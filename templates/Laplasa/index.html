@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block laplasa %} active {% endblock %}
+{% block content %}
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Критерій Лапласа</b></h1>
+    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form action="{{ url_for('kriteriy_laplasa.index') }}" method="GET">
+        <div align="center">
+            <p class="input-label">Введіть вашу задачу (необов’язково):</p>
+            <textarea class="input-settings" name="laplasa_task" id="laplasa_task" style="height: 75px"></textarea>
+            <br><br>
+            <div class="row gx-5">
+                <div class="col">
+                    <p class="input-label">Введіть кількість альтернатив:</p>
+                    <input class="input-settings" type="number" min="2" name="num_alt" id="num_criteria" required>
+                </div>
+                <div class="col">
+                    <p class="input-label">Введіть кількість умов:</p>
+                    <input class="input-settings" type="number" min="2" name="num_conditions" id="num_conditions"
+                       required>
+                </div>
+            </div>
+
+        </div>
+        <br>
+
+        <button type="submit" class="btns first">Далі</button>
+    </form>
+</div>
+{% endblock %}
+

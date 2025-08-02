@@ -11,7 +11,7 @@ hierarchy_bp = Blueprint("hierarchy", __name__, url_prefix="/hierarchy")
 @hierarchy_bp.route("/")
 def index():
     context = {
-        "title": "Головна",
+        "title": "Метод Аналізу Ієрархій",
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
     return render_template("Hierarchy/index.html", **context)

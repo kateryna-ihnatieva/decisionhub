@@ -153,6 +153,12 @@
                                 </div>
                             </div>
                         </a>
+                        {% elif result.method_name == 'Laplasa' %}
+                        <a href="{{ url_for('kriteriy_laplasa.result', method_id=result.method_id) }}"
+                           style="text-decoration: none;">
+                            <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="laplasa"
+                                 class="card-img-top" style="margin-top: 20px">
+                            <div class="card-body">
                         {% endif %}
                     </div>
                 </div>

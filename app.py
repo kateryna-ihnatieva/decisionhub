@@ -12,7 +12,12 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 from flask import Flask, render_template, request, redirect, url_for
-from blueprints import hierarchy_bp, binary_relations_bp, experts_bp
+from blueprints import (
+    hierarchy_bp,
+    binary_relations_bp,
+    experts_bp,
+    kriteriy_laplasa_bp,
+)
 from models import *
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import (
@@ -39,6 +44,7 @@ db.init_app(app)
 app.register_blueprint(hierarchy_bp)
 app.register_blueprint(binary_relations_bp)
 app.register_blueprint(experts_bp)
+app.register_blueprint(kriteriy_laplasa_bp)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -58,7 +64,7 @@ def index():
     return render_template("index.html", **context)
 
 
-@app.route("/info")
+@app.route("/documentation")
 def documentation():
     context = {
         "title": "Довідка",
