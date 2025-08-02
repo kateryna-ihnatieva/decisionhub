@@ -1,10 +1,16 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session
 from mymodules.mai import *
-from models import *
-from mymodules.gpt_response import *
-from mymodules.methods import *
-from mymodules.binary import *
+from models import (
+    LaplasaConditions,
+    LaplasaAlternatives,
+    LaplasaCostMatrix,
+    LaplasaTask,
+    db,
+    Result,
+)
 from flask_login import current_user
+from mymodules.methods import add_object_to_db, generate_plot, generate_pdf
+from mymodules.experts_func import make_table
 
 kriteriy_laplasa_bp = Blueprint(
     "kriteriy_laplasa", __name__, url_prefix="/kriteriy-laplasa"
@@ -77,6 +83,7 @@ def cost_matrix():
 
     # Збереження даних у сесії
     session["new_record_id"] = new_record_id
+    session["flag"] = 0
 
     context = {
         "title": "Матриця Вартостей",
@@ -85,6 +92,91 @@ def cost_matrix():
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "name": current_user.get_name() if current_user.is_authenticated else None,
+        "id": new_record_id,
     }
 
     return render_template("Laplasa/cost_matrix.html", **context)
+
+
+@kriteriy_laplasa_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
+def result(method_id=None):
+    if not method_id:
+        new_record_id = int(session.get("new_record_id"))
+        num_alt = int(session.get("num_alt"))
+        num_conditions = int(session.get("num_conditions"))
+    else:
+        new_record_id = method_id
+        num_alt = len(LaplasaAlternatives.query.get(new_record_id).names)
+        num_conditions = len(LaplasaConditions.query.get(new_record_id).names)
+
+    name_alternatives = LaplasaAlternatives.query.get(new_record_id).names
+    name_conditions = LaplasaConditions.query.get(new_record_id).names
+
+    laplasa_task = session.get("laplasa_task")
+
+    try:
+        laplasa_task_record = LaplasaTask.query.get(new_record_id)
+        laplasa_task = laplasa_task_record.task if laplasa_task_record else None
+    except Exception as e:
+        print("[!] Error:", e)
+
+    name_alternatives = LaplasaAlternatives.query.get(new_record_id).names
+    name_conditions = LaplasaConditions.query.get(new_record_id).names
+
+    flag = session.get("flag")
+    if flag != 0:
+        cost_matrix = LaplasaCostMatrix.query.get(new_record_id).matrix
+    else:
+        cost_matrix_raw = request.form.getlist("cost_matrix")
+        cost_matrix = make_table(num_alt, num_conditions, cost_matrix_raw)
+
+    optimal_variants = [
+        round(sum(map(int, sublist)) / len(sublist), 2) for sublist in cost_matrix
+    ]
+    # Знаходимо максимальне значення і його індекс
+    max_value = max(optimal_variants)
+    max_index = optimal_variants.index(max_value)
+    optimal_alternative = name_alternatives[max_index]
+
+    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+
+    existing_record = LaplasaCostMatrix.query.get(new_record_id)
+    if existing_record is None:
+        add_object_to_db(
+            db,
+            LaplasaCostMatrix,
+            id=new_record_id,
+            laplasa_alternatives_id=new_record_id,
+            matrix=cost_matrix,
+            optimal_variants=optimal_variants,
+        )
+
+        if current_user.is_authenticated:
+            add_object_to_db(
+                db,
+                Result,
+                method_name="Laplasa",
+                method_id=new_record_id,
+                user_id=current_user.get_id(),
+            )
+    context = {
+        "title": "Результат",
+        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name_alternatives": name_alternatives,
+        "name_conditions": name_conditions,
+        "cost_matrix": cost_matrix,
+        "optimal_variants": optimal_variants,
+        "id": new_record_id,
+        "laplasa_task": laplasa_task,
+        "optimal_message": optimal_message,
+        "laplasa_plot": generate_plot(optimal_variants, name_alternatives, False),
+    }
+
+    session["flag"] = 1
+
+    pdf_request = request.args.get("pdf", False)
+
+    if pdf_request:
+        return generate_pdf(context, "Laplasa/result.html")
+
+    return render_template("Laplasa/result.html", **context)

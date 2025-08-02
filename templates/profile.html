@@ -186,7 +186,34 @@
           <div class="result-content">
             <h5 class="result-title">Критерій Лапласа</h5>
             <div class="result-details">
-              <!-- Add Laplasa specific content here if needed -->
+              <div class="detail-section">
+                <div class="detail-label">Імена альтернатив:</div>
+                <ul class="detail-list">
+                  <li class="detail-item">
+                    {% for alternative_name in result.name_alternatives %}
+                      {{ alternative_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Імена умов:</div>
+                <ul class="detail-list">
+                  <li class="detail-item">
+                    {% for condition_name in result.name_conditions %}
+                      {{ condition_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
+              </div>
+              {% if current_user.get_name() == 'admin' %}
+              <div class="detail-section">
+                <div class="detail-label">Власник результату:</div>
+                <ul class="detail-list">
+                  <li class="detail-item owner-info">{{ result.owner_name }}</li>
+                </ul>
+              </div>
+              {% endif %}
             </div>
           </div>
         </a>

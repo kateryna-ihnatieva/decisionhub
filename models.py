@@ -100,6 +100,17 @@ class LaplasaTask(db.Model):
     task = db.Column(db.Text)
 
 
+class LaplasaCostMatrix(db.Model):
+    __tablename__ = "laplasa_cost_matrix"
+    id = db.Column(db.Integer, primary_key=True)
+    laplasa_alternatives_id = db.Column(
+        db.Integer, db.ForeignKey("laplasa_alternatives.id"), nullable=False
+    )
+    matrix = db.Column(JSON, nullable=False)
+    optimal_variants = db.Column(JSON, nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey("laplasa_tasks.id"), nullable=True)
+
+
 # --- BINARY ---
 
 
