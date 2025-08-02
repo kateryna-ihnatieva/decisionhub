@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block laplasa %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Критерій Лапласа</b></h1>
+    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form action="{{ url_for('kriteriy_laplasa.index') }}" method="POST">
+        {% if error %}
+        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
+        <br>
+        {% endif %}
+        <p class="input-label">Введіть імена альтернатив:</p>
+        {% for n in range(num_alt) %}
+        <input class="input-settings" type="text" name="name_alternatives" id="alternative{{ n+1 }}"
+               placeholder="Альтернатива {{ n+1 }}"
+               value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+               required>
+        <br>
+        {% endfor %}
+        <br>
+        <p class="input-label">Введіть імена умов:</p>
+        {% for m in range(num_conditions) %}
+        <input class="input-settings" type="text" name="name_conditions" id="condition{{ m+1 }}"
+               placeholder="Умова {{ m+1 }}"
+               value="{% if name_conditions %}{{ name_conditions[m] }}{% endif %}"
+               required>
+        <br>
+        {% endfor %}
+        <br>
+
+        <button type="submit" class="btns first">Далі</button>
+        <br><br>
+
+    </form>
+</div>
+
+{% endblock %}
