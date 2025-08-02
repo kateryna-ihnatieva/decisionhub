@@ -134,9 +134,6 @@
         <br>
         {{ experts_plot | safe }}
         <br>
-        <form method="POST" action="{{ url_for('experts.experts_result', pdf=True, method_id=method_id) }}">
-            <button type="submit" class="btns first">Завантажити у форматі PDF</button>
-        </form>
     </div>
 </div>
 

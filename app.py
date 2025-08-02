@@ -217,6 +217,23 @@ def profile():
             )
             session.close()
 
+        if method_name == "Laplasa":
+            session = Session(bind=db.engine)
+            name_alternatives = session.get(LaplasaAlternatives, result.method_id).names
+            name_conditions = session.get(LaplasaConditions, result.method_id).names
+            owner_name = session.get(User, result.user_id).name
+            result_history.append(
+                {
+                    "result_id": result_id,
+                    "method_id": method_id,
+                    "method_name": method_name,
+                    "name_alternatives": name_alternatives,
+                    "name_conditions": name_conditions,
+                    "owner_name": owner_name,
+                }
+            )
+            session.close()
+
     # Розбиваємо список результатів на сторінці
     pagination = Pagination(
         page=page,

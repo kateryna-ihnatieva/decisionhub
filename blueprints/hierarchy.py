@@ -406,9 +406,4 @@ def result(method_id=None):
 
     session["matr_alt"] = 1
 
-    pdf_request = request.args.get("pdf", False)
-
-    if pdf_request:
-        return generate_pdf(context, "Hierarchy/result.html")
-
     return render_template("Hierarchy/result.html", **context)

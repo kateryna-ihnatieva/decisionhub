@@ -9,7 +9,7 @@ from models import (
     Result,
 )
 from flask_login import current_user
-from mymodules.methods import add_object_to_db, generate_plot, generate_pdf
+from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 
 kriteriy_laplasa_bp = Blueprint(
@@ -173,10 +173,5 @@ def result(method_id=None):
     }
 
     session["flag"] = 1
-
-    pdf_request = request.args.get("pdf", False)
-
-    if pdf_request:
-        return generate_pdf(context, "Laplasa/result.html")
 
     return render_template("Laplasa/result.html", **context)

@@ -239,8 +239,4 @@ def experts_result(method_id=None):
     }
 
     session["flag"] = 1
-    pdf_request = request.args.get("pdf", False)
-
-    if pdf_request:
-        return generate_pdf(context, "Experts/result.html")
     return render_template("Experts/result.html", **context)
