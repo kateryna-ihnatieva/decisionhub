@@ -41,3 +41,50 @@ def names():
     }
 
     return render_template("Laplasa/names.html", **context)
+
+
+@kriteriy_laplasa_bp.route("/cost-matrix", methods=["GET", "POST"])
+def cost_matrix():
+    num_alt = int(session.get("num_alt"))
+    num_conditions = int(session.get("num_conditions"))
+    laplasa_task = session.get("laplasa_task")
+
+    name_alternatives = request.form.getlist("name_alternatives")
+    name_conditions = request.form.getlist("name_conditions")
+
+    if len(name_alternatives) != len(set(name_alternatives)) or len(
+        name_conditions
+    ) != len(set(name_conditions)):
+        context = {
+            "title": "Імена",
+            "num_alt": num_alt,
+            "num_conditions": num_conditions,
+            "name_alternatives": name_alternatives,
+            "name_conditions": name_conditions,
+            "error": "Імена повинні бути унікальними!",
+            "name": current_user.get_name() if current_user.is_authenticated else None,
+        }
+
+        return render_template("Laplasa/names.html", **context)
+
+    # Збереження даних у БД
+    new_record_id = add_object_to_db(db, LaplasaConditions, names=name_conditions)
+
+    add_object_to_db(db, LaplasaAlternatives, id=new_record_id, names=name_alternatives)
+
+    if laplasa_task:
+        add_object_to_db(db, LaplasaTask, id=new_record_id, task=laplasa_task)
+
+    # Збереження даних у сесії
+    session["new_record_id"] = new_record_id
+
+    context = {
+        "title": "Матриця Вартостей",
+        "num_alt": num_alt,
+        "num_conditions": num_conditions,
+        "name_alternatives": name_alternatives,
+        "name_conditions": name_conditions,
+        "name": current_user.get_name() if current_user.is_authenticated else None,
+    }
+
+    return render_template("Laplasa/cost_matrix.html", **context)

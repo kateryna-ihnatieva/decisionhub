@@ -32,6 +32,7 @@ from dotenv import load_dotenv
 import os
 from sqlalchemy.orm import Session
 from flask_paginate import Pagination, get_page_args
+from mymodules.methods import add_object_to_db
 
 load_dotenv()
 
