@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block binary %} active {% endblock %}
+{% block content %}
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Бінарних
+        Відношень</b></h1>
+    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form method="POST">
+        <h3 class="result-text" align="center">МПП</h3>
+        <table class="table table-bordered align-middle">
+            <thead align="center" class="table-back text-white">
+            <tr>
+                <th></th>
+                {% for name in names %}
+                <th>{{ name }}</th>
+                {% endfor %}
+                <th class="table_backg">SUM</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for i in range(num) %}
+            <tr>
+                <th style="background: #222629" class="text-white">{{ names[i] }}</th>
+                {% for j in range(num) %}
+                <td class="text-white" align="center">{{ matrix[i][j] }}</td>
+                {% endfor %}
+                <td class="text-white" align="center"><i>{{ sorted_dict[names[i]] }}</i></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <br><br>
+        <h3 class="result-text" align="center">Порядок ранжування</h3>
+
+        <table class="table table-bordered align-middle center" style="width: 50%">
+            <thead align="center" class="table-back text-white">
+            <tr>
+                <th>Об'єкт</th>
+                <th>Сума</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for name, total in sorted_dict.items() %}
+            <tr>
+                <td class="text-white" align="center">{{ name }}</td>
+                <td class="text-white" align="center"><i>{{ total }}</i></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <br><br>
+        <h3 class="result-text" align="center">Ранжування з використанням відношень</h3>
+        <p class="blue-text" style="font-size: 24px; color: #45A29E" align="center"><i>{{ ranj_str }}</i></p>
+        {% if task %}
+        <p class="text-white" style="font-size: 20px;"><b>Задача:</b> {{ task }}</p>
+<!--        {% if gpt_response %}-->
+<!--        <p class="text-white" style="font-size: 20px;"><b>Результат:</b> {{ gpt_response | safe }}</p>-->
+<!--        {% endif %}-->
+        {% endif %}
+
+        <br>
+        {{ binary_plot | safe }}
+        <br><br>
+
+        <h3 class="result-text" align="center">Формальні позначки</h3>
+        <table class="table table-bordered align-middle center" style="width: 50%">
+            <thead align="center" class="table-back text-white">
+            <tr>
+                <th>Об'єкт</th>
+                <th>Формальна позначка</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for i in range(num) %}
+            <tr>
+                <td class="text-white" align="center">{{ names[i] }}</td>
+                <td class="text-white" align="center">a{{ i+1 }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <br><br>
+
+        <h3 class="result-text" align="center">Перевірка на транзитивність</h3>
+        <table class="table table-bordered align-middle">
+
+            <thead align="center" class="table-back text-white">
+            <tr class="tranz_table">
+                <th>№</th>
+                <th>Комбінація 3-х об’єктів</th>
+                <th>Умова транзитивності</th>
+                <th>Відношення</th>
+                <th>Примітка</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for i in range(len_comb) %}
+            <tr>
+                <th class="tranz_table text-white">{{ i+1 }}</th>
+
+                <th class="comb text-white">{{ comb[i] }}</th>
+
+                <th class="comb text-white">{{ cond_tranz[i] }}</th>
+
+                <th class="text-white">{{ vidnosh[i] }}</th>
+
+                {% if prim[i] == '+' %}
+                <th class="text-white" style="background-color: #32CD32;">{{ prim[i] }}</th>
+                {% elif prim[i] == '-' %}
+                <th class="text-white" style="background: #DC143C;">{{ prim[i] }}</th>
+                {% else %}
+                <th class="text-white">{{ prim[i] }}</th>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            </tbody>
+
+        </table>
+        <br><br>
+
+        <h3 class="blue-text" align="center">ВИСНОВОК</h3>
+        <p class="green-text">{{ visnovok }}</p>
+        <br><br>
+
+    </form>
+    <form method="POST" action="{{ url_for('binary_relations.result', pdf=True, method_id=method_id) }}">
+        <button type="submit" class="btns first">Завантажити у форматі PDF</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block main %} active {% endblock %}
+{% block content %}
+<h1 class="display-3 method-name" align="center"><b>Прийняття рішень</b></h1>
+<br>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+
+        <thead align="center" class="table-back text-white">
+        <tr>
+            <th><a href="{{ url_for('hierarchy.index') }}" class="link-head">Аналіз Ієрархій</a></th>
+            <th><a href="{{ url_for('binary_relations.index') }}" class="link-head">Бінарне Відношення</a></th>
+            <th><a href="{{ url_for('experts.index') }}" class="link-head">Експертні Оцінки</a></th>
+            <th><a href="{{ url_for('documentation') }}" class="link-head">Довідка</a></th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr>
+            <td class="align-top blue-text"
+                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
+                Сторінка для проведення аналізу ієрархій. Визначте вагомість різних критеріїв та альтернатив для
+                прийняття обґрунтованих рішень.
+                <br>Використовуйте метод аналізу ієрархій для визначення найкращого варіанту.
+            </td>
+            <td class="align-top blue-text"
+                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
+                Сторінка для роботи з бінарним відношенням. Встановлюйте та аналізуйте відношення між елементами,
+                використовуючи бінарні матриці.
+                <br>Оцінюйте важливість та залежності між об'єктами.
+            </td>
+            <td class="align-top blue-text"
+                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
+                Сторінка для отримання та аналізу експертних оцінок. Використовуйте експертні думки для визначення
+                пріоритетів та ранжування альтернатив.
+                <br>Отримуйте цінні інсайти від фахівців.
+            </td>
+            <td class="align-top blue-text"
+                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
+                Сторінка, що надає корисну інформацію та довідковий матеріал щодо використання системи.
+                <br>Ознайомтеся з інструкціями та порадами для ефективного користування веб-додатком.
+            </td>
+        </tr>
+        <tr>
+            <td class="align-top" align="center">
+                <a href="{{ url_for('hierarchy.index') }}">
+                    <img src="static/img/hierarchy.png" alt="Hierarcy" width="65%">
+                </a>
+            </td>
+            <td class="align-top" align="center">
+                <a href="{{ url_for('binary_relations.index') }}">
+                    <img src="static/img/binary.png" alt="Binary" width="65%">
+                </a>
+            </td>
+            <td class="align-top" align="center">
+                <a href="{{ url_for('experts.index') }}">
+                    <img src="static/img/experts.png" alt="Experts" width="65%">
+                </a>
+            </td>
+            <td class="align-top" align="center">
+                <a href="{{ url_for('documentation') }}">
+                    <img src="static/img/info.png" alt="Info" width="65%">
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

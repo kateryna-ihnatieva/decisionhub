@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <img src="../static/img/favicon.ico" alt="decision" width="10%">
+    <br>
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Реєстрація</b>
+    </h1>
+    <br><br>
+    <form action="{{ url_for('register') }}" method="POST">
+        {% if error %}
+        <div class="alert alert-danger alert-style center" role="alert" style="width: 60%"><i>{{ error }}</i></div>
+        <br>
+        {% endif %}
+        <div class="center" style="width: 50%">
+            <input class="input-settings" type="text" name="name" required placeholder="Ім'я">
+            <input class="input-settings" type="email" name="email" required placeholder="Email адреса">
+            <div style="position: relative;">
+                <input id="password" class="input-settings" type="password" name="psw" required placeholder="Пароль">
+                <button type="button" id="show-password" class="btn" style="position: absolute; right: 3%; top: 12%;">
+                    <img src="{{ url_for('static', filename='img/hidden.png') }}" alt="eye" width="23px">
+                </button>
+            </div>
+            <div style="position: relative;">
+                <input id="password2" class="input-settings" type="password" name="psw2" required
+                       placeholder="Повтор паролю">
+                <button type="button" id="show-password2" class="btn" style="position: absolute; right: 3%; top: 12%;">
+                    <img src="{{ url_for('static', filename='img/hidden.png') }}" alt="eye" width="23px">
+                </button>
+            </div>
+            <br><br>
+            <button type="submit" class="btn btn-info"
+                    style="width: 45%; height: 50px; font-family: 'Ubuntu', sans-serif; font-size: 24px;">Реєстрація
+            </button>
+        </div>
+    </form>
+</div>
+<br><br>
+<script>
+    document.getElementById('show-password').addEventListener('click', function() {
+        var passwordField = document.getElementById('password');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            this.innerHTML = '<img src="{{ url_for('static', filename='img/eye.png') }}" alt="hide" width="23px">';
+        } else {
+            passwordField.type = 'password';
+            this.innerHTML = '<img src="{{ url_for('static', filename='img/hidden.png') }}" alt="eye" width="23px">';
+        }
+    });
+
+    document.getElementById('show-password2').addEventListener('click', function() {
+        var passwordField = document.getElementById('password2');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            this.innerHTML = '<img src="{{ url_for('static', filename='img/eye.png') }}" alt="hide" width="23px">';
+        } else {
+            passwordField.type = 'password';
+            this.innerHTML = '<img src="{{ url_for('static', filename='img/hidden.png') }}" alt="eye" width="23px">';
+        }
+    });
+</script>
+{% endblock %}

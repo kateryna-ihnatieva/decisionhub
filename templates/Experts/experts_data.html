@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block expert %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Експертних
+        Оцінок</b></h1>
+    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" width="6%" style="margin-bottom: 41px">
+</div>
+<br>
+<div>
+    <div class="center">
+        <form action="{{ url_for('experts.experts_result', method_id=id) }}" method="POST">
+            {% if error %}
+            <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
+            <br>
+            {% endif %}
+
+            <p class="input-label" align="center">Вихідні експертні дані</p>
+
+            <div class="card text-bg-info mb-3 center" style="width: 22rem;">
+                <div class="card-body">
+                    <h5>Довідка</h5>
+                    <div class="complement">0 - Напрямок не впливає на дослідження кон'юнктури ринку
+                        <br>1-2 - Напрямок робить слабкий вплив, його варто врахувати в майбутньому
+                        <br>3-5 - Напрямок впливає, але важко реалізовано
+                        <br>6-7 - Напрямок має істотний вплив
+                        <br>8-10 - Напрямок є важливим і актуальним, реалізується в першу чергу
+                    </div>
+                </div>
+            </div>
+
+            <br>
+
+            <table class="table table-bordered align-middle">
+
+                <thead align="center">
+                <tr>
+                    <th rowspan="2" class="result-text"
+                        style="font-size: 20px; text-align: center; vertical-align: middle;"><b>Експерти</b></th>
+                    <td colspan="{{ name_research | length }}" class="result-text" style="font-size: 20px"><b>Часткові
+                        критерії</b></td>
+                </tr>
+                <tr>
+                    {% for i in range(name_research | length) %}
+                    <th class="text-white">{{ name_research[i] }}</th>
+                    {% endfor %}
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for n_e in range(num_experts) %}
+                <tr>
+                    <th class="text-white" style="text-align: center;">{{ n_e + 1 }}</th>
+                    {% for i in range(name_research | length) %}
+                    <td>
+                        <input class="input-settings" type="text" name="experts_data_table"
+                               id="experts_data_table_{{ i }}_{{ j }}" required pattern="^(10|[0-9])$">
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                </tbody>
+
+            </table>
+
+
+            <br>
+            <button type="submit" class="btns first">Далі</button>
+            <br><br>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

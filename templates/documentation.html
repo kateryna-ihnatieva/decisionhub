@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block info %} active {% endblock %}
+{% block content %}
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Довідка</b></h1>
+    <img src="../static/img/info.png" alt="Info" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4" style="width:30%">
+            <h2 onclick="showDescription(1)" class="blue-text method-name" style="color: #45A29E">Метод Аналізу
+                Ієрархій</h2>
+            <div id="description-1" class="method-description" style="display:none">
+                <h1 class="blue-text" style="color: #8EE4AF">Метод Аналізу Ієрархій</h1>
+                <p class="info-text">
+                    Метод аналізу ієрархій (МАІ) – це структурований підхід до ухвалення рішень, що ґрунтується на
+                    декомпозиції складних завдань на простіші елементи. У процесі МАІ виявляються ключові аспекти
+                    проблеми, визначається їхня важливість і встановлюються ієрархічні відносини між ними.
+                </p>
+                <p class="info-text">
+                    Цей метод включає побудову ієрархічної структури з рівнями цілей, критеріїв і альтернативних рішень.
+                    Порівняння критеріїв і оцінку альтернатив проводять із використанням матриці парних порівнянь, а
+                    потім розраховують вагові коефіцієнти для кожного рівня ієрархії. Вибір оптимальної альтернативи та
+                    аналіз результатів завершують процес ухвалення рішення.
+                </p>
+                <p class="info-text">
+                    <strong>Формула для оцінки компонент власного вектора:</strong>
+                    <br>
+                    \[V_i = \sqrt[m]{\prod_{j=1}^{m} k_{ij}}, \quad i=1,\ldots,m, \quad j=1,\ldots,m\]
+                </p>
+                <p class="info-text">
+                    <strong>Нормалізовані оцінки вектора пріоритету кожного критерію обчислюються за наступною
+                        формулою:</strong>
+                    <br>
+                    \[ P_i = \frac{V_i}{\sum_{i=1}^{m} V_i}, \quad i=1,\ldots,m \]
+                </p>
+                <p class="info-text">
+                    \[ \lambda_{\text{max}} = \sum M_j P_j \]
+                </p>
+                <p class="info-text">
+                    <strong>Відношення узгодженості та індекс узгодженості розраховуються за наступними
+                        формулами:</strong>
+                    <br>
+                    \[ ІУ = \frac{\lambda_{\text{max}} - n}{n-1} \]
+                    <br>
+                    \[ ВУ = \frac{ІУ}{ВІ} \]
+                </p>
+                <p class="info-text">
+                    Де \( \lambda_{\text{max}} \) - це максимальне власне значення, \( ІУ \) - індекс узгодженості, \(
+                    ВУ \) - відношення узгодженості, а \( ВІ \) - випадковий індекс.
+                </p>
+                <table class="table table-bordered">
+                    <caption class="info-text" style="font-size:16px">Таблиця – Індекси рандомізації</caption>
+                    <tr class="text-white" align="center">
+                        <th>n</th>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                        <td>7</td>
+                        <td>8</td>
+                        <td>9</td>
+                        <td>10</td>
+                    </tr>
+                    <tr class="text-white" align="center">
+                        <th>Індекс рандомізації</th>
+                        <td>0</td>
+                        <td>0.58</td>
+                        <td>0.90</td>
+                        <td>1.12</td>
+                        <td>1.24</td>
+                        <td>1.32</td>
+                        <td>1.41</td>
+                        <td>1.45</td>
+                        <td>1.49</td>
+                    </tr>
+                </table>
+                <p class="info-text">
+                    В загальному випадку індекс рандомізації можливо наближено знайти за формулою:
+                    <br>
+                    \[ВІ = \frac{1.98(n-2)}{n}\]
+                </p>
+                <br><br><br>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <h2 onclick="showDescription(2)" class="blue-text method-name" style="color: #45A29E">Метод Бінарних
+                Відношень</h2>
+            <div id="description-2" class="method-description" style="display:none;">
+                <h1 class="blue-text" style="color: #8EE4AF">Метод Бінарних Відношень</h1>
+                <p class="info-text">
+                    Метод бінарних відношень є ефективним інструментом для ухвалення рішень в умовах визначеності, що
+                    ґрунтується на порівнянні пар альтернатив. Цей метод дає змогу визначити, якому об’єкту надається
+                    перевага в парі з іншим об’єктом.
+                </p>
+                <p class="info-text">
+                    Основна ідея методу полягає в побудові матриці попарних порівнянь, де кожен елемент матриці набуває
+                    значення 1, 0 або -1, яке позначає перевагу одного об’єкта над іншим, рівність або зворотну
+                    перевагу. Після побудови матриці відбувається визначення ваг об’єктів із використанням методу
+                    строкових сум, що дає змогу встановити загальний порядок альтернатив.
+                </p>
+                <p class="info-text">
+                    Формули методу бінарних відношень:
+                </p>
+                <p class="info-text">
+                    <strong>Значення елементу матриці R для пари альтернатив Ai і Aj:</strong>
+                    <br>
+                    \[ R_{i,j} = \begin{cases} 1, & \text{якщо } A_i \text{ краще } A_j \\ 0, & \text{якщо } A_i \text{
+                    і } A_j \text{ рівні за значенням} \\ -1, & \text{якщо } A_j \text{ краще } A_i \end{cases} \]
+                </p>
+                <p class="info-text">
+                    <strong>Вага об’єкта Aj:</strong>
+                    <br>
+                    \[ W_j = \sum_{i=1}^{n} R_{i,j} \]
+                </p>
+                <br><br><br>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <h2 onclick="showDescription(3)" class="blue-text method-name" style="color: #45A29E">Метод Експертних
+                Оцінок</h2>
+            <div id="description-3" class="method-description" style="display:none;">
+                <h1 class="blue-text" style="color: #8EE4AF">Метод Експертних Оцінок</h1>
+                <p class="info-text">
+                    Метод Делфі – це систематичний підхід до ухвалення рішень, який ґрунтується на експертних оцінках і
+                    повторному аналізі.
+                </p>
+                <p class="info-text">
+                    Цей метод включає кілька етапів: уточнення проблем, формування групи експертів, розробка анкет для
+                    опитування, індивідуальне анкетне опитування, математичне опрацювання результатів і уточнення
+                    оцінок. Для формування стійкої узагальненої оцінки етапи опитування можуть проводитися кілька разів.
+                </p>
+                <p class="info-text">
+                    Кожен експерт оцінює свою компетентність і знайомство з проблемою, що враховується під час
+                    розрахунку узагальненої оцінки значущості факторів. Після розрахунку узагальнених оцінок факторів їх
+                    можна проранжувати для визначення важливості кожного фактора в ухваленні рішень.
+                </p>
+                <p class="info-text">
+                    <strong>Формула для узагальненої оцінки важливості чинника:</strong>
+                    <br>
+                    \[ M_j = \frac{\sum_{j=1}^{m} c_{ij}}{m_j} \]
+                </p>
+                <p class="info-text">
+                    <strong>З урахуванням коефіцієнта компетентності:</strong>
+                    <br>
+                    \[ M_j = \frac{\sum_{j=1}^{m} K_k c_{ij}}{m_j} \]
+                </p>
+                <p class="info-text">
+                    Для визначення відносних коефіцієнтів значимості часткових критеріїв, можна використовувати просту
+                    функцію ранжирування:
+                    <br>
+                    \[ \lambda_i = 2 \left[ \left( \frac{n+1-R_i}{n(n+1)} \right) \right] \] \[ \sum_{i} \lambda_i =
+                    1.00 \]
+                </p>
+                <br><br><br>
+            </div>
+        </div>
+
+    </div>
+</div>
+<br><br>
+
+<!-- Спливаючий блок з описом методу -->
+<div class="container" style="width:80%">
+    <div class="method-description-popup" id="method-description-popup" style="display:none;">
+        <div class="method-description-content" id="method-description-content">
+            <!-- Сюди підставлятиметься опис методу -->
+        </div>
+    </div>
+</div>
+
+<script>
+    function showDescription(methodNumber) {
+        // Отримуємо опис методу
+        var description = document.getElementById("description-" + methodNumber).innerHTML;
+        // Підставляємо опис до спливаючого блоку
+        document.getElementById("method-description-content").innerHTML = description;
+        // Відображаємо спливаюче блок
+        document.getElementById("method-description-popup").style.display = "block";
+    }
+</script>
+{% endblock %}

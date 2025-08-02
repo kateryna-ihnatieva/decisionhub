@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block binary %} active {% endblock %}
+{% block content %}
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Бінарних Відношень</b></h1>
+    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form class="form" action="{{ url_for('binary_relations.matrix') }}" method="POST">
+        {% if error %}
+        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
+        <br>
+        {% endif %}
+
+        <p class="input-label">Введіть імена об'єктів:</p>
+        {% for i in range(num) %}
+        <input class="input-settings" type="text" name="names" id="name_{{ i }}"
+               placeholder="Об'єкт {{ i+1 }}" value="{% if names %}{{ names[i] }}{% endif %}" required>
+        {% endfor %}
+        <br><br>
+        <button type="submit" class="btns first">Далі</button>
+        <br>
+    </form>
+</div>
+{% endblock %}

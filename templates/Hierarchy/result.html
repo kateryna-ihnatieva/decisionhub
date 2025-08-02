@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block hierarchy %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу
+        Ієрархій</b></h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarcy" width="6%"
+         style="margin-bottom: 41px">
+</div>
+<br><br>
+<div>
+
+    <div class="center">
+        {% if error_krit %}
+        <div class="alert alert-danger alert-style" role="alert">
+            <i>{{ error_krit }}</i>
+        </div>
+        <br>
+        {% elif error %}
+        <div class="alert alert-danger alert-style" role="alert">
+            <i>{{ error }}</i>
+        </div>
+        <br>
+        {% endif %}
+        <form method="POST">
+            <h3 class="result-text" align="center">Матриця парних порівнянь для критеріїв</h3>
+            <br>
+            <div>
+                <table class="table table-bordered align-middle">
+                    <thead align="center" class="table-back text-white">
+                    <tr>
+                        <th></th>
+                        {% for name in name_criteria %}
+                        <th>{{ name }}</th>
+                        {% endfor %}
+                        <th>Оцінки компонент власного вектора</th>
+                        <th>Нормалізовані оцінки вектора пріоритету</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for i in range(num_criteria) %}
+                    <tr>
+                        <th style="background: #222629" class="text-white">{{ name_criteria[i] }}</th>
+                        {% for j in range(num_criteria) %}
+                        <td class="text-white" align="center">{{ matrix_krit[i][j] }}</td>
+                        {% endfor %}
+                        <td class="text-white" align="center">{{ components_eigenvector[i] | round(3) }}</td>
+                        <td class="text-white" align="center">{{ normalized_eigenvector[i] | round(3) }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <th colspan="{{ num_criteria+1 }}" style="background: #222629" class="text-white">Сума</th>
+                        <td class="text-white" align="center">{{ components_eigenvector | sum | round(3) }}</td>
+                        <td class="text-white" align="center">{{ normalized_eigenvector | sum | round | int }}</td>
+                    </tr>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div>
+
+                <table class="table table-bordered align-middle">
+
+                    <tbody>
+                    <tr>
+                        <th style="background: #222629" class="text-white">Сума по стовпцях</th>
+                        {% for i in range(num_criteria) %}
+                        <td class="text-white" align="center">{{ sum_col[i] | round(3) }}</td>
+                        {% endfor %}
+                        <th style="background: #222629" class="text-white">Разом (Lmax)</th>
+                    </tr>
+                    <tr>
+                        <th style="background: #222629" class="text-white">Добуток додатку по стовпцях і нормалізованої
+                            оцінки вектора
+                            пріоритету
+                        </th>
+                        {% for i in range(num_criteria) %}
+                        <td class="text-white" align="center">{{ prod_col[i] | round(3) }}</td>
+                        {% endfor %}
+                        <td class="text-white" align="center">{{ l_max[0] | round(3) }}</td>
+                    </tr>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <p class="white-text">Індекс узгодженості = {{ index_consistency[0] | round(3) }}</p>
+            <p class="white-text">Відношення узгодженості = {{ relation_consistency[0] | round(3) }}%</p>
+            <p class="blue-text" style="color: #45A29E; font-size: 20px;"><b>Висновок: {{ ranj[0] }}</b></p>
+            <br>
+
+        </form>
+
+        <form method="POST">
+            <h3 class="result-text" align="center">Матриця парних порівнянь для альтернатив</h3>
+
+            {% for num in range(num_criteria) %}
+
+            <p class="green-text">Критерій "{{name_criteria[num]}}"</p>
+            <div>
+                <table class="table table-bordered align-middle">
+
+                    <thead align="center" class="table-back text-white">
+                    <tr>
+                        <th></th>
+                        {% for name in name_alternatives %}
+                        <th>{{ name }}</th>
+                        {% endfor %}
+                        <th>Оцінки компонент власного вектора</th>
+                        <th>Нормалізовані оцінки вектора пріоритету</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for i in range(name_alternatives | length) %}
+                    <tr>
+                        <th style="background: #222629" class="text-white">{{ name_alternatives[i] }}</th>
+                        {% for j in range(name_alternatives | length) %}
+                        <td class="text-white" align="center">{{ matrix_alt[num][i][j] }}</td>
+                        {% endfor %}
+                        <td class="text-white" align="center">{{ components_eigenvector_alt[num][i] | round(3) }}</td>
+                        <td class="text-white" align="center">{{ normalized_eigenvector_alt[num][i] | round(3) }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <th colspan="{{ num_alternatives+1 }}" style="background: #222629" class="text-white">Сума</th>
+                        <td class="text-white" align="center">{{ components_eigenvector_alt[num] | sum | round(3) }}
+                        </td>
+                        <td class="text-white" align="center">{{ normalized_eigenvector_alt[num] | sum | round | int
+                            }}
+                        </td>
+                    </tr>
+                    </tbody>
+
+                </table>
+            </div>
+
+            <div>
+                <table class="table table-bordered align-middle">
+
+                    <tbody>
+                    <tr>
+                        <th style="background: #222629" class="text-white">Сума по стовпцях</th>
+                        {% for i in range(num_alternatives) %}
+                        <td class="text-white" align="center">{{ sum_col_alt[num][i] | round(3) }}</td>
+                        {% endfor %}
+                        <th style="background: #222629" class="text-white">Разом (Lmax)</th>
+                    </tr>
+                    <tr>
+                        <th style="background: #222629" class="text-white">Добуток додатку по стовпцях і нормалізованої
+                            оцінки вектора
+                            пріоритету
+                        </th>
+                        {% for i in range(num_alternatives) %}
+                        <td class="text-white" align="center">{{ prod_col_alt[num][i] | round(3) }}</td>
+                        {% endfor %}
+                        <td class="text-white" align="center">{{ l_max_alt[num][0] | round(3) }}</td>
+                    </tr>
+                    </tbody>
+
+                </table>
+            </div>
+
+            <p class="white-text">Індекс узгодженості = {{ index_consistency_alt[num][0] | round(3) }}</p>
+            <p class="white-text">Відношення узгодженості = {{ relation_consistency_alt[num][0] | round(3) }}%</p>
+            <p class="blue-text" style="color: #45A29E; font-size: 20px;"><b>Висновок по критерію "{{ name_criteria[num]
+                }}": {{ ranj_alt[num][0] }}</b></p>
+            <br>
+            {% endfor %}
+            <br>
+
+        </form>
+
+        <h3 class="result-text" align="center">Вектор глобальних пріоритетів</h3>
+        <br>
+        <div>
+
+            <table class="table table-bordered align-middle">
+                <thead align="center">
+                <tr class="table-back text-white">
+                    <th rowspan="5" class="align-middle">Альтернативи</th>
+                    <th colspan="{{ num_criteria }}">Критерії</th>
+                    <th rowspan="5" class="align-middle">Глобальні пріоритети
+                    </th>
+                </tr>
+
+                <tr>
+                    {% for i in range(num_criteria) %}
+                    <th class="text-white"><i>{{ name_criteria[i] }}</i></th>
+                    {% endfor %}
+                </tr>
+
+                <tr class="table-back text-white">
+                    <th colspan="{{ num_criteria }}">Чисельне значення
+                        вектору пріоритету
+                    </th>
+                </tr>
+
+                <tr>
+                    {% for i in range(num_criteria) %}
+                    <td class="text-white" align="center">{{ normalized_eigenvector[i] | round(3) }}</td>
+                    {% endfor %}
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for i in range(num_alternatives) %}
+                <tr>
+                    <th class="text-white"><i>{{ name_alternatives[i] }}</i></th>
+                    {% for j in range(normalized_eigenvector_alt | length) %}
+                    <td class="text-white" align="center">{{ normalized_eigenvector_alt[j][i] | round(3) }}</td>
+                    {% endfor %}
+                    <td class="text-white" align="center">{{ global_prior[i] | round(3) }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <th colspan="{{ num_criteria+1 }}" style="background: #222629" class="text-white">Сума</th>
+                    <td class="text-white" align="center">{{ global_prior | sum | round | int }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+        {% if task %}
+        <p class="white-text" style="font-size: 20px;"><b>Задача:</b> {{ task }}</p>
+<!--        {% if gpt_response %}-->
+<!--        <p class="white-text" style="font-size: 20px;"><b>Результат:</b> {{ gpt_response | safe }}</p>-->
+<!--        {% endif %}-->
+        {% endif %}
+
+        <p class="blue-text" style="font-size: 24px;"><b>Висновок: {{ ranj_global[0] }}</b></p>
+        <br>
+
+        {{ global_prior_plot | safe }}
+
+        <div align="center">
+            <br>
+            <h3 class="result-text" align="center">Ієрархічне представлення</h3>
+            <br>
+            <img src="{{ url_for('static', filename='img/hierarchy_tree.png') }}" alt="Hierarchy Tree">
+            <br><br>
+        </div>
+
+
+        <form method="POST" action="{{ url_for('hierarchy.result', pdf=True, method_id=method_id) }}">
+            <button type="submit" class="btns first">Завантажити у форматі PDF</button>
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

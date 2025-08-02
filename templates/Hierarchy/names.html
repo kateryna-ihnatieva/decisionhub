@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block hierarchy %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу
+        Ієрархій</b></h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarcy" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
+        {% if error %}
+        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
+        <br>
+        {% endif %}
+        <p class="input-label">Введіть імена критеріїв:</p>
+        {% for i in range(num_criteria | int) %}
+        <input class="input-settings" type="text" name="name_criteria" id="criter{{ i+1 }}"
+               placeholder="Критерій {{ i+1 }}"
+               value="{% if name_criteria %}{{ name_criteria[i] }}{% endif %}"
+               required>
+        <br>
+        {% endfor %}
+        <br>
+        <p class="input-label">Введіть імена альтернатив:</p>
+        {% for n in range(num_alternatives) %}
+        <input class="input-settings" type="text" name="name_alternatives" id="alternative{{ n+1 }}"
+               placeholder="Альтернатива {{ n+1 }}"
+               value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+               required>
+        <br>
+        {% endfor %}
+        <br>
+
+        <button type="submit" class="btns first">Далі</button>
+        <br><br>
+
+    </form>
+</div>
+
+{% endblock %}

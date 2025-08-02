@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Матриця попарних порівнянь
+{% endblock %}
+
+{% block binary %} active {% endblock %}
+{% block content %}
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Бінарних Відношень</b></h1>
+    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+
+<div class="center">
+    <form action="{{ url_for('binary_relations.result', method_id=id) }}" method="POST">
+        <p class="input-label" align="center">Матриця попарних порівнянь</p>
+
+        <div class="card text-bg-info mb-3 center" style="width: 22rem;">
+            <div class="card-body">
+                <h5>Довідка</h5>
+                <div class="complement"><b>-1</b> - Об'єкт 1 краще за об'єкт 2
+                    <br><b> 1</b> - Об'єкт 1 гірше за об'єкт 2
+                    <br><b> 0</b> - Об'єкти однакові
+                </div>
+            </div>
+        </div>
+        <br>
+        <table class="table table-bordered align-middle">
+            <tr align="center">
+                <th></th> <!-- Пуста комірка для симетрії -->
+                {% for name in names %}
+                <th class="text-white">{{ name }}</th>
+                {% endfor %}
+            </tr>
+            {% for i in range(num) %}
+            <tr>
+                <th class="text-white">{{ names[i] }}</th>
+                {% for j in range (num) %}
+                <td>
+                    {% if i < j %}
+                    <input class="input-settings" type="text" name="matrix" id="matrix[{{i}}][{{j}}]" pattern="^-?([0-1]{1}|1)$" required>
+                    <!-- Можна вводити тільки 1, -1, 0-->
+                    {% elif i > j %}
+                    <input class="input-settings" type="text" name="matrix" id="matrix[{{j}}][{{i}}]" value="" readonly>
+                    {% elif i == j %}
+                    <input class="input-settings" type="text" name="matrix" id="matrix[{{i}}{{j}}]" value="0" readonly>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+        <br>
+
+        <button type="submit" class="btns first">Далі</button>
+
+
+    </form>
+</div>
+{% endblock %}
+

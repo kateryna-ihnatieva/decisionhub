@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block hierarchy %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу Ієрархій</b></h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarchy" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div>
+    <div class="center">
+        <form action="{{ url_for('hierarchy.result', method_id=id) }}" method="POST">
+            <p class="input-label" align="center">Матриця парних порівнянь для альтернатив</p>
+
+            <div class="card text-bg-info mb-3 center" style="width: 22rem;">
+                <div class="card-body">
+                    <h5>Довідка</h5>
+                    <div class="complement">1 - однакова важливість
+                        <br>3 - помірна перевага одного над іншим
+                        <br>5 - істотна перевага одного над іншим
+                        <br>7 - значна перевага одного над іншим
+                        <br>9 - дуже сильна перевага одного над іншим
+                        <br>2, 4, 6, 8 - відповідні проміжні значення
+                    </div>
+                </div>
+            </div>
+
+            {% for num in range(num_criteria) %}
+            <br>
+            <p class="green-text">Критерій "{{name_criteria[num]}}"</p>
+
+            <div>
+
+                <table class="table table-bordered align-middle">
+
+                    <thead align="center">
+                    <tr>
+                        <th></th>
+                        {% for name in name_alternatives %}
+                        <th class="text-white">{{ name }}</th>
+                        {% endfor %}
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for i in range(name_alternatives | length) %}
+                    <tr>
+                        <th class="text-white">{{ name_alternatives[i] }}</th>
+                        {% for j in range(name_alternatives | length) %}
+                        <td>
+                            {% if i < j %}
+                            <input class="input-settings" type="text" name="matrix_alt"
+                                   id="matrix_alt_{{ i }}_{{ j }}_" required pattern="^[1-9]$|^(1\/[2-9])$">
+                            {% elif i > j %}
+                            <input class="input-settings" type="text" name="matrix_alt"
+                                   id="matrix_alt{{ j }}_{{ i }}" value="" readonly>
+                            {% elif i == j %}
+                            <input class="input-settings" type="text" name="matrix_alt"
+                                   id="matrix_alt{{ i }}_{{ j }}" value="1" readonly>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+
+                </table>
+
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btns first">Далі</button>
+            <br><br>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

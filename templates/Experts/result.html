@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block expert %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Експертних
+        Оцінок</b></h1>
+    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div>
+    <div class="center">
+        <form method="POST">
+            <h3 class="result-text" align="center">Результати оцінки компетентності експертів</h3>
+            <br>
+            <div>
+                <table class="table table-bordered align-middle">
+                    <thead align="center" class="table-back text-white">
+                    <tr>
+                        <th rowspan="2" style="text-align: center; vertical-align: middle;">Експерти</th>
+                        <td colspan="{{ name_arguments | length }}"><b>Джерела аргументів</b></td>
+                    </tr>
+                    <tr>
+                        {% for i in range(name_arguments | length) %}
+                        <th>{{ name_arguments[i] }}</th>
+                        {% endfor %}
+                        <th>K_k</th>
+                        <th>K_a</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for expert in range(num_experts) %}
+                    <tr>
+                        <th style="text-align: center; background: #222629;" class="text-white">{{ expert + 1 }}</th>
+                        {% for i in range(name_arguments | length) %}
+                        <td class="text-white" align="center" style="width:auto;">{{ table_competency[expert][i] }}</td>
+                        {% endfor %}
+                        <td class="text-white" align="center">{{ k_k[expert] | round(3) }}</td>
+                        <td class="text-white" align="center">{{ k_a[expert] | round(3) }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <br>
+            <h3 class="result-text" align="center">Результати обчислень</h3>
+            <br>
+            <div>
+                <table class="table table-bordered align-middle">
+                    <thead align="center" class="table-back text-white">
+                    <tr>
+                        <th rowspan="2" style="text-align: center; vertical-align: middle;">Експерти</th>
+                        <td colspan="{{ name_research | length }}"><b>Часткові критерії</b></td>
+                    </tr>
+                    <tr>
+                        {% for i in range(name_research | length) %}
+                        <th>{{ name_research[i] }}</th>
+                        {% endfor %}
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for expert in range(num_experts) %}
+                    <tr>
+                        <th style="text-align: center; background: #222629;" class="text-white">{{ expert + 1 }}</th>
+                        {% for i in range(name_research | length) %}
+                        <td class="text-white" align="center" style="width: auto;">{{ experts_data_table[expert][i] }}
+                        </td>
+                        {% endfor %}
+
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <th style="text-align: center; background: #222629;" class="text-white">M_i</th>
+                        {% for i in range(name_research | length) %}
+                        <td class="text-white" align="center" style="width: auto;">{{ m_i[i] | round(3) }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <th style="text-align: center; background: #222629;" class="text-white">R_i</th>
+                        {% for i in range(name_research | length) %}
+                        <td class="text-white" align="center" style="width: auto;">{{ r_i[i] | round(3) }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <th style="text-align: center; background: #222629;" class="text-white">λ</th>
+                        {% for i in range(name_research | length) %}
+                        <td class="text-white" align="center" style="width: auto;">{{ l_value[i] | round(3) }}</td>
+                        {% endfor %}
+                        <td style="text-align: center; background: #222629;" class="text-white"><b>{{ l_value_sum }}</b>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+        {% if experts_task %}
+        <p class="white-text" style="font-size: 20px;"><b>Задача:</b> {{ experts_task }}</p>
+<!--        {% if gpt_response %}-->
+<!--        <p class="white-text" style="font-size: 20px;"><b>Результат:</b> {{ gpt_response | safe }}</p>-->
+<!--        {% endif %}-->
+        {% endif %}
+
+        <p class="blue-text" style="font-size: 24px;"><b>Висновок:</b></p>
+        <p class="green-text" style="font-size: 22px;">{{ rank_str }}</p>
+        <br>
+        {{ experts_plot | safe }}
+        <br>
+        <form method="POST" action="{{ url_for('experts.experts_result', pdf=True, method_id=method_id) }}">
+            <button type="submit" class="btns first">Завантажити у форматі PDF</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

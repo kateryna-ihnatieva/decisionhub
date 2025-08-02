@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block binary %} active {% endblock %}
+{% block content %}
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Бінарних
+        Відношень</b></h1>
+    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form action="{{ url_for('binary_relations.names') }}" method="GET">
+        <div align="center">
+            <p class="input-label">Введіть вашу задачу (необов’язково):</p>
+            <textarea class="input-settings" name="binary_task" id="binary_task" style="width: 60%; height: 120px"></textarea>
+            <br><br>
+            <p class="input-label">Введіть кількість об'єктів:</p>
+            <input class="input-settings" type="number" id="num" name="num" min="3" style="width: 60%" required>
+        </div>
+        <br>
+
+        <button type="submit" class="btns first">Далі</button>
+    </form>
+</div>
+{% endblock %}

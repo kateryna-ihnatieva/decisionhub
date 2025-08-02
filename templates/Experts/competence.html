@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block expert %} active {% endblock %}
+{% block content %}
+
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Експертних
+        Оцінок</b></h1>
+    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" width="6%" style="margin-bottom: 41px">
+</div>
+<div>
+    <div class="center">
+
+        {% if error %}
+        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
+        {% endif %}
+
+        <form action="{{ url_for('experts.experts_data') }}" method="POST">
+            <p class="input-label" align="center">Оцінки компенетності експертів</p>
+
+            <div class="card text-bg-info mb-3 center" style="width: 22rem;">
+                <div class="card-body">
+                    <h5>Довідка</h5>
+                    <div class="complement">Ступінь знайомства <= 1
+                        <br>Теоретичний аналіз + Досвід + Література + Інтуїція <= 1
+                    </div>
+                </div>
+            </div>
+
+            <br>
+
+            <table class="table table-bordered align-middle">
+
+                <thead align="center">
+                <tr>
+                    <th></th>
+                    {% for i in range(name_arguments | length) %}
+                    <th class="text-white">{{ name_arguments[i] }}</th>
+                    {% endfor %}
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for n_e in range(num_experts) %}
+                <tr>
+                    <th class="text-white" style="text-align: center;">{{ n_e + 1 }}</th>
+                    {% for i in range(name_arguments | length) %}
+                    <td>
+                        <input class="input-settings" type="text" name="table_competence"
+                               id="table_competence_{{ i }}_{{ j }}" value="{% if table_competence %}{{ table_competence[n_e][i] }}{% endif %}" required pattern="^(0(\.\d+)?|1(\.0+)?)$">
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                </tbody>
+
+            </table>
+
+
+            <br>
+            <button type="submit" class="btns first">Далі</button>
+            <br><br>
+
+        </form>
+    </div>
+</div>
+
+
+{% endblock %}
