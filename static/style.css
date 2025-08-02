@@ -1,16 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
 :root {
-  --color-background: #0B0C10;
-  --color-text: #EDF5E1;
-  --color-accent: #66FCF1;
-  --color-accent-dark: #05386B;
-  --color-link: #8EE4AF;
-  --color-link-hover: #5CDB95;
+    --color-background: #0B0C10;
+    --color-text: #EDF5E1;
+    --color-accent: #66FCF1;
+    --color-accent-dark: #05386B;
+    --color-link: #8EE4AF;
+    --color-link-hover: #5CDB95;
 }
 
 
-html, body {
+html,
+body {
     background: var(--color-background);
     scrollbar-color: var(--color-accent);
     scrollbar-width: auto;
@@ -46,7 +47,7 @@ html, body {
 }
 
 .head-nav:hover,
- .active {
+.active {
     color: var(--color-link-hover);
 }
 
@@ -78,13 +79,13 @@ html, body {
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.alert-style{
+.alert-style {
     font-family: 'Ubuntu', sans-serif;
     font-size: 18px;
     font-weight: 500;
 }
 
-.result-text{
+.result-text {
     font-family: 'Ubuntu', sans-serif;
     color: #FAED26;
     font-size: 32px;
@@ -100,84 +101,88 @@ html, body {
     color: #fff;
 }
 
-.green-text{
+.green-text {
     font-family: 'Ubuntu', sans-serif;
     color: #86C232;
     font-size: 20px;
     font-style: italic;
 }
 
-.link-head{
+.link-head {
     color: white;
     text-decoration: none;
 }
 
-.link-head:hover{
+.link-head:hover {
     color: white;
     text-decoration: underline
 }
 
-.align-top{
+.align-top {
     width: 25%;
 }
 
 /* Buttons */
-.btns, .btns2 {
-  position: relative;
-  left: 50%;
-  transform: translate(-50%, 0);
-  box-sizing: border-box;
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  background-color: transparent;
-  border: 2px solid var(--color-accent);
-  border-radius: 0.6em;
-  color: var(--color-accent);
-  cursor: pointer;
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-align-self: center;
-      -ms-flex-item-align: center;
-          align-self: center;
-  line-height: 1;
-  margin: 20px 20px 20px 0px;
-  padding: 1.2em 2.8em;
-  text-decoration: none;
-  text-align: center;
-  text-transform: uppercase;
-  font-family: 'Ubuntu', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
+.btns,
+.btns2 {
+    position: relative;
+    left: 50%;
+    transform: translate(-50%, 0);
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: transparent;
+    border: 2px solid var(--color-accent);
+    border-radius: 0.6em;
+    color: var(--color-accent);
+    cursor: pointer;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-align-self: center;
+    -ms-flex-item-align: center;
+    align-self: center;
+    line-height: 1;
+    margin: 20px 20px 20px 0px;
+    padding: 1.2em 2.8em;
+    text-decoration: none;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
 }
 
-.btns:hover, .btn:focus,
-.btns2:hover, .btn2:focus{
-  color: var(--color-background);
-  outline: 0;
+.btns:hover,
+.btn:focus,
+.btns2:hover,
+.btn2:focus {
+    color: var(--color-background);
+    outline: 0;
 }
 
-.first, .first2 {
-  -webkit-transition: box-shadow 300ms ease-in-out, color 300ms ease-in-out;
-  transition: box-shadow 300ms ease-in-out, color 300ms ease-in-out;
+.first,
+.first2 {
+    -webkit-transition: box-shadow 300ms ease-in-out, color 300ms ease-in-out;
+    transition: box-shadow 300ms ease-in-out, color 300ms ease-in-out;
 }
 
 .first:hover {
-  box-shadow: 0 0 40px 40px var(--color-accent) inset;
+    box-shadow: 0 0 40px 40px var(--color-accent) inset;
 }
 
 .btns2 {
-  border: 2px solid var(--color-link);
-  color: var(--color-link);
+    border: 2px solid var(--color-link);
+    color: var(--color-link);
 }
 
 .first2:hover {
-  box-shadow: 0 0 40px 40px var(--color-link) inset;
+    box-shadow: 0 0 40px 40px var(--color-link) inset;
 }
 
-.complement{
+.complement {
     font-family: 'Ubuntu', sans-serif;
     font-size: 13px;
 }
@@ -186,7 +191,7 @@ html, body {
     background: #222629;
 }
 
-.comb{
+.comb {
     font-style: italic;
 }
 
@@ -216,8 +221,9 @@ html, body {
     transform: translateY(-2px);
 }
 
-.method-name:hover, .selected {
-        cursor: pointer;
+.method-name:hover,
+.selected {
+    cursor: pointer;
 }
 
 .custom-col {
@@ -241,15 +247,406 @@ html, body {
 
 /* Scroll */
 
- ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
     border-radius: 5px;
     background-color: grey;
 }
 
- ::-webkit-scrollbar {
+::-webkit-scrollbar {
     width: 11px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background-color: #616060;
+}
+
+/* --- Общий стиль --- */
+.main-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #212529;
+    color: white;
+    transition: width 0.4s ease, padding 0.4s ease;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.content {
+    flex-grow: 1;
+    transition: margin-left 0.3s ease;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* --- Кнопка --- */
+.toggle-button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+/* --- Скрытие контента --- */
+.sidebar.collapsed {
+    width: 60px;
+    padding: 10px;
+}
+
+.sidebar .nav-link {
+    opacity: 1;
+    height: auto;
+    padding: 12px 15px;
+    transition:
+        opacity 0.3s ease,
+        height 0.3s ease,
+        padding 0.3s ease,
+        transform 0.3s ease;
+    transform: translateX(0);
+}
+
+.sidebar.collapsed .nav-link {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    transform: translateX(-20px);
+    transition-delay: 0s, 0s, 0s, 0s;
+}
+
+.sidebar:not(.collapsed) .nav-link {
+    transition-delay: 0.1s, 0.1s, 0.1s, 0.1s;
+}
+
+/* Не скрываем footer и user block */
+.sidebar .sidebar-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar.collapsed .sidebar-footer .user-link {
+    font-size: 12px;
+    display: block;
+}
+
+.sidebar.collapsed .sidebar-footer img {
+    width: 30px;
+    margin-top: 5px;
+}
+
+.sidebar-footer {
+    position: relative;
+    bottom: 0;
+}
+
+.sidebar.collapsed .sidebar-footer {
+    padding-top: 10px;
+}
+
+/* Контент сдвигается */
+#main-content.expanded {
+    margin-left: -190px;
+}
+
+/* По умолчанию показываем полную зону пользователя (имя, кнопка и аватар) */
+.sidebar-footer .avatar-link {
+    display: block;
+    /* скрываем ссылку с аватаром в развёрнутом виде */
+}
+
+.sidebar-footer .full-link,
+.sidebar-footer .logout-btn {
+    display: block;
+}
+
+/* В свернутом сайдбаре скрываем имя и кнопку выхода */
+.sidebar.collapsed .sidebar-footer .full-link,
+.sidebar.collapsed .sidebar-footer .logout-btn {
+    display: none;
+}
+
+/* В свернутом сайдбаре показываем только кликабельный аватар */
+.sidebar.collapsed .sidebar-footer .avatar-link {
+    display: block;
+    text-align: center;
+}
+
+/* Подогнать аватар в свернутом виде */
+.sidebar.collapsed .sidebar-footer .avatar-link img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* По умолчанию — кнопка Login видна, иконка скрыта */
+.login-btn {
+    display: inline-block;
+}
+
+.login-icon {
+    display: none;
+}
+
+/* При свернутом сайдбаре */
+.sidebar.collapsed .login-btn {
+    display: none !important;
+}
+
+.sidebar.collapsed .login-icon {
+    display: block !important;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+/* По умолчанию: иконка выхода скрыта */
+.logout-icon {
+    display: none;
+}
+
+/* В свернутом виде — показываем иконку выхода, прячем текстовую кнопку */
+.sidebar.collapsed .logout-btn {
+    display: none;
+}
+
+.sidebar.collapsed .logout-icon {
+    display: block;
+    margin-top: 12px;
+    text-align: center;
+}
+
+.sidebar.collapsed .logout-icon img {
+    display: block;
+    margin: 0 auto;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.sidebar.collapsed .logout-icon img:hover {
+    transform: scale(1.1);
+}
+
+/* Иконка логина в свернутом виде */
+.sidebar.collapsed .login-icon img {
+    display: block;
+    margin: 0 auto;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.sidebar.collapsed .login-icon img:hover {
+    transform: scale(1.1);
+}
+
+/* Отступ между аватаркой и иконкой выхода в свернутом виде */
+.sidebar.collapsed .avatar-link {
+    display: block;
+    margin-bottom: 1rem;
+    /* или любое другое значение */
+    text-align: center;
+}
+
+.sidebar.collapsed .logout-icon {
+    display: block;
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.sidebar-separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 10px 0;
+}
+
+.sidebar.collapsed .sidebar-separator {
+    margin: 8px auto;
+    width: 100%;
+}
+
+.sidebar .nav-link {
+    font-family: 'Ubuntu', sans-serif;
+    color: var(--color-link);
+    font-size: 18px;
+    margin: 5px 0;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: var(--color-link-hover);
+    color: #0B0C10;
+}
+
+.sidebar {
+    background: linear-gradient(180deg, #1f1f1f 0%, #0B0C10 100%);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar {
+    background: linear-gradient(180deg, #1f1f1f 0%, #0B0C10 100%);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.toggle-button:hover svg {
+    transform: scale(1.1);
+    color: var(--color-accent);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+#toggle-icon {
+    transition: transform 0.4s ease-in-out;
+    transform-origin: center;
+}
+
+#toggle-icon.rotated {
+    transform: rotate(90deg);
+}
+
+/* Добавим анимацию изменения размеров и отступов */
+.sidebar {
+    width: 250px;
+    background-color: #212529;
+    color: white;
+    transition: width 0.4s ease, padding 0.4s ease;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    /* важно для анимации */
+}
+
+/* Переходы для ссылок */
+.sidebar .nav-link {
+    opacity: 1;
+    height: auto;
+    padding: 12px 15px;
+    transition:
+        opacity 0.3s ease,
+        height 0.3s ease,
+        padding 0.3s ease,
+        transform 0.3s ease;
+    transform: translateX(0);
+}
+
+/* Скрытые ссылки в свернутом виде */
+.sidebar.collapsed .nav-link {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    transform: translateX(-20px);
+    transition-delay: 0s, 0s, 0s, 0s;
+}
+
+/* Добавим задержку для плавности при раскрытии */
+.sidebar:not(.collapsed) .nav-link {
+    transition-delay: 0.1s, 0.1s, 0.1s, 0.1s;
+}
+
+/* Улучшим плавность поворота иконки */
+#toggle-icon {
+    transition: transform 0.4s ease-in-out;
+    transform-origin: center;
+}
+
+#toggle-icon.rotated {
+    transform: rotate(90deg);
+}
+
+.sidebar-footer {
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.user-profile:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-accent, #17a2b8);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-name {
+    font-weight: 600;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    transition: color 0.2s ease;
+}
+
+.user-name:hover {
+    color: var(--color-accent, #17a2b8);
+}
+
+.logout-btn {
+    padding: 3px 10px;
+    font-size: 14px;
+    align-self: start;
+}
+
+.sidebar.collapsed .user-info {
+    display: none;
+}
+
+.sidebar.collapsed .user-profile {
+    justify-content: center;
+}
+
+.sidebar.collapsed .full-link,
+.sidebar.collapsed .logout-btn,
+.sidebar.collapsed .login-btn {
+    display: none;
+}
+
+.sidebar.collapsed .logout-icon,
+.sidebar.collapsed .login-icon {
+    display: block;
+}
+
+.full-link,
+.logout-btn,
+.login-btn {
+    display: block;
+}
+
+.logout-icon,
+.login-icon {
+    display: none;
 }

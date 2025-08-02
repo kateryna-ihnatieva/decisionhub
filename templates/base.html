@@ -1,62 +1,495 @@
 <!DOCTYPE html>
 <html lang="ua">
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.ico') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
-          integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<meta charset="UTF-8">
+<title>{% block title %}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.ico') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+/* Общие улучшения сайдбара */
+.sidebar {
+    background: linear-gradient(180deg, var(--color-background) 0%, #1a1d23 100%);
+    border-right: 2px solid rgba(102, 252, 241, 0.1);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 280px;
+}
 
+.sidebar-header {
+    display: flex;
+    justify-content: center;
+}
+
+.toggle-button {
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-link) 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 10px;
+    color: var(--color-background);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 252, 241, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(102, 252, 241, 0.3);
+    background: linear-gradient(135deg, var(--color-link) 0%, var(--color-accent) 100%);
+}
+
+#toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+#toggle-icon.rotated {
+    transform: rotate(90deg);
+}
+
+/* Улучшения навигационных ссылок */
+.nav-link {
+    color: var(--color-text) !important;
+    padding: 12px 20px !important;
+    margin: 4px 8px !important;
+    border-radius: 10px !important;
+    transition: all 0.3s ease !important;
+    font-weight: 500 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 252, 241, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.nav-link:hover::before {
+    left: 100%;
+}
+
+.nav-link:hover {
+    background: rgba(102, 252, 241, 0.1) !important;
+    color: var(--color-accent) !important;
+    transform: translateX(5px) !important;
+    box-shadow: 0 4px 15px rgba(102, 252, 241, 0.1) !important;
+}
+
+.nav-link.active {
+    background: linear-gradient(135deg, rgba(102, 252, 241, 0.2) 0%, rgba(142, 228, 175, 0.1) 100%) !important;
+    color: var(--color-accent) !important;
+    border-left: 3px solid var(--color-accent) !important;
+    font-weight: 600 !important;
+}
+
+/* Улучшения для свернутого сайдбара */
+.sidebar.collapsed {
+    width: 90px !important;
+}
+
+.sidebar.collapsed .sidebar-header {
+    padding: 15px 5px;
+}
+
+.sidebar.collapsed .nav-link {
+    text-align: center !important;
+    padding: 15px 10px !important;
+    font-size: 0 !important;
+    margin: 4px 5px !important;
+}
+
+.sidebar.collapsed .nav-link::after {
+    content: '●';
+    font-size: 16px;
+    color: var(--color-text);
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .nav-link:hover::after {
+    color: var(--color-accent);
+    transform: scale(1.3);
+}
+
+.sidebar.collapsed .nav-link.active::after {
+    color: var(--color-accent);
+    content: '◆';
+}
+
+/* Улучшения footer сайдбара */
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid rgba(102, 252, 241, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar.collapsed .sidebar-footer {
+    padding: 15px 5px;
+}
+
+/* Улучшения элементов для свернутого состояния */
+.avatar-link img {
+    border-radius: 50%;
+    border: 2px solid var(--color-accent);
+    transition: all 0.3s ease;
+    padding: 2px;
+    background: var(--color-background);
+}
+
+.avatar-link:hover img {
+    transform: scale(1.1);
+    border-color: var(--color-link);
+    box-shadow: 0 4px 15px rgba(102, 252, 241, 0.3);
+}
+
+.logout-icon img {
+    border-radius: 50%;
+    border: 2px solid rgba(220, 53, 69, 0.6);
+    transition: all 0.3s ease;
+    padding: 8px;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.logout-icon:hover img {
+    transform: scale(1.1);
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.2);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.login-icon img {
+    border-radius: 50%;
+    border: 2px solid var(--color-accent);
+    transition: all 0.3s ease;
+    padding: 8px;
+    background: rgba(142, 228, 175, 0.1);
+}
+
+.login-icon:hover img {
+    transform: scale(1.1);
+    border-color: var(--color-accent);
+    background: rgba(142, 228, 175, 0.2);
+    box-shadow: 0 4px 15px rgba(142, 228, 175, 0.3);
+}
+
+/* Скрытые элементы в развернутом виде */
+.user-link {
+    color: var(--color-text) !important;
+    text-decoration: none !important;
+    text-align: center !important;
+    display: block !important;
+    padding: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+}
+
+.user-link:hover {
+    color: var(--color-accent) !important;
+}
+
+.sidebar-separator {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    margin: 10px 0;
+}
+
+.logout-btn {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2) !important;
+}
+
+.logout-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3) !important;
+}
+
+.login-btn {
+    background: linear-gradient(135deg, var(--color-link) 0%, var(--color-link-hover) 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(142, 228, 175, 0.2) !important;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(142, 228, 175, 0.3) !important;
+}
+
+/* Стили для красивого профиля пользователя в развернутом сайдбаре */
+.user-profile-card {
+    background: linear-gradient(135deg, var(--color-accent-dark) 0%, #0B0C10 100%);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: 0 8px 32px rgba(5, 56, 107, 0.3);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.user-profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(102, 252, 241, 0.1) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.user-profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(5, 56, 107, 0.4);
+}
+
+.user-avatar-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.user-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 3px solid var(--color-accent);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.user-avatar:hover {
+    transform: scale(1.05);
+    border-color: var(--color-link);
+}
+
+.user-info {
+    text-align: center;
+    color: var(--color-text);
+}
+
+.user-name {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: var(--color-text);
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.user-name:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+    transform: scale(1.02);
+}
+
+.user-status {
+    font-size: 12px;
+    color: rgba(237, 245, 225, 0.8);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    background: var(--color-link);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.user-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    backdrop-filter: blur(10px);
+}
+
+.profile-btn {
+    background: rgba(102, 252, 241, 0.2);
+    color: var(--color-text);
+    border: 1px solid var(--color-accent);
+}
+
+.profile-btn:hover {
+    background: rgba(102, 252, 241, 0.3);
+    color: var(--color-text);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.logout-btn-card {
+    background: rgba(220, 53, 69, 0.8);
+    color: var(--color-text);
+    border: 1px solid rgba(220, 53, 69, 0.6);
+}
+
+.logout-btn-card:hover {
+    background: #dc3545;
+    color: var(--color-text);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* В развернутом сайдбаре скрываем старые элементы */
+.sidebar:not(.collapsed) .avatar-link,
+.sidebar:not(.collapsed) .user-link,
+.sidebar:not(.collapsed) .logout-btn,
+.sidebar:not(.collapsed) .logout-icon,
+.sidebar:not(.collapsed) .sidebar-separator {
+    display: none;
+}
+
+/* Скрываем карточку профиля в свернутом состоянии */
+.sidebar.collapsed .user-profile-card {
+    display: none;
+}
+
+/* Оригинальные элементы в свернутом сайдбаре остаются без изменений */
+.sidebar.collapsed .avatar-link,
+.sidebar.collapsed .logout-icon {
+    display: block;
+    margin: 8px auto;
+}
+
+.sidebar.collapsed .logout-icon img {
+    width: 50px;
+    height: 50px;
+}
+
+.sidebar.collapsed .login-icon img {
+    width: 50px;
+    height: 50px;
+}
+</style>
 </head>
 <body>
-<div class="add-settings">
-    <div class="container">
-        <div class="head-cont">
-
-            <header class="p-3 mb-3 border-bottom d-flex justify-content-between align-items-center">
-                <ul class="head-navig nav" style="width: 80%">
-                    <li class="nav-item"><a class="head-nav {% block main %}{% endblock %}"
-                                            href="{{ url_for('index') }}">Головна</a></li>
-                    <li class="nav-item"><a class="head-nav {% block hierarchy %}{% endblock %}"
-                                            href="{{ url_for('hierarchy.index') }}">Аналіз Ієрархій</a></li>
-                    <li class="nav-item"><a class="head-nav {% block binary %}{% endblock %}"
-                                            href="{{ url_for('binary_relations.index') }}">Бінарне Відношення</a>
-                    </li>
-                    <li class="nav-item"><a class="head-nav {% block expert %}{% endblock %}"
-                                            href="{{ url_for('experts.index') }}">Експертні
-                        Оцінки</a></li>
-                    <li class="nav-item"><a class="head-nav {% block laplasa %}{% endblock %}"
-                                            href="{{ url_for('kriteriy_laplasa.index') }}">Критерій Лапласа</a></li>
-                    <li class="nav-item"><a class="head-nav {% block info %}{% endblock %}"
-                                            href="{{ url_for('documentation') }}">Довідка</a></li>
-                </ul>
-
-                <div class="text-end">
-                    {% if name %}
-                    <a style="color: #8EE4AF; margin-right: 2px;" href="{{ url_for('profile') }}">{{ name }}</a>
-                    <img src="{{ url_for('static', filename='img/user_profile.png') }}" alt="Profile" width="4%"
-                         style="margin-right: 3%; margin-bottom: 0.5%">
-                    <a class="btn btn-info" href="{{ url_for('logout') }}">Вийти</a>
-                    {% else %}
-                    <a class="btn btn-info" href="{{ url_for('login') }}">Login</a>
-                    {% endif %}
-                </div>
-            </header>
-
-
+<div class="main-layout">
+<nav class="sidebar" id="sidebar">
+<div class="sidebar-header">
+<button id="toggle-btn" class="toggle-button" aria-label="Toggle Menu" title="Меню" onclick="toggleSidebar()">
+<svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+<path fill-rule="evenodd" d="M1.5 12a.5.5 0 010-1h13a.5.5 0 010 1h-13zm0-4a.5.5 0 010-1h13a.5.5 0 010 1h-13zm0-4a.5.5 0 010-1h13a.5.5 0 010 1h-13z"/>
+</svg>
+</button>
+</div>
+<ul class="nav flex-column mt-3">
+<li><a class="nav-link {% block main %}{% endblock %}" href="{{ url_for('index') }}">Головна</a></li>
+<li><a class="nav-link {% block hierarchy %}{% endblock %}" href="{{ url_for('hierarchy.index') }}">Аналіз Ієрархій</a></li>
+<li><a class="nav-link {% block binary %}{% endblock %}" href="{{ url_for('binary_relations.index') }}">Бінарне Відношення</a></li>
+<li><a class="nav-link {% block expert %}{% endblock %}" href="{{ url_for('experts.index') }}">Експертні Оцінки</a></li>
+<li><a class="nav-link {% block laplasa %}{% endblock %}" href="{{ url_for('kriteriy_laplasa.index') }}">Критерій Лапласа</a></li>
+<li><a class="nav-link {% block info %}{% endblock %}" href="{{ url_for('documentation') }}">Довідка</a></li>
+</ul>
+<div class="sidebar-footer mt-auto">
+{% if name %}
+<!-- Красивая карточка профиля для развернутого сайдбара -->
+<div class="user-profile-card">
+    <div class="user-avatar-container">
+        <a href="{{ url_for('profile') }}">
+            <img src="{{ url_for('static', filename='img/user_profile.png') }}" alt="Profile" class="user-avatar">
+        </a>
+    </div>
+    <div class="user-info">
+        <a href="{{ url_for('profile') }}" class="user-name">{{ name }}</a>
+        <div class="user-actions">
+            <a href="{{ url_for('profile') }}" class="action-btn profile-btn">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                </svg>
+                Профіль
+            </a>
+            <a href="{{ url_for('logout') }}" class="action-btn logout-btn-card">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+                    <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                </svg>
+                Вихід
+            </a>
         </div>
     </div>
-
-    <br><br>
-    <div class="container">
-        {% block content %}
-
-        {% endblock %}
-    </div>
 </div>
+
+<!-- Старые элементы для свернутого сайдбара (остаются без изменений) -->
+<a href="{{ url_for('profile') }}" class="avatar-link">
+<img src="{{ url_for('static', filename='img/user_profile.png') }}" alt="Profile" width="55">
+</a>
+<div class="sidebar-separator"></div>
+<!-- Кнопка выхода (развёрнутый вид) -->
+<a class="btn btn-danger mt-2 logout-btn" href="{{ url_for('logout') }}">Logout</a>
+<!-- Иконка выхода (только в свернутом сайдбаре) -->
+<a href="{{ url_for('logout') }}" class="logout-icon" title="Вийти">
+<img src="{{ url_for('static', filename='img/logout_icon.png') }}" alt="Logout" width="55" />
+</a>
+{% else %}
+<a href="{{ url_for('login') }}" class="login-btn btn btn-info d-none d-md-inline-block">Login</a>
+<a href="{{ url_for('login') }}" class="login-icon d-block d-md-none" title="Login">
+<img src="{{ url_for('static', filename='img/login_icon.png') }}" alt="Login" width="55"/>
+</a>
+{% endif %}
+</div>
+</nav>
+<main class="content" id="main-content">
+<div class="container pt-4">
+{% block content %}{% endblock %}
+</div>
+</main>
+</div>
+<script>
+function toggleSidebar() {
+const sidebar = document.getElementById("sidebar");
+const content = document.getElementById("main-content");
+const toggleIcon = document.getElementById("toggle-icon");
+const isCollapsed = sidebar.classList.toggle("collapsed");
+content.classList.toggle("expanded", isCollapsed);
+toggleIcon.classList.toggle("rotated", isCollapsed);
+}
+</script>
 </body>
 </html>
