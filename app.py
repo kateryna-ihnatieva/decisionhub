@@ -148,9 +148,10 @@ def logout():
 @app.route("/profile", methods=["POST", "GET"])
 @login_required
 def profile():
-    page, per_page, offset = get_page_args(
+    page, _, offset = get_page_args(
         page_parameter="page", per_page_parameter="per_page"
     )
+    per_page = 12
 
     user = current_user
     if user.get_name() == "admin":
