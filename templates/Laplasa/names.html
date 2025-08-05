@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block laplasa %} active {% endblock %}
+{% block content %}
+    <style>
+    :root {
+    --color-background: #0B0C10;
+    --color-text: #EDF5E1;
+    --color-accent: #66FCF1;
+    --color-accent-dark: #05386B;
+    --color-link: #8EE4AF;
+    --color-link-hover: #5CDB95;
+  }
+    body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+  }
+
+    .method-name {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+</style>
+<div style="text-align: center;">
+    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Критерій Лапласа</b></h1>
+    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" width="6%" style="margin-bottom: 41px">
+</div>
+<br><br>
+<div class="center">
+    <form action="{{ url_for('kriteriy_laplasa.cost_matrix') }}" method="POST">
+        {% if error %}
+        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
+        <br>
+        {% endif %}
+        <p class="input-label">Введіть імена альтернатив:</p>
+        {% for n in range(num_alt) %}
+        <input class="input-settings" type="text" name="name_alternatives" id="alternative{{ n+1 }}"
+               placeholder="Альтернатива {{ n+1 }}"
+               value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+               required>
+        <br>
+        {% endfor %}
+        <br>
+        <p class="input-label">Введіть імена умов:</p>
+        {% for m in range(num_conditions) %}
+        <input class="input-settings" type="text" name="name_conditions" id="condition{{ m+1 }}"
+               placeholder="Умова {{ m+1 }}"
+               value="{% if name_conditions %}{{ name_conditions[m] }}{% endif %}"
+               required>
+        <br>
+        {% endfor %}
+        <br>
+
+        <button type="submit" class="btns first">Далі</button>
+        <br><br>
+
+    </form>
+</div>
+
+{% endblock %}

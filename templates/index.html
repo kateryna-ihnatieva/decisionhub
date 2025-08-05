@@ -5,71 +5,89 @@
 {% endblock %}
 
 {% block main %} active {% endblock %}
+
 {% block content %}
-<h1 class="display-3 method-name" align="center"><b>Прийняття рішень</b></h1>
-<br>
+<style>
+  :root {
+    --color-background: #0B0C10;
+    --color-text: #EDF5E1;
+    --color-accent: #66FCF1;
+    --color-accent-dark: #05386B;
+    --color-link: #8EE4AF;
+    --color-link-hover: #5CDB95;
+  }
 
-<div class="table-responsive">
-    <table class="table align-middle">
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+</style>
 
-        <thead align="center" class="table-back text-white">
-        <tr>
-            <th><a href="{{ url_for('hierarchy.index') }}" class="link-head">Аналіз Ієрархій</a></th>
-            <th><a href="{{ url_for('binary_relations.index') }}" class="link-head">Бінарне Відношення</a></th>
-            <th><a href="{{ url_for('experts.index') }}" class="link-head">Експертні Оцінки</a></th>
-            <th><a href="{{ url_for('documentation') }}" class="link-head">Довідка</a></th>
-        </tr>
-        </thead>
-
-        <tbody>
-        <tr>
-            <td class="align-top blue-text"
-                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
-                Сторінка для проведення аналізу ієрархій. Визначте вагомість різних критеріїв та альтернатив для
-                прийняття обґрунтованих рішень.
-                <br>Використовуйте метод аналізу ієрархій для визначення найкращого варіанту.
-            </td>
-            <td class="align-top blue-text"
-                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
-                Сторінка для роботи з бінарним відношенням. Встановлюйте та аналізуйте відношення між елементами,
-                використовуючи бінарні матриці.
-                <br>Оцінюйте важливість та залежності між об'єктами.
-            </td>
-            <td class="align-top blue-text"
-                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
-                Сторінка для отримання та аналізу експертних оцінок. Використовуйте експертні думки для визначення
-                пріоритетів та ранжування альтернатив.
-                <br>Отримуйте цінні інсайти від фахівців.
-            </td>
-            <td class="align-top blue-text"
-                style="color: #EDF5E1; font-size: 18px; padding-top: 1%; padding-bottom: 1%;">
-                Сторінка, що надає корисну інформацію та довідковий матеріал щодо використання системи.
-                <br>Ознайомтеся з інструкціями та порадами для ефективного користування веб-додатком.
-            </td>
-        </tr>
-        <tr>
-            <td class="align-top" align="center">
-                <a href="{{ url_for('hierarchy.index') }}">
-                    <img src="static/img/hierarchy.png" alt="Hierarcy" width="65%">
-                </a>
-            </td>
-            <td class="align-top" align="center">
-                <a href="{{ url_for('binary_relations.index') }}">
-                    <img src="static/img/binary.png" alt="Binary" width="65%">
-                </a>
-            </td>
-            <td class="align-top" align="center">
-                <a href="{{ url_for('experts.index') }}">
-                    <img src="static/img/experts.png" alt="Experts" width="65%">
-                </a>
-            </td>
-            <td class="align-top" align="center">
-                <a href="{{ url_for('documentation') }}">
-                    <img src="static/img/info.png" alt="Info" width="65%">
-                </a>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+<div class="hero-section">
+  <h1 class="main-title">Прийняття рішень</h1>
+  <p class="subtitle">Потужні інструменти для аналізу та обґрунтованого вибору найкращих альтернатив</p>
 </div>
+
+<div class="cards-container">
+  <div class="cards-grid">
+
+    <div class="method-card">
+      <a href="{{ url_for('hierarchy.index') }}" class="card-link">
+        <div class="card-icon-wrapper">
+          <img src="{{ url_for('static', filename='img/hierarchy.png') }}" class="card-icon" alt="Hierarchy">
+        </div>
+        <h5 class="card-title">Аналіз Ієрархій</h5>
+        <p class="card-description">Проведіть структурований аналіз вагомості критеріїв та альтернатив для обґрунтованого вибору.</p>
+        <div class="action-hint">Розпочати аналіз</div>
+      </a>
+    </div>
+
+    <div class="method-card">
+      <a href="{{ url_for('binary_relations.index') }}" class="card-link">
+        <div class="card-icon-wrapper">
+          <img src="{{ url_for('static', filename='img/binary.png') }}" class="card-icon" alt="Binary">
+        </div>
+        <h5 class="card-title">Бінарні Відношення</h5>
+        <p class="card-description">Створюйте та аналізуйте бінарні матриці для встановлення зв'язків між об'єктами.</p>
+        <div class="action-hint">Створити матрицю</div>
+      </a>
+    </div>
+
+    <div class="method-card">
+      <a href="{{ url_for('experts.index') }}" class="card-link">
+        <div class="card-icon-wrapper">
+          <img src="{{ url_for('static', filename='img/experts.png') }}" class="card-icon" alt="Experts">
+        </div>
+        <h5 class="card-title">Експертні Оцінки</h5>
+        <p class="card-description">Збирайте думки фахівців, аналізуйте їх і приймайте обґрунтовані рішення.</p>
+        <div class="action-hint">Почати опитування</div>
+      </a>
+    </div>
+
+    <div class="method-card">
+      <a href="{{ url_for('kriteriy_laplasa.index') }}" class="card-link">
+        <div class="card-icon-wrapper">
+          <img src="{{ url_for('static', filename='img/laplasa.png') }}" class="card-icon" alt="Laplasa">
+        </div>
+        <h5 class="card-title">Критерій Лапласа</h5>
+        <p class="card-description">Розрахуйте найкращу альтернативу на основі рівноймовірних сценаріїв.</p>
+        <div class="action-hint">Розрахувати</div>
+      </a>
+    </div>
+
+    <div class="method-card">
+      <a href="{{ url_for('documentation') }}" class="card-link">
+        <div class="card-icon-wrapper">
+          <img src="{{ url_for('static', filename='img/documentation.png') }}" class="card-icon" alt="Documentation">
+        </div>
+        <h5 class="card-title">Довідка</h5>
+        <p class="card-description">Ознайомтеся з функціональністю системи, інструкціями та корисними порадами.</p>
+        <div class="action-hint">Переглянути</div>
+      </a>
+    </div>
+
+  </div>
+</div>
+
 {% endblock %}

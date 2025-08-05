@@ -12,7 +12,12 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 from flask import Flask, render_template, request, redirect, url_for
-from blueprints import hierarchy_bp, binary_relations_bp, experts_bp
+from blueprints import (
+    hierarchy_bp,
+    binary_relations_bp,
+    experts_bp,
+    kriteriy_laplasa_bp,
+)
 from models import *
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import (
@@ -27,6 +32,7 @@ from dotenv import load_dotenv
 import os
 from sqlalchemy.orm import Session
 from flask_paginate import Pagination, get_page_args
+from mymodules.methods import add_object_to_db
 
 load_dotenv()
 
@@ -39,6 +45,7 @@ db.init_app(app)
 app.register_blueprint(hierarchy_bp)
 app.register_blueprint(binary_relations_bp)
 app.register_blueprint(experts_bp)
+app.register_blueprint(kriteriy_laplasa_bp)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -58,7 +65,7 @@ def index():
     return render_template("index.html", **context)
 
 
-@app.route("/info")
+@app.route("/documentation")
 def documentation():
     context = {
         "title": "Довідка",
@@ -141,9 +148,10 @@ def logout():
 @app.route("/profile", methods=["POST", "GET"])
 @login_required
 def profile():
-    page, per_page, offset = get_page_args(
+    page, _, offset = get_page_args(
         page_parameter="page", per_page_parameter="per_page"
     )
+    per_page = 12
 
     user = current_user
     if user.get_name() == "admin":
@@ -204,6 +212,23 @@ def profile():
                     "method_id": method_id,
                     "method_name": method_name,
                     "name_research": name_research,
+                    "owner_name": owner_name,
+                }
+            )
+            session.close()
+
+        if method_name == "Laplasa":
+            session = Session(bind=db.engine)
+            name_alternatives = session.get(LaplasaAlternatives, result.method_id).names
+            name_conditions = session.get(LaplasaConditions, result.method_id).names
+            owner_name = session.get(User, result.user_id).name
+            result_history.append(
+                {
+                    "result_id": result_id,
+                    "method_id": method_id,
+                    "method_name": method_name,
+                    "name_alternatives": name_alternatives,
+                    "name_conditions": name_conditions,
                     "owner_name": owner_name,
                 }
             )

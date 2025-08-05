@@ -11,7 +11,7 @@ hierarchy_bp = Blueprint("hierarchy", __name__, url_prefix="/hierarchy")
 @hierarchy_bp.route("/")
 def index():
     context = {
-        "title": "Головна",
+        "title": "Метод Аналізу Ієрархій",
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
     return render_template("Hierarchy/index.html", **context)
@@ -405,10 +405,5 @@ def result(method_id=None):
             break
 
     session["matr_alt"] = 1
-
-    pdf_request = request.args.get("pdf", False)
-
-    if pdf_request:
-        return generate_pdf(context, "Hierarchy/result.html")
 
     return render_template("Hierarchy/result.html", **context)
