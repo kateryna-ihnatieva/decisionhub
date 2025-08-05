@@ -5,9 +5,10 @@
 {% endblock %}
 
 {% block binary %} active {% endblock %}
+
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,69 +16,416 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .method-hero {
+    text-align: center;
+    padding: 40px 20px 60px;
+    background: linear-gradient(135deg, rgba(11, 12, 16, 0.9) 0%, rgba(5, 56, 107, 0.1) 100%);
+    border-radius: 20px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .method-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(102, 252, 241, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .method-title {
+    font-size: 3rem;
     font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 15px;
     letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(102, 252, 241, 0.3);
   }
 
+  .method-icon {
+    width: 80px;
+    height: 80px;
+    margin: 20px 0;
+    filter: drop-shadow(0 0 15px rgba(102, 252, 241, 0.4));
+    transition: transform 0.3s ease;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .step-indicator {
+    display: inline-block;
+    background: rgba(102, 252, 241, 0.1);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+  }
+
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .page-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+  }
+
+  .page-title::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    margin: 15px auto 0;
+  }
+
+  .help-card {
+    background: rgba(102, 252, 241, 0.1);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 40px;
+    backdrop-filter: blur(10px);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .help-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .help-title::before {
+    content: '💡';
+    font-size: 1.3rem;
+  }
+
+  .help-content {
+    display: grid;
+    gap: 12px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .help-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(11, 12, 16, 0.3);
+    border-radius: 8px;
+  }
+
+  .help-value {
+    background: var(--color-accent);
+    color: var(--color-background);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    min-width: 30px;
+    text-align: center;
+  }
+
+  .matrix-container {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1);
+    overflow-x: auto;
+  }
+
+  .matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 8px;
+    margin: 20px 0;
+  }
+
+  .matrix-table th {
+    background: rgba(102, 252, 241, 0.1);
+    color: var(--color-accent);
+    padding: 12px 8px;
+    text-align: center;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    min-width: 80px;
+    word-break: break-word;
+  }
+
+  .matrix-table td {
+    padding: 4px;
+    text-align: center;
+  }
+
+  .matrix-input {
+    width: 60px;
+    height: 45px;
+    background: rgba(5, 56, 107, 0.2);
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 8px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .matrix-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(102, 252, 241, 0.1);
+    background: rgba(5, 56, 107, 0.3);
+  }
+
+  .matrix-input[readonly] {
+    background: rgba(102, 252, 241, 0.05);
+    border-color: rgba(102, 252, 241, 0.1);
+    color: var(--color-accent);
+    cursor: not-allowed;
+  }
+
+  .matrix-input.diagonal {
+    background: rgba(142, 228, 175, 0.1);
+    border-color: rgba(142, 228, 175, 0.3);
+    color: var(--color-link);
+  }
+
+  .submit-container {
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg, var(--color-link) 0%, var(--color-link-hover) 100%);
+    color: var(--color-background);
+    border: none;
+    padding: 18px 40px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 25px rgba(142, 228, 175, 0.3),
+      0 0 0 3px rgba(142, 228, 175, 0.1);
+  }
+
+  .submit-button:active {
+    transform: translateY(0);
+  }
+
+  .progress-hint {
+    color: rgba(237, 245, 225, 0.7);
+    font-size: 0.9rem;
+    margin-top: 15px;
+    font-style: italic;
+  }
+
+  @media (max-width: 768px) {
+    .method-title {
+      font-size: 2.2rem;
+    }
+
+    .method-icon {
+      width: 60px;
+      height: 60px;
+    }
+
+    .matrix-container {
+      padding: 20px 15px;
+      margin: 0 10px;
+    }
+
+    .matrix-table {
+      border-spacing: 4px;
+    }
+
+    .matrix-table th {
+      padding: 8px 4px;
+      font-size: 0.8rem;
+      min-width: 60px;
+    }
+
+    .matrix-input {
+      width: 45px;
+      height: 40px;
+      font-size: 0.9rem;
+    }
+
+    .help-card {
+      margin: 0 10px 30px;
+      padding: 20px 15px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .matrix-table th {
+      font-size: 0.7rem;
+      padding: 6px 2px;
+      min-width: 50px;
+    }
+
+    .matrix-input {
+      width: 40px;
+      height: 35px;
+      font-size: 0.8rem;
+    }
+  }
 </style>
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Бінарних Відношень</b></h1>
-    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary" width="6%" style="margin-bottom: 41px">
+
+<div class="method-hero">
+  <div class="hero-content">
+    <h1 class="method-title">Метод Бінарних Відношень</h1>
+    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary Relations" class="method-icon">
+    <div class="step-indicator">Крок 3: Матриця порівнянь</div>
+  </div>
 </div>
-<br><br>
 
-<div class="center">
+<div class="main-container">
+  <div class="page-title">Матриця попарних порівнянь</div>
+
+  <div class="help-card">
+    <div class="help-title">Довідка</div>
+    <div class="help-content">
+      <div class="help-item">
+        <div class="help-value">-1</div>
+        <div>Об'єкт 1 краще за об'єкт 2</div>
+      </div>
+      <div class="help-item">
+        <div class="help-value">1</div>
+        <div>Об'єкт 1 гірше за об'єкт 2</div>
+      </div>
+      <div class="help-item">
+        <div class="help-value">0</div>
+        <div>Об'єкти однакові за важливістю</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="matrix-container">
     <form action="{{ url_for('binary_relations.result', method_id=id) }}" method="POST">
-        <p class="input-label" align="center">Матриця попарних порівнянь</p>
 
-        <div class="card text-bg-info mb-3 center" style="width: 22rem;">
-            <div class="card-body">
-                <h5>Довідка</h5>
-                <div class="complement"><b>-1</b> - Об'єкт 1 краще за об'єкт 2
-                    <br><b> 1</b> - Об'єкт 1 гірше за об'єкт 2
-                    <br><b> 0</b> - Об'єкти однакові
-                </div>
-            </div>
+      <table class="matrix-table">
+        <tr>
+          <th></th> <!-- Пуста комірка для симетрії -->
+          {% for name in names %}
+          <th>{{ name }}</th>
+          {% endfor %}
+        </tr>
+
+        {% for i in range(num) %}
+        <tr>
+          <th>{{ names[i] }}</th>
+          {% for j in range(num) %}
+          <td>
+            {% if i < j %}
+            <input
+              class="matrix-input"
+              type="text"
+              name="matrix"
+              id="matrix[{{i}}][{{j}}]"
+              pattern="^-?([0-1]{1}|1)$"
+              title="Введіть -1, 0 або 1"
+              required
+            >
+            {% elif i > j %}
+            <input
+              class="matrix-input"
+              type="text"
+              name="matrix"
+              id="matrix[{{j}}][{{i}}]"
+              value=""
+              readonly
+            >
+            {% elif i == j %}
+            <input
+              class="matrix-input diagonal"
+              type="text"
+              name="matrix"
+              id="matrix[{{i}}{{j}}]"
+              value="0"
+              readonly
+            >
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+
+      <div class="submit-container">
+        <button type="submit" class="submit-button">Отримати результат</button>
+        <div class="progress-hint">
+          Аналіз відношень та підрахунок результатів
         </div>
-        <br>
-        <table class="table table-bordered align-middle">
-            <tr align="center">
-                <th></th> <!-- Пуста комірка для симетрії -->
-                {% for name in names %}
-                <th class="text-white">{{ name }}</th>
-                {% endfor %}
-            </tr>
-            {% for i in range(num) %}
-            <tr>
-                <th class="text-white">{{ names[i] }}</th>
-                {% for j in range (num) %}
-                <td>
-                    {% if i < j %}
-                    <input class="input-settings" type="text" name="matrix" id="matrix[{{i}}][{{j}}]" pattern="^-?([0-1]{1}|1)$" required>
-                    <!-- Можна вводити тільки 1, -1, 0-->
-                    {% elif i > j %}
-                    <input class="input-settings" type="text" name="matrix" id="matrix[{{j}}][{{i}}]" value="" readonly>
-                    {% elif i == j %}
-                    <input class="input-settings" type="text" name="matrix" id="matrix[{{i}}{{j}}]" value="0" readonly>
-                    {% endif %}
-                </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </table>
-        <br>
-
-        <button type="submit" class="btns first">Далі</button>
-
+      </div>
 
     </form>
+  </div>
 </div>
-{% endblock %}
 
+{% endblock %}

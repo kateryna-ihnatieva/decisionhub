@@ -6,8 +6,8 @@
 
 {% block binary %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,145 +15,460 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .method-hero {
+    text-align: center;
+    padding: 40px 20px 60px;
+    background: linear-gradient(135deg, rgba(11, 12, 16, 0.9) 0%, rgba(5, 56, 107, 0.1) 100%);
+    border-radius: 20px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .method-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(102, 252, 241, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .method-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(102, 252, 241, 0.3);
+  }
+
+  .method-icon {
+    width: 80px;
+    height: 80px;
+    margin: 20px 0;
+    filter: drop-shadow(0 0 15px rgba(102, 252, 241, 0.4));
+    transition: transform 0.3s ease;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .step-indicator {
+    display: inline-block;
+    background: rgba(142, 228, 175, 0.2);
+    border: 1px solid rgba(142, 228, 175, 0.4);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: var(--color-link);
+    margin-bottom: 20px;
+  }
+
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .section {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1);
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 25px;
+    position: relative;
+  }
+
+  .section-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    margin: 10px auto 0;
+  }
+
+  .result-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .result-table th {
+    background: linear-gradient(135deg, rgba(102, 252, 241, 0.2), rgba(5, 56, 107, 0.3));
+    color: var(--color-accent);
+    padding: 15px 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(102, 252, 241, 0.3);
+    position: relative;
+  }
+
+  .result-table td {
+    background: rgba(5, 56, 107, 0.1);
+    color: var(--color-text);
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid rgba(102, 252, 241, 0.1);
+    font-weight: 500;
+  }
+
+  .result-table tbody tr:hover {
+    background: rgba(102, 252, 241, 0.05);
+  }
+
+  .row-header {
+    background: rgba(34, 38, 41, 0.8) !important;
+    color: var(--color-text) !important;
+    font-weight: 600;
+  }
+
+  .sum-column {
+    background: rgba(142, 228, 175, 0.1) !important;
+    color: var(--color-link) !important;
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  .ranking-table {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .ranking-result {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--color-link);
+    font-weight: 600;
+    font-style: italic;
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    border-radius: 12px;
+    text-shadow: 0 0 10px rgba(142, 228, 175, 0.3);
+  }
+
+  .task-section {
+    background: rgba(102, 252, 241, 0.05);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+
+  .task-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 10px;
+  }
+
+  .task-content {
+    font-size: 1rem;
+    line-height: 1.6;
     color: var(--color-text);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-weight: 700;
-    letter-spacing: 1px;
+  .plot-container {
+    text-align: center;
+    margin: 30px 0;
+    padding: 20px;
+    background: rgba(11, 12, 16, 0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(102, 252, 241, 0.1);
   }
 
+  .transitivity-table {
+    font-size: 0.9rem;
+  }
+
+  .transitivity-table th {
+    font-size: 0.85rem;
+    padding: 12px 8px;
+  }
+
+  .transitivity-table td {
+    padding: 10px 8px;
+  }
+
+  .status-positive {
+    background: rgba(50, 205, 50, 0.8) !important;
+    color: white !important;
+    font-weight: 600;
+  }
+
+  .status-negative {
+    background: rgba(220, 20, 60, 0.8) !important;
+    color: white !important;
+    font-weight: 600;
+  }
+
+  .conclusion {
+    background: linear-gradient(135deg, rgba(142, 228, 175, 0.1), rgba(102, 252, 241, 0.1));
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .conclusion-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .conclusion-text {
+    font-size: 1.1rem;
+    color: var(--color-link);
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  .formal-table {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .formal-notation {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 768px) {
+    .method-title {
+      font-size: 2.2rem;
+    }
+
+    .method-icon {
+      width: 60px;
+      height: 60px;
+    }
+
+    .section {
+      padding: 20px 15px;
+      margin: 0 10px 20px;
+    }
+
+    .result-table th,
+    .result-table td {
+      padding: 8px 6px;
+      font-size: 0.8rem;
+    }
+
+    .transitivity-table th,
+    .transitivity-table td {
+      padding: 8px 4px;
+      font-size: 0.75rem;
+    }
+
+    .ranking-result {
+      font-size: 1.2rem;
+      padding: 15px;
+    }
+
+    .main-container {
+      padding: 0 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .result-table {
+      font-size: 0.7rem;
+    }
+
+    .result-table th,
+    .result-table td {
+      padding: 6px 3px;
+    }
+
+    .transitivity-table th,
+    .transitivity-table td {
+      padding: 6px 2px;
+      font-size: 0.65rem;
+    }
+  }
 </style>
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Бінарних
-        Відношень</b></h1>
-    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary" width="6%" style="margin-bottom: 41px">
+
+<div class="method-hero">
+  <div class="hero-content">
+    <h1 class="method-title">Метод Бінарних Відношень</h1>
+    <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary Relations" class="method-icon">
+    <div class="step-indicator">✅ Результати аналізу</div>
+  </div>
 </div>
-<br><br>
-<div class="center">
-    <form method="POST">
-        <h3 class="result-text" align="center">МПП</h3>
-        <table class="table table-bordered align-middle">
-            <thead align="center" class="table-back text-white">
+
+<div class="main-container">
+  <form method="POST">
+
+    <!-- Матриця попарних порівнянь -->
+    <div class="section">
+      <h3 class="section-title">МПП</h3>
+      <div style="overflow-x: auto;">
+        <table class="result-table">
+          <thead>
             <tr>
-                <th></th>
-                {% for name in names %}
-                <th>{{ name }}</th>
-                {% endfor %}
-                <th class="table_backg">SUM</th>
+              <th></th>
+              {% for name in names %}
+              <th>{{ name }}</th>
+              {% endfor %}
+              <th>SUM</th>
             </tr>
-            </thead>
-            <tbody>
+          </thead>
+          <tbody>
             {% for i in range(num) %}
             <tr>
-                <th style="background: #222629" class="text-white">{{ names[i] }}</th>
-                {% for j in range(num) %}
-                <td class="text-white" align="center">{{ matrix[i][j] }}</td>
-                {% endfor %}
-                <td class="text-white" align="center"><i>{{ sorted_dict[names[i]] }}</i></td>
+              <td class="row-header">{{ names[i] }}</td>
+              {% for j in range(num) %}
+              <td>{{ matrix[i][j] }}</td>
+              {% endfor %}
+              <td class="sum-column">{{ sorted_dict[names[i]] }}</td>
             </tr>
             {% endfor %}
-            </tbody>
+          </tbody>
         </table>
+      </div>
+    </div>
 
-        <br><br>
-        <h3 class="result-text" align="center">Порядок ранжування</h3>
+    <!-- Порядок ранжування -->
+    <div class="section">
+      <h3 class="section-title">Порядок ранжування</h3>
+      <table class="result-table ranking-table">
+        <thead>
+          <tr>
+            <th>Об'єкт</th>
+            <th>Сума</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for name, total in sorted_dict.items() %}
+          <tr>
+            <td>{{ name }}</td>
+            <td class="sum-column">{{ total }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-        <table class="table table-bordered align-middle center" style="width: 50%">
-            <thead align="center" class="table-back text-white">
-            <tr>
-                <th>Об'єкт</th>
-                <th>Сума</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for name, total in sorted_dict.items() %}
-            <tr>
-                <td class="text-white" align="center">{{ name }}</td>
-                <td class="text-white" align="center"><i>{{ total }}</i></td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <!-- Результат ранжування -->
+    <div class="section">
+      <h3 class="section-title">Ранжування з використанням відношень</h3>
+      <div class="ranking-result">{{ ranj_str }}</div>
 
-        <br><br>
-        <h3 class="result-text" align="center">Ранжування з використанням відношень</h3>
-        <p class="blue-text" style="font-size: 24px; color: #45A29E" align="center"><i>{{ ranj_str }}</i></p>
-        {% if task %}
-        <p class="text-white" style="font-size: 20px;"><b>Задача:</b> {{ task }}</p>
-<!--        {% if gpt_response %}-->
-<!--        <p class="text-white" style="font-size: 20px;"><b>Результат:</b> {{ gpt_response | safe }}</p>-->
-<!--        {% endif %}-->
-        {% endif %}
+      {% if task %}
+      <div class="task-section">
+        <div class="task-label">Задача:</div>
+        <div class="task-content">{{ task }}</div>
+      </div>
+      {% endif %}
+    </div>
 
-        <br>
+    <!-- График -->
+    {% if binary_plot %}
+    <div class="section">
+      <div class="plot-container">
         {{ binary_plot | safe }}
-        <br><br>
+      </div>
+    </div>
+    {% endif %}
 
-        <h3 class="result-text" align="center">Формальні позначки</h3>
-        <table class="table table-bordered align-middle center" style="width: 50%">
-            <thead align="center" class="table-back text-white">
+    <!-- Формальні позначки -->
+    <div class="section">
+      <h3 class="section-title">Формальні позначки</h3>
+      <table class="result-table formal-table">
+        <thead>
+          <tr>
+            <th>Об'єкт</th>
+            <th>Формальна позначка</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(num) %}
+          <tr>
+            <td>{{ names[i] }}</td>
+            <td class="formal-notation">a{{ i+1 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Перевірка на транзитивність -->
+    <div class="section">
+      <h3 class="section-title">Перевірка на транзитивність</h3>
+      <div style="overflow-x: auto;">
+        <table class="result-table transitivity-table">
+          <thead>
             <tr>
-                <th>Об'єкт</th>
-                <th>Формальна позначка</th>
+              <th>№</th>
+              <th>Комбінація 3-х об'єктів</th>
+              <th>Умова транзитивності</th>
+              <th>Відношення</th>
+              <th>Примітка</th>
             </tr>
-            </thead>
-            <tbody>
-            {% for i in range(num) %}
-            <tr>
-                <td class="text-white" align="center">{{ names[i] }}</td>
-                <td class="text-white" align="center">a{{ i+1 }}</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        <br><br>
-
-        <h3 class="result-text" align="center">Перевірка на транзитивність</h3>
-        <table class="table table-bordered align-middle">
-
-            <thead align="center" class="table-back text-white">
-            <tr class="tranz_table">
-                <th>№</th>
-                <th>Комбінація 3-х об’єктів</th>
-                <th>Умова транзитивності</th>
-                <th>Відношення</th>
-                <th>Примітка</th>
-            </tr>
-            </thead>
-
-            <tbody>
+          </thead>
+          <tbody>
             {% for i in range(len_comb) %}
             <tr>
-                <th class="tranz_table text-white">{{ i+1 }}</th>
-
-                <th class="comb text-white">{{ comb[i] }}</th>
-
-                <th class="comb text-white">{{ cond_tranz[i] }}</th>
-
-                <th class="text-white">{{ vidnosh[i] }}</th>
-
-                {% if prim[i] == '+' %}
-                <th class="text-white" style="background-color: #32CD32;">{{ prim[i] }}</th>
-                {% elif prim[i] == '-' %}
-                <th class="text-white" style="background: #DC143C;">{{ prim[i] }}</th>
-                {% else %}
-                <th class="text-white">{{ prim[i] }}</th>
-                {% endif %}
+              <td>{{ i+1 }}</td>
+              <td>{{ comb[i] }}</td>
+              <td>{{ cond_tranz[i] }}</td>
+              <td>{{ vidnosh[i] }}</td>
+              <td class="{% if prim[i] == '+' %}status-positive{% elif prim[i] == '-' %}status-negative{% endif %}">
+                {{ prim[i] }}
+              </td>
             </tr>
             {% endfor %}
-            </tbody>
-
+          </tbody>
         </table>
-        <br><br>
+      </div>
+    </div>
 
-        <h3 class="blue-text" align="center">ВИСНОВОК</h3>
-        <p class="green-text">{{ visnovok }}</p>
-        <br><br>
+    <!-- Висновок -->
+    <div class="conclusion">
+      <div class="conclusion-title">Висновок</div>
+      <div class="conclusion-text">{{ visnovok }}</div>
+    </div>
 
-    </form>
+  </form>
 </div>
+
 {% endblock %}
