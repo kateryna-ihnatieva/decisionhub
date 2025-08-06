@@ -94,8 +94,14 @@ def result(method_id=None):
     names = BinaryNames.query.get(new_record_id).names
     num = len(names)
 
-    matr = session.get("matr")
-    if matr == 0:
+    # Проверим: если матрица уже есть — session["matr"] должен быть 1
+    existing_matrix = BinaryMatrix.query.get(new_record_id)
+    if existing_matrix:
+        session["matr"] = 1
+    else:
+        session["matr"] = 0
+    print(session["matr"])
+    if session["matr"] == 0:
         matrix = process_matrix(request.form.getlist("matrix"), num)
         add_object_to_db(
             db,

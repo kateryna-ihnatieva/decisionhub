@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block expert %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,80 +13,429 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 20px 0;
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 30px 20px 40px;
+    background: linear-gradient(135deg, rgba(11, 12, 16, 0.9) 0%, rgba(5, 56, 107, 0.1) 100%);
+    border-radius: 20px;
+    margin: 0 20px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(102, 252, 241, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .method-title {
+    font-size: 2.5rem;
     font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 15px;
     letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(102, 252, 241, 0.3);
+    display: inline-block;
+    margin-right: 20px;
   }
 
+  .method-icon {
+    width: 70px;
+    height: 70px;
+    filter: drop-shadow(0 0 15px rgba(102, 252, 241, 0.4));
+    transition: transform 0.3s ease;
+    vertical-align: middle;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .alert-danger {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.05) 100%);
+    border: 2px solid rgba(220, 53, 69, 0.3);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 30px;
+    color: #ff6b7d;
+    font-style: italic;
+    text-align: center;
+    backdrop-filter: blur(5px);
+  }
+
+  .competence-form {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 20px;
+    padding: 40px;
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1);
+  }
+
+  .form-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+  }
+
+  .form-title::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    margin: 15px auto 0;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg, rgba(142, 228, 175, 0.1) 0%, rgba(142, 228, 175, 0.05) 100%);
+    border: 2px solid rgba(142, 228, 175, 0.3);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top right, rgba(142, 228, 175, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .info-card-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .info-card h5 {
+    color: var(--color-link);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .info-card h5::before {
+    content: '💡';
+    font-size: 1.2rem;
+  }
+
+  .complement {
+    color: rgba(237, 245, 225, 0.9);
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  .table-container {
+    background: rgba(5, 56, 107, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 30px 0;
+    overflow-x: auto;
+    border: 1px solid rgba(102, 252, 241, 0.2);
+  }
+
+  .competence-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: transparent;
+    margin: 0;
+  }
+
+  .competence-table th,
+  .competence-table td {
+    padding: 15px 12px;
+    text-align: center;
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    background: rgba(11, 12, 16, 0.4);
+    color: var(--color-text);
+    transition: all 0.3s ease;
+  }
+
+  .competence-table th {
+    background: linear-gradient(135deg, rgba(102, 252, 241, 0.2) 0%, rgba(102, 252, 241, 0.1) 100%);
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 0.95rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .competence-table tbody th {
+    background: linear-gradient(135deg, rgba(142, 228, 175, 0.2) 0%, rgba(142, 228, 175, 0.1) 100%);
+    color: var(--color-link);
+    font-weight: 600;
+    min-width: 60px;
+  }
+
+  .competence-table th:first-child,
+  .competence-table td:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  .competence-table th:last-child,
+  .competence-table td:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .competence-table tr:hover td {
+    background: rgba(102, 252, 241, 0.05);
+    transform: scale(1.01);
+  }
+
+  .input-settings {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(5, 56, 107, 0.3);
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 8px;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    text-align: center;
+    transition: all 0.3s ease;
+    min-width: 80px;
+  }
+
+  .input-settings:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.5);
+    box-shadow:
+      0 0 0 3px rgba(102, 252, 241, 0.1),
+      0 0 15px rgba(102, 252, 241, 0.2);
+    transform: scale(1.05);
+  }
+
+  .input-settings:valid {
+    border-color: rgba(142, 228, 175, 0.5);
+  }
+
+  .input-settings:invalid:not(:focus) {
+    border-color: rgba(255, 107, 125, 0.5);
+    background: rgba(255, 107, 125, 0.05);
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg, var(--color-link) 0%, var(--color-link-hover) 100%);
+    color: var(--color-background);
+    border: none;
+    padding: 18px 40px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    margin: 30px auto;
+    display: block;
+    min-width: 200px;
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 25px rgba(142, 228, 175, 0.3),
+      0 0 0 3px rgba(142, 228, 175, 0.1);
+  }
+
+  .submit-button:active {
+    transform: translateY(0);
+  }
+
+  .expert-row-label {
+    position: relative;
+  }
+
+  .expert-row-label::before {
+    content: '👤';
+    margin-right: 8px;
+    opacity: 0.7;
+  }
+
+  @media (max-width: 768px) {
+    .method-title {
+      font-size: 2rem;
+      display: block;
+      margin-right: 0;
+      margin-bottom: 15px;
+    }
+
+    .method-icon {
+      width: 50px;
+      height: 50px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .competence-form {
+      margin: 0 10px;
+      padding: 25px 20px;
+    }
+
+    .table-container {
+      margin: 20px -10px;
+      border-radius: 0;
+      padding: 15px 10px;
+    }
+
+    .competence-table th,
+    .competence-table td {
+      padding: 10px 8px;
+      font-size: 0.9rem;
+    }
+
+    .input-settings {
+      min-width: 60px;
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 10px;
+    }
+
+    .competence-table th,
+    .competence-table td {
+      padding: 8px 6px;
+      font-size: 0.8rem;
+    }
+
+    .input-settings {
+      min-width: 50px;
+      padding: 8px 6px;
+    }
+  }
 </style>
 
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Експертних
-        Оцінок</b></h1>
-    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" width="6%" style="margin-bottom: 41px">
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Експертних Оцінок</h1>
+    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" class="method-icon">
+  </div>
 </div>
-<div>
-    <div class="center">
 
-        {% if error %}
-        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
-        {% endif %}
+<div class="main-container">
+  {% if error %}
+  <div class="alert alert-danger" role="alert">
+    <i>{{ error }}</i>
+  </div>
+  {% endif %}
 
-        <form action="{{ url_for('experts.experts_data') }}" method="POST">
-            <p class="input-label" align="center">Оцінки компенетності експертів</p>
+  <div class="competence-form">
+    <h2 class="form-title">Оцінки компетентності експертів</h2>
 
-            <div class="card text-bg-info mb-3 center" style="width: 22rem;">
-                <div class="card-body">
-                    <h5>Довідка</h5>
-                    <div class="complement">Ступінь знайомства <= 1
-                        <br>Теоретичний аналіз + Досвід + Література + Інтуїція <= 1
-                    </div>
-                </div>
-            </div>
-
-            <br>
-
-            <table class="table table-bordered align-middle">
-
-                <thead align="center">
-                <tr>
-                    <th></th>
-                    {% for i in range(name_arguments | length) %}
-                    <th class="text-white">{{ name_arguments[i] }}</th>
-                    {% endfor %}
-                </tr>
-                </thead>
-
-                <tbody>
-                {% for n_e in range(num_experts) %}
-                <tr>
-                    <th class="text-white" style="text-align: center;">{{ n_e + 1 }}</th>
-                    {% for i in range(name_arguments | length) %}
-                    <td>
-                        <input class="input-settings" type="text" name="table_competence"
-                               id="table_competence_{{ i }}_{{ j }}" value="{% if table_competence %}{{ table_competence[n_e][i] }}{% endif %}" required pattern="^(0(\.\d+)?|1(\.0+)?)$">
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-                </tbody>
-
-            </table>
-
-
-            <br>
-            <button type="submit" class="btns first">Далі</button>
-            <br><br>
-
-        </form>
+    <div class="info-card">
+      <div class="info-card-content">
+        <h5>Довідка</h5>
+        <div class="complement">
+          Ступінь знайомства ≤ 1<br>
+          Теоретичний аналіз + Досвід + Література + Інтуїція ≤ 1
+        </div>
+      </div>
     </div>
-</div>
 
+    <form action="{{ url_for('experts.experts_data') }}" method="POST">
+      <div class="table-container">
+        <table class="competence-table">
+          <thead>
+            <tr>
+              <th></th>
+              {% for i in range(name_arguments | length) %}
+              <th>{{ name_arguments[i] }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for n_e in range(num_experts) %}
+            <tr>
+              <th class="expert-row-label">Експерт {{ n_e + 1 }}</th>
+              {% for i in range(name_arguments | length) %}
+              <td>
+                <input
+                  class="input-settings"
+                  type="text"
+                  name="table_competence"
+                  id="table_competence_{{ i }}_{{ n_e }}"
+                  value="{% if table_competence %}{{ table_competence[n_e][i] }}{% endif %}"
+                  required
+                  pattern="^(0(\.\d+)?|1(\.0+)?)$"
+                  placeholder="0.0-1.0"
+                  title="Введіть значення від 0 до 1 (наприклад: 0.8 або 1.0)"
+                >
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <button type="submit" class="submit-button">Далі</button>
+    </form>
+  </div>
+</div>
 
 {% endblock %}

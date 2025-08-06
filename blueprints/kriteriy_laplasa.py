@@ -124,6 +124,7 @@ def result(method_id=None):
     name_conditions = LaplasaConditions.query.get(new_record_id).names
 
     flag = session.get("flag")
+    print(flag)
     if flag != 0:
         cost_matrix = LaplasaCostMatrix.query.get(new_record_id).matrix
     else:
