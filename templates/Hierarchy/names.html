@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block hierarchy %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,54 +13,501 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 60px 20px 80px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(142, 228, 175, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 40px 40px;
+    margin-bottom: 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(102, 252, 241, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 70% 60%, rgba(142, 228, 175, 0.06) 0%, transparent 40%);
+    pointer-events: none;
+    animation: gentle-pulse 8s ease-in-out infinite;
+  }
+
+  @keyframes gentle-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+    text-shadow:
+      0 0 30px rgba(102, 252, 241, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 25px;
+  }
+
+  .method-icon {
+    width: 80px;
+    height: 80px;
+    filter:
+      drop-shadow(0 0 20px rgba(102, 252, 241, 0.4))
+      drop-shadow(0 8px 20px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 10px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.15) rotate(-5deg);
+    filter:
+      drop-shadow(0 0 25px rgba(102, 252, 241, 0.6))
+      drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .step-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    padding: 10px 24px;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-top: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 20px rgba(142, 228, 175, 0.1);
+  }
+
+  .step-indicator::before {
+    content: '📝';
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 8px rgba(142, 228, 175, 0.4));
+  }
+
+  .main-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .names-form {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 25px;
+    padding: 45px;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .names-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.5),
+      rgba(142, 228, 175, 0.5),
+      transparent);
+  }
+
+  .alert-danger {
+    background: rgba(255, 107, 125, 0.1);
+    border: 1px solid rgba(255, 107, 125, 0.3);
+    color: #ffccd5;
+    padding: 15px 20px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+    font-style: italic;
+    animation: shake-error 0.5s ease-in-out;
+  }
+
+  @keyframes shake-error {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .input-section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    color: var(--color-accent);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
   }
 
+  .section-title.criteria::before {
+    content: '📊';
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
+  .section-title.alternatives::before {
+    content: '🎯';
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg,
+      rgba(102, 252, 241, 0.3),
+      transparent);
+    margin-left: 15px;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .input-group {
+    position: relative;
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 18px 20px;
+    background: rgba(5, 56, 107, 0.15);
+    border: 2px solid rgba(102, 252, 241, 0.25);
+    border-radius: 16px;
+    color: var(--color-text);
+    font-size: 1.05rem;
+    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+    position: relative;
+  }
+
+  .input-field::placeholder {
+    color: rgba(237, 245, 225, 0.5);
+    font-style: italic;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.25);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.1),
+      0 0 20px rgba(102, 252, 241, 0.2),
+      0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .input-field:valid:not(:placeholder-shown) {
+    border-color: rgba(142, 228, 175, 0.4);
+    background: rgba(142, 228, 175, 0.08);
+  }
+
+  .input-number {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, var(--color-accent), var(--color-link));
+    color: var(--color-background);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.9rem;
+    position: absolute;
+    left: -21px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    box-shadow:
+      0 4px 15px rgba(102, 252, 241, 0.3),
+      0 0 0 3px var(--color-background);
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg,
+      var(--color-link) 0%,
+      var(--color-link-hover) 50%,
+      var(--color-link) 100%);
+    background-size: 200% 200%;
+    color: var(--color-background);
+    border: none;
+    padding: 20px 50px;
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    position: relative;
+    overflow: hidden;
+    margin: 40px auto 0;
+    display: block;
+    min-width: 200px;
+    box-shadow:
+      0 10px 30px rgba(142, 228, 175, 0.2),
+      0 0 0 1px rgba(142, 228, 175, 0.1);
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .submit-button::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .submit-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      0 15px 35px rgba(142, 228, 175, 0.3),
+      0 0 0 4px rgba(142, 228, 175, 0.1),
+      0 6px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+
+  /* Floating decorative elements */
+  .names-form::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 8%;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.08), rgba(142, 228, 175, 0.08));
+    border-radius: 50%;
+    animation: float-gentle 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 40px 20px 50px;
+      border-radius: 0 0 25px 25px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 15px;
+    }
+
+    .method-icon {
+      width: 65px;
+      height: 65px;
+      display: block;
+      margin: 0 auto 15px;
+    }
+
+    .names-form {
+      margin: 0 10px;
+      padding: 30px 20px;
+      border-radius: 20px;
+    }
+
+    .input-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .submit-button {
+      padding: 18px 40px;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 10px;
+    }
+
+    .names-form {
+      padding: 25px 15px;
+    }
+
+    .input-field {
+      padding: 16px 18px;
+      font-size: 1rem;
+    }
+
+    .input-number {
+      width: 30px;
+      height: 30px;
+      font-size: 0.8rem;
+    }
+
+    .submit-button {
+      padding: 16px 35px;
+      font-size: 1rem;
+      min-width: 180px;
+    }
+  }
 </style>
 
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу
-        Ієрархій</b></h1>
-    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarcy" width="6%" style="margin-bottom: 41px">
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Аналізу Ієрархій</h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarchy" class="method-icon">
+    <div class="step-indicator">Крок 2: Введення назв</div>
+  </div>
 </div>
-<br><br>
-<div class="center">
+
+<div class="main-container">
+  <div class="names-form">
     <form action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
-        {% if error %}
-        <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
-        <br>
-        {% endif %}
-        <p class="input-label">Введіть імена критеріїв:</p>
-        {% for i in range(num_criteria | int) %}
-        <input class="input-settings" type="text" name="name_criteria" id="criter{{ i+1 }}"
-               placeholder="Критерій {{ i+1 }}"
-               value="{% if name_criteria %}{{ name_criteria[i] }}{% endif %}"
-               required>
-        <br>
-        {% endfor %}
-        <br>
-        <p class="input-label">Введіть імена альтернатив:</p>
-        {% for n in range(num_alternatives) %}
-        <input class="input-settings" type="text" name="name_alternatives" id="alternative{{ n+1 }}"
-               placeholder="Альтернатива {{ n+1 }}"
-               value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
-               required>
-        <br>
-        {% endfor %}
-        <br>
 
-        <button type="submit" class="btns first">Далі</button>
-        <br><br>
+      {% if error %}
+      <div class="alert-danger" role="alert">
+        <i>{{ error }}</i>
+      </div>
+      {% endif %}
 
+      <div class="input-section">
+        <div class="section-title criteria">Назви критеріїв</div>
+        <div class="input-grid">
+          {% for i in range(num_criteria | int) %}
+          <div class="input-group">
+            <div class="input-number">{{ i+1 }}</div>
+            <input
+              class="input-field"
+              type="text"
+              name="name_criteria"
+              id="criter{{ i+1 }}"
+              placeholder="Критерій {{ i+1 }}"
+              value="{% if name_criteria %}{{ name_criteria[i] }}{% endif %}"
+              required
+            >
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="input-section">
+        <div class="section-title alternatives">Назви альтернатив</div>
+        <div class="input-grid">
+          {% for n in range(num_alternatives) %}
+          <div class="input-group">
+            <div class="input-number">{{ n+1 }}</div>
+            <input
+              class="input-field"
+              type="text"
+              name="name_alternatives"
+              id="alternative{{ n+1 }}"
+              placeholder="Альтернатива {{ n+1 }}"
+              value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+              required
+            >
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button type="submit" class="submit-button">Далі</button>
     </form>
+  </div>
 </div>
 
 {% endblock %}

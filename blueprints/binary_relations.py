@@ -146,7 +146,9 @@ def result(method_id=None):
             binary_matrix_id=new_record_id,
             sorted_sum=sorted_dict,
             ranj=ranj_str,
-            plot_data=generate_plot(sum_dict.values(), sum_dict.keys(), False),
+            plot_data=generate_plot(
+                list(sum_dict.values()), list(sum_dict.keys()), False
+            ),
         )
 
     # Перевірка на транизитивність
@@ -220,7 +222,9 @@ def result(method_id=None):
         "vidnosh": vidnosh,
         "prim": prim,
         "visnovok": visnovok,
-        "binary_plot": generate_plot(sum_dict.values(), sum_dict.keys(), False),
+        "binary_plot": generate_plot(
+            list(sum_dict.values()), list(sum_dict.keys()), False
+        ),
         "name": current_user.get_name() if current_user.is_authenticated else None,
         "task": binary_task if binary_task else None,
         "method_id": method_id,
