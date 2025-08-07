@@ -1,14 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block laplasa %} active {% endblock %}
 {% block content %}
-<div style="text-align: center;">
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -16,45 +13,541 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 70px 20px 90px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(102, 252, 241, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 50px 50px;
+    margin-bottom: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(102, 252, 241, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 70% 70%, rgba(142, 228, 175, 0.06) 0%, transparent 40%),
+      linear-gradient(135deg, transparent 0%, rgba(102, 252, 241, 0.02) 50%, transparent 100%);
+    pointer-events: none;
+    animation: shimmer 12s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 25px;
+    letter-spacing: -0.02em;
+    text-shadow:
+      0 0 30px rgba(102, 252, 241, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 25px;
+  }
+
+  .method-icon {
+    width: 85px;
+    height: 85px;
+    filter:
+      drop-shadow(0 0 20px rgba(102, 252, 241, 0.4))
+      drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 12px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.15) rotate(-6deg);
+    filter:
+      drop-shadow(0 0 30px rgba(102, 252, 241, 0.6))
+      drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: rgba(237, 245, 225, 0.75);
+    margin-top: 15px;
+    font-weight: 300;
+    line-height: 1.4;
+  }
+
+  .main-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .setup-form {
+    background: rgba(11, 12, 16, 0.75);
+    border: 1px solid rgba(102, 252, 241, 0.12);
+    border-radius: 30px;
+    padding: 45px 40px;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .setup-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.3),
+      rgba(142, 228, 175, 0.3),
+      transparent);
+  }
+
+  .form-section {
+    margin-bottom: 35px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .section-title.task::before {
+    content: '📋';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .section-title.parameters::before {
+    content: '⚙️';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .task-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 20px;
+    background: rgba(5, 56, 107, 0.12);
+    border: 2px solid rgba(102, 252, 241, 0.18);
+    border-radius: 18px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    line-height: 1.6;
+    resize: vertical;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+  }
+
+  .task-textarea::placeholder {
+    color: rgba(237, 245, 225, 0.45);
+    font-style: italic;
+  }
+
+  .task-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.22);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.06),
+      0 0 20px rgba(102, 252, 241, 0.15),
+      0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: scale(1.008);
+  }
+
+  .parameters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-top: 20px;
+  }
+
+  .parameter-group {
+    background: rgba(5, 56, 107, 0.08);
+    border: 1px solid rgba(102, 252, 241, 0.12);
+    border-radius: 20px;
+    padding: 28px 22px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+
+  .parameter-group:hover {
+    border-color: rgba(102, 252, 241, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .parameter-group::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.25),
+      transparent);
+  }
+
+  .parameter-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .parameter-label.alternatives::before {
+    content: '🔄';
+    font-size: 1.2rem;
+  }
+
+  .parameter-label.conditions::before {
+    content: '🎯';
+    font-size: 1.2rem;
+  }
+
+  .parameter-input {
+    width: 100%;
+    padding: 18px 20px;
+    background: rgba(11, 12, 16, 0.35);
+    border: 2px solid rgba(102, 252, 241, 0.18);
+    border-radius: 14px;
+    color: var(--color-text);
+    font-size: 1.1rem;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+  }
+
+  .parameter-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(11, 12, 16, 0.55);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.06),
+      0 0 18px rgba(102, 252, 241, 0.15),
+      0 3px 15px rgba(0, 0, 0, 0.1);
+    transform: scale(1.02);
+  }
+
+  .parameter-input:valid {
+    border-color: rgba(142, 228, 175, 0.35);
+    background: rgba(142, 228, 175, 0.04);
+  }
+
+  .parameter-input:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: rgba(255, 107, 125, 0.35);
+    background: rgba(255, 107, 125, 0.04);
+    animation: shake 0.4s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .info-hint {
+    font-size: 0.85rem;
+    color: rgba(237, 245, 225, 0.55);
+    margin-top: 8px;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg,
+      var(--color-link) 0%,
+      var(--color-link-hover) 50%,
+      var(--color-link) 100%);
+    background-size: 200% 200%;
+    color: var(--color-background);
+    border: none;
+    padding: 22px 55px;
+    border-radius: 16px;
+    font-size: 1.2rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    position: relative;
+    overflow: hidden;
+    margin: 45px auto 0;
+    display: block;
+    min-width: 220px;
+    box-shadow:
+      0 10px 30px rgba(142, 228, 175, 0.2),
+      0 0 0 1px rgba(142, 228, 175, 0.08);
   }
 
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .submit-button::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 50%);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .submit-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      0 15px 35px rgba(142, 228, 175, 0.28),
+      0 0 0 4px rgba(142, 228, 175, 0.12),
+      0 6px 18px rgba(0, 0, 0, 0.15);
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+
+  /* Floating decoration */
+  .setup-form::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 8%;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.08), rgba(142, 228, 175, 0.08));
+    border-radius: 50%;
+    animation: float-decoration 10s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-decoration {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 50px 20px 60px;
+      border-radius: 0 0 30px 30px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .method-icon {
+      width: 70px;
+      height: 70px;
+      display: block;
+      margin: 0 auto 15px;
+    }
+
+    .setup-form {
+      margin: 0 15px;
+      padding: 35px 25px;
+      border-radius: 25px;
+    }
+
+    .parameters-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .parameter-group {
+      padding: 25px 20px;
+    }
+
+    .submit-button {
+      padding: 20px 45px;
+      font-size: 1.1rem;
+      letter-spacing: 1.5px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 12px;
+    }
+
+    .setup-form {
+      padding: 25px 18px;
+    }
+
+    .task-textarea {
+      min-height: 85px;
+      padding: 16px;
+    }
+
+    .parameter-input {
+      padding: 16px 18px;
+      font-size: 1rem;
+    }
+
+    .parameter-group {
+      padding: 20px 16px;
+    }
+
+    .submit-button {
+      padding: 18px 35px;
+      font-size: 1rem;
+      min-width: 180px;
+    }
+  }
 </style>
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Критерій Лапласа</b></h1>
-    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" width="6%" style="margin-bottom: 41px">
+
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Критерій Лапласа</h1>
+    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" class="method-icon">
+    <p class="subtitle">Метод прийняття рішень в умовах невизначеності</p>
+  </div>
 </div>
-<br><br>
-<div class="center">
+
+<div class="main-container">
+  <div class="setup-form">
     <form action="{{ url_for('kriteriy_laplasa.names') }}" method="GET">
-        <div align="center">
-            <p class="input-label">Введіть вашу задачу (необов’язково):</p>
-            <textarea class="input-settings" name="laplasa_task" id="laplasa_task" style="height: 75px"></textarea>
-            <br><br>
-            <div class="row gx-5">
-                <div class="col">
-                    <p class="input-label">Введіть кількість альтернатив:</p>
-                    <input class="input-settings" type="number" min="2" name="num_alt" id="num_criteria" required>
-                </div>
-                <div class="col">
-                    <p class="input-label">Введіть кількість умов:</p>
-                    <input class="input-settings" type="number" min="2" name="num_conditions" id="num_conditions"
-                       required>
-                </div>
-            </div>
 
+      <div class="form-section">
+        <div class="section-title task">Опис задачі</div>
+        <textarea
+          class="task-textarea"
+          name="laplasa_task"
+          id="laplasa_task"
+          placeholder="Опишіть задачу, яку потрібно розв'язати (необов'язково)...&#10;&#10;Наприклад: Вибір стратегії інвестування при невизначеності ринкових умов"
+        ></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title parameters">Параметри аналізу</div>
+
+        <div class="parameters-grid">
+          <div class="parameter-group">
+            <div class="parameter-label alternatives">Кількість альтернатив</div>
+            <input
+              class="parameter-input"
+              type="number"
+              min="2"
+              max="10"
+              name="num_alt"
+              id="num_alt"
+              placeholder="2"
+              required
+            >
+            <div class="info-hint">Мінімум 2, рекомендовано до 5</div>
+          </div>
+
+          <div class="parameter-group">
+            <div class="parameter-label conditions">Кількість умов</div>
+            <input
+              class="parameter-input"
+              type="number"
+              min="2"
+              max="10"
+              name="num_conditions"
+              id="num_conditions"
+              placeholder="2"
+              required
+            >
+            <div class="info-hint">Мінімум 2, рекомендовано до 6</div>
+          </div>
         </div>
-        <br>
+      </div>
 
-        <button type="submit" class="btns first">Далі</button>
+      <button type="submit" class="submit-button">Далі</button>
     </form>
+  </div>
 </div>
-{% endblock %}
 
+{% endblock %}
