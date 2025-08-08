@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block laplasa %} active {% endblock %}
 {% block content %}
 <style>
-    :root {
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,57 +13,533 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 10% 20%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 90% 80%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 50px 20px 70px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.12) 40%,
+      rgba(102, 252, 241, 0.02) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 35px 35px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 15% 25%, rgba(102, 252, 241, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(142, 228, 175, 0.02) 0%, transparent 40%),
+      linear-gradient(135deg, transparent 0%, rgba(102, 252, 241, 0.008) 50%, transparent 100%);
+    pointer-events: none;
+    animation: shimmer 18s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.4; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(102, 252, 241, 0.2);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    letter-spacing: -0.02em;
+    text-shadow:
+      0 0 15px rgba(102, 252, 241, 0.2),
+      0 2px 6px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 15px;
+  }
+
+  .method-icon {
+    width: 55px;
+    height: 55px;
+    filter:
+      drop-shadow(0 0 8px rgba(102, 252, 241, 0.2))
+      drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 6px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.08) rotate(-3deg);
+    filter:
+      drop-shadow(0 0 15px rgba(102, 252, 241, 0.3))
+      drop-shadow(0 8px 15px rgba(0, 0, 0, 0.5));
+  }
+
+  .step-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(142, 228, 175, 0.04);
+    border: 1px solid rgba(142, 228, 175, 0.15);
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-top: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(142, 228, 175, 0.04);
+  }
+
+  .step-indicator::before {
+    content: '✅';
+    font-size: 1rem;
+    filter: drop-shadow(0 0 4px rgba(142, 228, 175, 0.2));
+  }
+
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .results-form {
+    background: rgba(11, 12, 16, 0.5);
+    border: 1px solid rgba(102, 252, 241, 0.06);
+    border-radius: 20px;
+    padding: 30px 25px;
+    backdrop-filter: blur(12px);
+    box-shadow:
+      0 12px 25px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(102, 252, 241, 0.02),
+      inset 0 1px 0 rgba(255, 255, 255, 0.01);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .results-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.15),
+      rgba(142, 228, 175, 0.15),
+      transparent);
+  }
+
+  .matrix-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .matrix-title::before {
+    content: '📊';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 6px rgba(102, 252, 241, 0.25));
+  }
+
+  .matrix-container {
+    overflow-x: auto;
+    border-radius: 16px;
+    background: rgba(5, 56, 107, 0.03);
+    border: 1px solid rgba(102, 252, 241, 0.08);
+    box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+  }
+
+  .results-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: transparent;
+  }
+
+  .matrix-header {
+    background: linear-gradient(135deg,
+      rgba(5, 56, 107, 0.12) 0%,
+      rgba(102, 252, 241, 0.06) 50%,
+      rgba(5, 56, 107, 0.12) 100%);
+    border-bottom: 2px solid rgba(102, 252, 241, 0.12);
+  }
+
+  .header-cell {
+    padding: 14px 12px;
+    text-align: center;
+    font-weight: 700;
+    color: var(--color-accent);
+    font-size: 0.9rem;
+    letter-spacing: 0.2px;
+    border-right: 1px solid rgba(102, 252, 241, 0.05);
+  }
+
+  .header-cell:first-child {
+    border-top-left-radius: 14px;
+    background: rgba(11, 12, 16, 0.25);
+    border-right: 2px solid rgba(102, 252, 241, 0.12);
+  }
+
+  .header-cell:last-child {
+    border-top-right-radius: 14px;
+    border-right: none;
+    background: rgba(142, 228, 175, 0.08);
+    color: var(--color-link);
+    font-weight: 800;
+  }
+
+  .matrix-row {
+    transition: all 0.2s ease;
+  }
+
+  .matrix-row:hover {
+    background: rgba(102, 252, 241, 0.015);
+  }
+
+  .matrix-row:last-child .row-header {
+    border-bottom-left-radius: 14px;
+  }
+
+  .matrix-row:last-child .matrix-cell:last-child {
+    border-bottom-right-radius: 14px;
+  }
+
+  .row-header {
+    padding: 12px;
+    background: rgba(11, 12, 16, 0.15);
+    border-right: 2px solid rgba(102, 252, 241, 0.12);
+    border-bottom: 1px solid rgba(102, 252, 241, 0.05);
+    text-align: center;
+    font-weight: 700;
+    color: var(--color-link);
+    font-size: 0.85rem;
+    letter-spacing: 0.1px;
+  }
+
+  .matrix-cell {
+    padding: 12px;
+    border-right: 1px solid rgba(102, 252, 241, 0.05);
+    border-bottom: 1px solid rgba(102, 252, 241, 0.05);
+    text-align: center;
+    background: rgba(5, 56, 107, 0.015);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .matrix-cell:last-child {
+    border-right: none;
+    background: rgba(142, 228, 175, 0.05);
+    color: var(--color-link);
+    font-weight: 700;
+    border-left: 2px solid rgba(142, 228, 175, 0.12);
+  }
+
+  .task-section {
+    background: rgba(5, 56, 107, 0.05);
+    border: 1px solid rgba(102, 252, 241, 0.08);
+    border-radius: 14px;
+    padding: 20px;
+    margin: 25px 0;
+    backdrop-filter: blur(5px);
+  }
+
+  .task-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .task-label::before {
+    content: '📋';
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 4px rgba(102, 252, 241, 0.2));
+  }
+
+  .task-text {
+    font-size: 0.95rem;
+    color: var(--color-text);
+    line-height: 1.5;
+    opacity: 0.9;
+  }
+
+  .conclusion-section {
+    background: linear-gradient(135deg,
+      rgba(142, 228, 175, 0.08) 0%,
+      rgba(92, 219, 149, 0.05) 50%,
+      rgba(142, 228, 175, 0.08) 100%);
+    border: 2px solid rgba(142, 228, 175, 0.2);
+    border-radius: 16px;
+    padding: 25px;
+    margin: 30px 0;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 20px rgba(142, 228, 175, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .conclusion-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(142, 228, 175, 0.4),
+      transparent);
+  }
+
+  .conclusion-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-link);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .conclusion-label::before {
+    content: '🎯';
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 6px rgba(142, 228, 175, 0.3));
+  }
+
+  .conclusion-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.4;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .chart-container {
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(11, 12, 16, 0.2);
+    border: 1px solid rgba(102, 252, 241, 0.06);
+    border-radius: 16px;
+    backdrop-filter: blur(5px);
+  }
+
+  /* Floating decoration */
+  .results-form::after {
+    content: '';
+    position: absolute;
+    top: 6%;
+    right: 3%;
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.03), rgba(142, 228, 175, 0.03));
+    border-radius: 50%;
+    animation: float-decoration 16s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-decoration {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 35px 15px 45px;
+      border-radius: 0 0 18px 18px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 10px;
+    }
+
+    .method-icon {
+      width: 45px;
+      height: 45px;
+      display: block;
+      margin: 0 auto 8px;
+    }
+
+    .results-form {
+      margin: 0 10px;
+      padding: 22px 16px;
+      border-radius: 16px;
+    }
+
+    .matrix-container {
+      border-radius: 12px;
+    }
+
+    .header-cell, .row-header, .matrix-cell {
+      padding: 8px 6px;
+      font-size: 0.8rem;
+    }
+
+    .task-section, .conclusion-section {
+      padding: 16px;
+    }
+
+    .conclusion-text {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 10px;
+    }
+
+    .results-form {
+      padding: 18px 12px;
+    }
+
+    .header-cell, .row-header, .matrix-cell {
+      padding: 6px 4px;
+      font-size: 0.75rem;
+    }
+
+    .matrix-title {
+      font-size: 1rem;
+    }
+
+    .task-section {
+      padding: 12px;
+    }
+
+    .conclusion-section {
+      padding: 16px;
+    }
+
+    .conclusion-text {
+      font-size: 0.9rem;
+    }
+
+    .task-text {
+      font-size: 0.85rem;
+    }
   }
 </style>
 
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Лапласа</b></h1>
-    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" width="6%"
-         style="margin-bottom: 41px">
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Лапласа</h1>
+    <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" class="method-icon">
+    <div class="step-indicator">Результати аналізу</div>
+  </div>
 </div>
-<br><br>
-<div>
-    <div class="center">
-        <form method="POST">
-            <h3 class="result-text" align="center">Платіжна матриця</h3>
-            <br>
-            <div>
-                <table class="table table-bordered align-middle">
-                    <thead align="center" class="table-back text-white">
-                    <tr>
-                        <th></th>
-                        {% for name in name_conditions %}
-                        <th>{{ name }}</th>
-                        {% endfor %}
-                        <th>M</th>
-                    </tr>
-                    </thead>
 
-                    <tbody>
-    {% for i in range(name_alternatives | length) %}
-    <tr>
-        <th style="background: #222629" class="text-white">{{ name_alternatives[i] }}</th>
-        {% for j in range(name_conditions | length) %}
-        <td class="text-white" align="center">{{ cost_matrix[i][j] }}</td>
-        {% endfor %}
-        <td class="text-white" align="center">{{ optimal_variants[i] }}</td>
-    </tr>
-    {% endfor %}
-</tbody>
-                </table>
-            </div>
-            {% if laplasa_task %}
-            <p class="white-text" style="font-size: 20px;"><b>Задача:</b> {{ laplasa_task }}</p>
-            {% endif %}
-            <p class="blue-text" style="font-size: 24px;"><b>Висновок: {{ optimal_message }}</b></p>
-            <br>
-            {{ laplasa_plot | safe }}
-        </form>
-    </div>
+<div class="main-container">
+  <div class="results-form">
+    <form method="POST">
+
+      <div class="matrix-title">Платіжна матриця</div>
+
+      <div class="matrix-container">
+        <table class="results-matrix">
+          <thead class="matrix-header">
+            <tr>
+              <th class="header-cell"></th>
+              {% for name in name_conditions %}
+              <th class="header-cell">{{ name }}</th>
+              {% endfor %}
+              <th class="header-cell">M</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(name_alternatives | length) %}
+            <tr class="matrix-row">
+              <td class="row-header">{{ name_alternatives[i] }}</td>
+              {% for j in range(name_conditions | length) %}
+              <td class="matrix-cell">{{ cost_matrix[i][j] }}</td>
+              {% endfor %}
+              <td class="matrix-cell">{{ optimal_variants[i] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if laplasa_task %}
+      <div class="task-section">
+        <div class="task-label">Задача</div>
+        <div class="task-text">{{ laplasa_task }}</div>
+      </div>
+      {% endif %}
+
+      <div class="conclusion-section">
+        <div class="conclusion-label">Висновок</div>
+        <div class="conclusion-text">{{ optimal_message }}</div>
+      </div>
+
+      <div class="chart-container">
+        {{ laplasa_plot | safe }}
+      </div>
+
+    </form>
+  </div>
 </div>
 
 {% endblock %}
-

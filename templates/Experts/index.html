@@ -1,15 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block expert %} active {% endblock %}
 {% block content %}
-
-<div style="text-align: center;">
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -17,48 +13,443 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .method-hero {
+    text-align: center;
+    padding: 40px 20px 60px;
+    background: linear-gradient(135deg, rgba(11, 12, 16, 0.9) 0%, rgba(5, 56, 107, 0.1) 100%);
+    border-radius: 20px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .method-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(102, 252, 241, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .method-title {
+    font-size: 3rem;
     font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 15px;
     letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(102, 252, 241, 0.3);
   }
 
+  .method-icon {
+    width: 80px;
+    height: 80px;
+    margin: 20px 0;
+    filter: drop-shadow(0 0 15px rgba(102, 252, 241, 0.4));
+    transition: transform 0.3s ease;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .method-description {
+    font-size: 1.2rem;
+    color: var(--color-text);
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+  }
+
+  .actions-container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    gap: 30px;
+  }
+
+  .file-upload-section {
+    background: rgba(142, 228, 175, 0.1);
+    border: 2px dashed rgba(142, 228, 175, 0.3);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .file-upload-section:hover {
+    border-color: rgba(142, 228, 175, 0.5);
+    background: rgba(142, 228, 175, 0.15);
+  }
+
+  .file-upload-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .file-upload-title::before {
+    content: '📁';
+    font-size: 1.5rem;
+  }
+
+  .file-upload-description {
+    color: rgba(237, 245, 225, 0.8);
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+  }
+
+  .file-button {
+    background: linear-gradient(135deg, var(--color-link) 0%, var(--color-link-hover) 100%);
+    color: var(--color-background);
+    border: none;
+    padding: 15px 30px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .file-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .file-button:hover::before {
+    left: 100%;
+  }
+
+  .file-button:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 25px rgba(142, 228, 175, 0.3),
+      0 0 0 3px rgba(142, 228, 175, 0.1);
+  }
+
+  .form-container {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 20px;
+    padding: 40px;
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1);
+  }
+
+  .form-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+  }
+
+  .form-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    margin: 10px auto 0;
+  }
+
+  .input-group {
+    margin-bottom: 30px;
+  }
+
+  .input-label {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 12px;
+    text-align: left;
+  }
+
+  .form-textarea {
+    width: 100%;
+    padding: 15px 20px;
+    background: rgba(5, 56, 107, 0.2);
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 12px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+  }
+
+  .form-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow:
+      0 0 0 3px rgba(102, 252, 241, 0.1),
+      0 0 20px rgba(102, 252, 241, 0.2);
+    background: rgba(5, 56, 107, 0.3);
+  }
+
+  .form-textarea::placeholder {
+    color: rgba(237, 245, 225, 0.5);
+  }
+
+  .inputs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 15px 20px;
+    background: rgba(5, 56, 107, 0.2);
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 12px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow:
+      0 0 0 3px rgba(102, 252, 241, 0.1),
+      0 0 20px rgba(102, 252, 241, 0.2);
+    background: rgba(5, 56, 107, 0.3);
+  }
+
+  .form-input::placeholder {
+    color: rgba(237, 245, 225, 0.5);
+  }
+
+  .input-info {
+    background: rgba(102, 252, 241, 0.1);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: var(--color-accent);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg, var(--color-link) 0%, var(--color-link-hover) 100%);
+    color: var(--color-background);
+    border: none;
+    padding: 18px 40px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 25px rgba(142, 228, 175, 0.3),
+      0 0 0 3px rgba(142, 228, 175, 0.1);
+  }
+
+  .submit-button:active {
+    transform: translateY(0);
+  }
+
+  .optional-hint {
+    font-size: 0.9rem;
+    color: rgba(237, 245, 225, 0.6);
+    font-style: italic;
+    margin-top: 5px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    margin: 40px 0;
+    color: rgba(237, 245, 225, 0.5);
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(102, 252, 241, 0.3), transparent);
+  }
+
+  .divider span {
+    padding: 0 20px;
+    font-weight: 600;
+    background: rgba(11, 12, 16, 0.8);
+  }
+
+  @media (max-width: 768px) {
+    .method-title {
+      font-size: 2.2rem;
+    }
+
+    .form-container,
+    .file-upload-section {
+      margin: 0 20px;
+      padding: 30px 20px;
+    }
+
+    .method-icon {
+      width: 60px;
+      height: 60px;
+    }
+
+    .inputs-row {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
 </style>
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Експертних
-        Оцінок</b></h1>
-    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" width="6%" style="margin-bottom: 41px">
+
+<div class="method-hero">
+  <div class="hero-content">
+    <h1 class="method-title">Метод Експертних Оцінок</h1>
+    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Expert Evaluations" class="method-icon">
+    <p class="method-description">
+      Збирайте думки фахівців, аналізуйте їх оцінки та приймайте обґрунтовані рішення на основі експертних знань
+    </p>
+  </div>
 </div>
-<br>
-<div>
+
+<div class="actions-container">
+
+  <!-- Секция загрузки файла -->
+  <div class="file-upload-section">
     <form action="{{ url_for('experts.index', file_expert=True) }}" method="POST">
-        <button type="submit" class="btns2 first2">Завантажити файл для експерта</button>
+      <div class="file-upload-title">Завантажити файл для експертів</div>
+      <div class="file-upload-description">
+        Завантажте файл, який можете надати експертам для оцінки
+      </div>
+      <button type="submit" class="file-button">Завантажити файл</button>
     </form>
-    <br>
+  </div>
+
+  <div class="divider">
+  </div>
+
+  <!-- Форма создания нового опроса -->
+  <div class="form-container">
+    <div class="form-title">Створити новий експертний опрос</div>
+
     <form action="{{ url_for('experts.names') }}" method="GET">
-        <p class="input-label">Введіть вашу задачу (необов’язково):</p>
-        <textarea class="input-settings" name="experts_task" id="experts_task" style="height: 75px"></textarea>
-        <br><br>
-        <div class="row gx-5">
-            <div class="col">
-                <p class="input-label">Введіть кількість напрямків дослідження:</p>
-                <input class="input-settings" type="number" min="2" name="num_research" id="num_research" required>
-            </div>
-            <div class="col">
-                <p class="input-label">Введіть кількість експертів:</p>
-                <input class="input-settings" type="number" min="2" name="num_experts" id="num_experts" required>
-            </div>
+
+      <div class="input-group">
+        <label for="experts_task" class="input-label">Опишіть вашу задачу</label>
+        <textarea
+          class="form-textarea"
+          name="experts_task"
+          id="experts_task"
+          placeholder="Наприклад: Оцінка важливості критеріїв для вибору постачальника обладнання..."
+        ></textarea>
+        <div class="optional-hint">Необов'язкове поле для кращого розуміння контексту дослідження</div>
+      </div>
+
+      <div class="inputs-row">
+        <div class="input-group">
+          <label for="num_research" class="input-label">Кількість напрямків дослідження</label>
+          <input
+            class="form-input"
+            type="number"
+            min="2"
+            name="num_research"
+            id="num_research"
+            placeholder="Введіть число від 2"
+            required
+          >
+          <div class="input-info">
+            <strong>Напрямки:</strong> Критерії, альтернативи або фактори для оцінювання експертами
+          </div>
         </div>
-        <br><br>
-        <div>
-            <button type="submit" class="btns first">Далі</button>
-            <br><br>
+
+        <div class="input-group">
+          <label for="num_experts" class="input-label">Кількість експертів</label>
+          <input
+            class="form-input"
+            type="number"
+            min="2"
+            name="num_experts"
+            id="num_experts"
+            placeholder="Введіть число від 2"
+            required
+          >
+          <div class="input-info">
+            <strong>Рекомендація:</strong> Оптимальна кількість - від 5 до 15 експертів для надійності результатів
+          </div>
         </div>
+      </div>
+
+      <div style="text-align: center;">
+        <button type="submit" class="submit-button">Створити опрос</button>
+      </div>
+
     </form>
+  </div>
+
 </div>
 
 {% endblock %}

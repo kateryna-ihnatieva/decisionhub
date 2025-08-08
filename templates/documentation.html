@@ -6,9 +6,8 @@
 
 {% block info %} active {% endblock %}
 {% block content %}
-<div style="text-align: center;">
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -16,204 +15,844 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 70px 20px 90px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(102, 252, 241, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 50px 50px;
+    margin-bottom: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(102, 252, 241, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 70% 70%, rgba(142, 228, 175, 0.06) 0%, transparent 40%),
+      linear-gradient(135deg, transparent 0%, rgba(102, 252, 241, 0.02) 50%, transparent 100%);
+    pointer-events: none;
+    animation: shimmer 12s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .main-title {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 25px;
+    letter-spacing: -0.02em;
+    text-shadow:
+      0 0 30px rgba(102, 252, 241, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 25px;
+  }
+
+  .header-icon {
+    width: 85px;
+    height: 85px;
+    filter:
+      drop-shadow(0 0 20px rgba(102, 252, 241, 0.4))
+      drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 12px;
+  }
+
+  .header-icon:hover {
+    transform: scale(1.15) rotate(-6deg);
+    filter:
+      drop-shadow(0 0 30px rgba(102, 252, 241, 0.6))
+      drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: rgba(237, 245, 225, 0.75);
+    margin-top: 15px;
+    font-weight: 300;
+    line-height: 1.4;
+  }
+
+  .methods-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+    margin-bottom: 60px;
+  }
+
+  .method-card {
+    background: rgba(11, 12, 16, 0.75);
+    border: 1px solid rgba(102, 252, 241, 0.12);
+    border-radius: 30px;
+    padding: 35px;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    height: fit-content;
+  }
+
+  .method-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.3),
+      rgba(142, 228, 175, 0.3),
+      transparent);
+  }
+
+  .method-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(102, 252, 241, 0.25);
+    box-shadow:
+      0 35px 60px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(102, 252, 241, 0.15),
+      0 0 30px rgba(102, 252, 241, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .method-card::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 8%;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.08), rgba(142, 228, 175, 0.08));
+    border-radius: 50%;
+    animation: float-decoration 8s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .method-card:hover::after {
+    opacity: 1;
+  }
+
+  @keyframes float-decoration {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+  }
+
+  .method-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+  .method-icon {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, var(--color-accent), var(--color-link));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 8px 20px rgba(102, 252, 241, 0.25);
+    flex-shrink: 0;
+  }
+
+  .method-title {
+    font-size: 1.4rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    color: var(--color-accent);
+    margin: 0;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
   }
 
+  .method-description {
+    color: rgba(237, 245, 225, 0.85);
+    line-height: 1.7;
+    font-size: 1rem;
+    margin-bottom: 25px;
+  }
+
+  .method-description p {
+    margin-bottom: 15px;
+  }
+
+  .method-description p:last-child {
+    margin-bottom: 0;
+  }
+
+  .expand-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--color-link);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 20px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+  }
+
+  .method-card:hover .expand-indicator {
+    opacity: 1;
+    color: var(--color-link-hover);
+  }
+
+  .expand-icon {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: transform 0.3s ease;
+  }
+
+  .method-card:hover .expand-icon {
+    transform: scale(1.2);
+  }
+
+  /* Method specific styles */
+  .method-card.hierarchy .method-icon {
+    background: linear-gradient(135deg, #66FCF1, #45A29E);
+  }
+
+  .method-card.binary .method-icon {
+    background: linear-gradient(135deg, #8EE4AF, #5CDB95);
+  }
+
+  .method-card.expert .method-icon {
+    background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+  }
+
+  .method-card.laplasa .method-icon {
+    background: linear-gradient(135deg, #DDA0DD, #9370DB);
+  }
+
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-content {
+    background: rgba(11, 12, 16, 0.95);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 30px;
+    margin: 5% auto;
+    padding: 40px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 80vh;
+    overflow-y: auto;
+    backdrop-filter: blur(30px);
+    box-shadow:
+      0 40px 80px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(102, 252, 241, 0.1);
+    position: relative;
+    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateY(50px) scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(102, 252, 241, 0.15);
+  }
+
+  .modal-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-accent);
+    margin: 0;
+    flex-grow: 1;
+  }
+
+  .close-button {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 107, 125, 0.1);
+    border: 1px solid rgba(255, 107, 125, 0.3);
+    border-radius: 12px;
+    color: #FF6B7D;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .close-button:hover {
+    background: rgba(255, 107, 125, 0.2);
+    border-color: rgba(255, 107, 125, 0.5);
+    transform: scale(1.1);
+  }
+
+  .modal-body {
+    color: rgba(237, 245, 225, 0.9);
+    line-height: 1.7;
+    font-size: 1.05rem;
+  }
+
+  .modal-body h1 {
+    color: var(--color-link);
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
+
+  .modal-body p {
+    margin-bottom: 20px;
+  }
+
+  .modal-body strong {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .modal-body .table {
+    background: rgba(5, 56, 107, 0.1);
+    border-radius: 15px;
+    overflow: hidden;
+    margin: 25px 0;
+  }
+
+  .modal-body .table th,
+  .modal-body .table td {
+    padding: 15px;
+    border: 1px solid rgba(102, 252, 241, 0.15);
+    text-align: center;
+  }
+
+  .modal-body .table th {
+    background: rgba(102, 252, 241, 0.1);
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .modal-body .table caption {
+    color: var(--color-link);
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+  }
+
+  /* Math formulas styling */
+  .modal-body .math {
+    background: rgba(5, 56, 107, 0.15);
+    padding: 15px;
+    border-radius: 12px;
+    margin: 20px 0;
+    border-left: 3px solid var(--color-accent);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 50px 20px 60px;
+      border-radius: 0 0 30px 30px;
+    }
+
+    .main-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .header-icon {
+      width: 70px;
+      height: 70px;
+      display: block;
+      margin: 0 auto 15px;
+    }
+
+    .methods-grid {
+      grid-template-columns: 1fr;
+      gap: 25px;
+    }
+
+    .method-card {
+      padding: 28px 25px;
+    }
+
+    .modal-content {
+      margin: 10% auto;
+      padding: 30px 25px;
+      width: 95%;
+    }
+
+    .modal-title {
+      font-size: 1.6rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .methods-container {
+      padding: 0 15px;
+    }
+
+    .method-card {
+      padding: 25px 20px;
+      border-radius: 25px;
+    }
+
+    .method-title {
+      font-size: 1.2rem;
+    }
+
+    .modal-content {
+      padding: 25px 20px;
+      border-radius: 25px;
+    }
+  }
 </style>
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Довідка</b></h1>
-    <img src="{{ url_for('static', filename='img/documentation.png') }}" alt="Info" width="6%" style="margin-bottom: 41px">
+
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="main-title">Довідка</h1>
+    <img src="{{ url_for('static', filename='img/documentation.png') }}" alt="Info" class="header-icon">
+    <p class="subtitle">Методи прийняття рішень та їх застосування</p>
+  </div>
 </div>
-<br><br>
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-4" style="width:30%">
-            <h2 onclick="showDescription(1)" class="blue-text method-name" style="color: #45A29E">Метод Аналізу
-                Ієрархій</h2>
-            <div id="description-1" class="method-description" style="display:none">
-                <h1 class="blue-text" style="color: #8EE4AF">Метод Аналізу Ієрархій</h1>
-                <p class="info-text">
-                    Метод аналізу ієрархій (МАІ) – це структурований підхід до ухвалення рішень, що ґрунтується на
-                    декомпозиції складних завдань на простіші елементи. У процесі МАІ виявляються ключові аспекти
-                    проблеми, визначається їхня важливість і встановлюються ієрархічні відносини між ними.
-                </p>
-                <p class="info-text">
-                    Цей метод включає побудову ієрархічної структури з рівнями цілей, критеріїв і альтернативних рішень.
-                    Порівняння критеріїв і оцінку альтернатив проводять із використанням матриці парних порівнянь, а
-                    потім розраховують вагові коефіцієнти для кожного рівня ієрархії. Вибір оптимальної альтернативи та
-                    аналіз результатів завершують процес ухвалення рішення.
-                </p>
-                <p class="info-text">
-                    <strong>Формула для оцінки компонент власного вектора:</strong>
-                    <br>
-                    \[V_i = \sqrt[m]{\prod_{j=1}^{m} k_{ij}}, \quad i=1,\ldots,m, \quad j=1,\ldots,m\]
-                </p>
-                <p class="info-text">
-                    <strong>Нормалізовані оцінки вектора пріоритету кожного критерію обчислюються за наступною
-                        формулою:</strong>
-                    <br>
-                    \[ P_i = \frac{V_i}{\sum_{i=1}^{m} V_i}, \quad i=1,\ldots,m \]
-                </p>
-                <p class="info-text">
-                    \[ \lambda_{\text{max}} = \sum M_j P_j \]
-                </p>
-                <p class="info-text">
-                    <strong>Відношення узгодженості та індекс узгодженості розраховуються за наступними
-                        формулами:</strong>
-                    <br>
-                    \[ ІУ = \frac{\lambda_{\text{max}} - n}{n-1} \]
-                    <br>
-                    \[ ВУ = \frac{ІУ}{ВІ} \]
-                </p>
-                <p class="info-text">
-                    Де \( \lambda_{\text{max}} \) - це максимальне власне значення, \( ІУ \) - індекс узгодженості, \(
-                    ВУ \) - відношення узгодженості, а \( ВІ \) - випадковий індекс.
-                </p>
-                <table class="table table-bordered">
-                    <caption class="info-text" style="font-size:16px">Таблиця – Індекси рандомізації</caption>
-                    <tr class="text-white" align="center">
-                        <th>n</th>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                        <td>7</td>
-                        <td>8</td>
-                        <td>9</td>
-                        <td>10</td>
-                    </tr>
-                    <tr class="text-white" align="center">
-                        <th>Індекс рандомізації</th>
-                        <td>0</td>
-                        <td>0.58</td>
-                        <td>0.90</td>
-                        <td>1.12</td>
-                        <td>1.24</td>
-                        <td>1.32</td>
-                        <td>1.41</td>
-                        <td>1.45</td>
-                        <td>1.49</td>
-                    </tr>
-                </table>
-                <p class="info-text">
-                    В загальному випадку індекс рандомізації можливо наближено знайти за формулою:
-                    <br>
-                    \[ВІ = \frac{1.98(n-2)}{n}\]
-                </p>
-                <br><br><br>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <h2 onclick="showDescription(2)" class="blue-text method-name" style="color: #45A29E">Метод Бінарних
-                Відношень</h2>
-            <div id="description-2" class="method-description" style="display:none;">
-                <h1 class="blue-text" style="color: #8EE4AF">Метод Бінарних Відношень</h1>
-                <p class="info-text">
-                    Метод бінарних відношень є ефективним інструментом для ухвалення рішень в умовах визначеності, що
-                    ґрунтується на порівнянні пар альтернатив. Цей метод дає змогу визначити, якому об’єкту надається
-                    перевага в парі з іншим об’єктом.
-                </p>
-                <p class="info-text">
-                    Основна ідея методу полягає в побудові матриці попарних порівнянь, де кожен елемент матриці набуває
-                    значення 1, 0 або -1, яке позначає перевагу одного об’єкта над іншим, рівність або зворотну
-                    перевагу. Після побудови матриці відбувається визначення ваг об’єктів із використанням методу
-                    строкових сум, що дає змогу встановити загальний порядок альтернатив.
-                </p>
-                <p class="info-text">
-                    Формули методу бінарних відношень:
-                </p>
-                <p class="info-text">
-                    <strong>Значення елементу матриці R для пари альтернатив Ai і Aj:</strong>
-                    <br>
-                    \[ R_{i,j} = \begin{cases} 1, & \text{якщо } A_i \text{ краще } A_j \\ 0, & \text{якщо } A_i \text{
-                    і } A_j \text{ рівні за значенням} \\ -1, & \text{якщо } A_j \text{ краще } A_i \end{cases} \]
-                </p>
-                <p class="info-text">
-                    <strong>Вага об’єкта Aj:</strong>
-                    <br>
-                    \[ W_j = \sum_{i=1}^{n} R_{i,j} \]
-                </p>
-                <br><br><br>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <h2 onclick="showDescription(3)" class="blue-text method-name" style="color: #45A29E">Метод Експертних
-                Оцінок</h2>
-            <div id="description-3" class="method-description" style="display:none;">
-                <h1 class="blue-text" style="color: #8EE4AF">Метод Експертних Оцінок</h1>
-                <p class="info-text">
-                    Метод Делфі – це систематичний підхід до ухвалення рішень, який ґрунтується на експертних оцінках і
-                    повторному аналізі.
-                </p>
-                <p class="info-text">
-                    Цей метод включає кілька етапів: уточнення проблем, формування групи експертів, розробка анкет для
-                    опитування, індивідуальне анкетне опитування, математичне опрацювання результатів і уточнення
-                    оцінок. Для формування стійкої узагальненої оцінки етапи опитування можуть проводитися кілька разів.
-                </p>
-                <p class="info-text">
-                    Кожен експерт оцінює свою компетентність і знайомство з проблемою, що враховується під час
-                    розрахунку узагальненої оцінки значущості факторів. Після розрахунку узагальнених оцінок факторів їх
-                    можна проранжувати для визначення важливості кожного фактора в ухваленні рішень.
-                </p>
-                <p class="info-text">
-                    <strong>Формула для узагальненої оцінки важливості чинника:</strong>
-                    <br>
-                    \[ M_j = \frac{\sum_{j=1}^{m} c_{ij}}{m_j} \]
-                </p>
-                <p class="info-text">
-                    <strong>З урахуванням коефіцієнта компетентності:</strong>
-                    <br>
-                    \[ M_j = \frac{\sum_{j=1}^{m} K_k c_{ij}}{m_j} \]
-                </p>
-                <p class="info-text">
-                    Для визначення відносних коефіцієнтів значимості часткових критеріїв, можна використовувати просту
-                    функцію ранжирування:
-                    <br>
-                    \[ \lambda_i = 2 \left[ \left( \frac{n+1-R_i}{n(n+1)} \right) \right] \] \[ \sum_{i} \lambda_i =
-                    1.00 \]
-                </p>
-                <br><br><br>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <h2 onclick="showDescription(4)" class="blue-text method-name" style="color: #45A29E">Критерій Лапласа</h2>
-            <div id="description-4" class="method-description" style="display:none;">
-                <h1 class="blue-text" style="color: #8EE4AF">Критерій Лапласа</h1>
-            </div>
-        </div>
+<div class="methods-container">
+  <div class="methods-grid">
+    <!-- Метод Аналізу Ієрархій -->
+    <div class="method-card hierarchy" onclick="openModal('modal-1')">
+      <div class="method-header">
+        <div class="method-icon">🏗️</div>
+        <h2 class="method-title">Метод Аналізу Ієрархій</h2>
+      </div>
+      <div class="method-description">
+        <p>Структурований підхід до ухвалення рішень, що ґрунтується на декомпозиції складних завдань на простіші елементи.</p>
+        <p>Включає побудову ієрархічної структури з рівнями цілей, критеріїв і альтернативних рішень.</p>
+      </div>
+      <div class="expand-indicator">
+        <span>Детальніше</span>
+        <div class="expand-icon">→</div>
+      </div>
     </div>
+
+    <!-- Метод Бінарних Відношень -->
+    <div class="method-card binary" onclick="openModal('modal-2')">
+      <div class="method-header">
+        <div class="method-icon">⚖️</div>
+        <h2 class="method-title">Метод Бінарних Відношень</h2>
+      </div>
+      <div class="method-description">
+        <p>Ефективний інструмент для ухвалення рішень в умовах визначеності, що ґрунтується на порівнянні пар альтернатив.</p>
+        <p>Дає змогу визначити, якому об'єкту надається перевага в парі з іншим об'єктом.</p>
+      </div>
+      <div class="expand-indicator">
+        <span>Детальніше</span>
+        <div class="expand-icon">→</div>
+      </div>
+    </div>
+
+    <!-- Метод Експертних Оцінок -->
+    <div class="method-card expert" onclick="openModal('modal-3')">
+      <div class="method-header">
+        <div class="method-icon">👥</div>
+        <h2 class="method-title">Метод Експертних Оцінок</h2>
+      </div>
+      <div class="method-description">
+        <p>Систематичний підхід до ухвалення рішень, який ґрунтується на експертних оцінках і повторному аналізі.</p>
+        <p>Включає формування групи експертів, розробка анкет для опитування та математичне опрацювання результатів.</p>
+      </div>
+      <div class="expand-indicator">
+        <span>Детальніше</span>
+        <div class="expand-icon">→</div>
+      </div>
+    </div>
+
+    <!-- Критерій Лапласа -->
+    <div class="method-card laplasa" onclick="openModal('modal-4')">
+      <div class="method-header">
+        <div class="method-icon">🎯</div>
+        <h2 class="method-title">Критерій Лапласа</h2>
+      </div>
+      <div class="method-description">
+        <p>Метод прийняття рішень в умовах невизначеності, заснований на принципі недостатньої підстави.</p>
+        <p>Використовується коли відсутня інформація про ймовірності настання різних станів природи.</p>
+      </div>
+      <div class="expand-indicator">
+        <span>Детальніше</span>
+        <div class="expand-icon">→</div>
+      </div>
+    </div>
+  </div>
 </div>
-<br><br>
 
-<!-- Спливаючий блок з описом методу -->
-<div class="container" style="width:80%">
-    <div class="method-description-popup" id="method-description-popup" style="display:none;">
-        <div class="method-description-content" id="method-description-content">
-            <!-- Сюди підставлятиметься опис методу -->
-        </div>
+<!-- Модальні вікна -->
+<!-- Modal 1: Метод Аналізу Ієрархій -->
+<div id="modal-1" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="method-icon">🏗️</div>
+      <h1 class="modal-title">Метод Аналізу Ієрархій</h1>
+      <div class="close-button" onclick="closeModal('modal-1')">&times;</div>
     </div>
+    <div class="modal-body">
+      <p>
+        Метод аналізу ієрархій (МАІ) – це структурований підхід до ухвалення рішень, що ґрунтується на
+        декомпозиції складних завдань на простіші елементи. У процесі МАІ виявляються ключові аспекти
+        проблеми, визначається їхня важливість і встановлюються ієрархічні відносини між ними.
+      </p>
+      <p>
+        Цей метод включає побудову ієрархічної структури з рівнями цілей, критеріїв і альтернативних рішень.
+        Порівняння критеріїв і оцінку альтернатив проводять із використанням матриці парних порівнянь, а
+        потім розраховують вагові коефіцієнти для кожного рівня ієрархії. Вибір оптимальної альтернативи та
+        аналіз результатів завершують процес ухвалення рішення.
+      </p>
+
+      <div class="math">
+        <p><strong>Формула для оцінки компонент власного вектора:</strong></p>
+        <p>\[V_i = \sqrt[m]{\prod_{j=1}^{m} k_{ij}}, \quad i=1,\ldots,m, \quad j=1,\ldots,m\]</p>
+      </div>
+
+      <div class="math">
+        <p><strong>Нормалізовані оцінки вектора пріоритету кожного критерію:</strong></p>
+        <p>\[ P_i = \frac{V_i}{\sum_{i=1}^{m} V_i}, \quad i=1,\ldots,m \]</p>
+        <p>\[ \lambda_{\text{max}} = \sum M_j P_j \]</p>
+      </div>
+
+      <div class="math">
+        <p><strong>Відношення узгодженості та індекс узгодженості:</strong></p>
+        <p>\[ ІУ = \frac{\lambda_{\text{max}} - n}{n-1} \]</p>
+        <p>\[ ВУ = \frac{ІУ}{ВІ} \]</p>
+        <p>Де \( \lambda_{\text{max}} \) - це максимальне власне значення, \( ІУ \) - індекс узгодженості, \( ВУ \) - відношення узгодженості, а \( ВІ \) - випадковий індекс.</p>
+      </div>
+
+      <table class="table table-bordered">
+        <caption>Таблиця – Індекси рандомізації</caption>
+        <tr>
+          <th>n</th>
+          <td style="color: white;">2</td>
+          <td style="color: white;">3</td>
+          <td style="color: white;">4</td>
+          <td style="color: white;">5</td>
+          <td style="color: white;">6</td>
+          <td style="color: white;">7</td>
+          <td style="color: white;">8</td>
+          <td style="color: white;">9</td>
+          <td style="color: white;">10</td>
+        </tr>
+        <tr>
+          <th>Індекс рандомізації</th>
+          <td style="color: white;">0</td>
+          <td style="color: white;">0.58</td>
+          <td style="color: white;">0.90</td>
+          <td style="color: white;">1.12</td>
+          <td style="color: white;">1.24</td>
+          <td style="color: white;">1.32</td>
+          <td style="color: white;">1.41</td>
+          <td style="color: white;">1.45</td>
+          <td style="color: white;">1.49</td>
+        </tr>
+      </table>
+
+      <div class="math">
+        <p>В загальному випадку індекс рандомізації можливо наближено знайти за формулою:</p>
+        <p>\[ВІ = \frac{1.98(n-2)}{n}\]</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Метод Бінарних Відношень -->
+<div id="modal-2" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="method-icon">⚖️</div>
+      <h1 class="modal-title">Метод Бінарних Відношень</h1>
+      <div class="close-button" onclick="closeModal('modal-2')">&times;</div>
+    </div>
+    <div class="modal-body">
+      <p>
+        Метод бінарних відношень є ефективним інструментом для ухвалення рішень в умовах визначеності, що
+        ґрунтується на порівнянні пар альтернатив. Цей метод дає змогу визначити, якому об'єкту надається
+        перевага в парі з іншим об'єктом.
+      </p>
+      <p>
+        Основна ідея методу полягає в побудові матриці попарних порівнянь, де кожен елемент матриці набуває
+        значення 1, 0 або -1, яке позначає перевагу одного об'єкта над іншим, рівність або зворотну
+        перевагу. Після побудови матриці відбувається визначення ваг об'єктів із використанням методу
+        строкових сум, що дає змогу встановити загальний порядок альтернатив.
+      </p>
+
+      <div class="math">
+        <p><strong>Значення елементу матриці R для пари альтернатив Ai і Aj:</strong></p>
+        <p>\[ R_{i,j} = \begin{cases} 1, & \text{якщо } A_i \text{ краще } A_j \\ 0, & \text{якщо } A_i \text{ і } A_j \text{ рівні за значенням} \\ -1, & \text{якщо } A_j \text{ краще } A_i \end{cases} \]</p>
+      </div>
+
+      <div class="math">
+        <p><strong>Вага об'єкта Aj:</strong></p>
+        <p>\[ W_j = \sum_{i=1}^{n} R_{i,j} \]</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3: Метод Експертних Оцінок -->
+<div id="modal-3" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="method-icon">👥</div>
+      <h1 class="modal-title">Метод Експертних Оцінок</h1>
+      <div class="close-button" onclick="closeModal('modal-3')">&times;</div>
+    </div>
+    <div class="modal-body">
+      <p>
+        Метод Делфі – це систематичний підхід до ухвалення рішень, який ґрунтується на експертних оцінках і
+        повторному аналізі.
+      </p>
+      <p>
+        Цей метод включає кілька етапів: уточнення проблем, формування групи експертів, розробка анкет для
+        опитування, індивідуальне анкетне опитування, математичне опрацювання результатів і уточнення
+        оцінок. Для формування стійкої узагальненої оцінки етапи опитування можуть проводитися кілька разів.
+      </p>
+      <p>
+        Кожен експерт оцінює свою компетентність і знайомство з проблемою, що враховується під час
+        розрахунку узагальненої оцінки значущості факторів. Після розрахунку узагальнених оцінок факторів їх
+        можна проранжувати для визначення важливості кожного фактора в ухваленні рішень.
+      </p>
+
+      <div class="math">
+        <p><strong>Формула для узагальненої оцінки важливості чинника:</strong></p>
+        <p>\[ M_j = \frac{\sum_{j=1}^{m} c_{ij}}{m_j} \]</p>
+      </div>
+
+      <div class="math">
+        <p><strong>З урахуванням коефіцієнта компетентності:</strong></p>
+        <p>\[ M_j = \frac{\sum_{j=1}^{m} K_k c_{ij}}{m_j} \]</p>
+      </div>
+
+      <div class="math">
+        <p>Для визначення відносних коефіцієнтів значимості часткових критеріїв, можна використовувати просту функцію ранжирування:</p>
+        <p>\[ \lambda_i = 2 \left[ \left( \frac{n+1-R_i}{n(n+1)} \right) \right] \]</p>
+        <p>\[ \sum_{i} \lambda_i = 1.00 \]</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 4: Критерій Лапласа -->
+<div id="modal-4" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="method-icon">🎯</div>
+      <h1 class="modal-title">Критерій Лапласа</h1>
+      <div class="close-button" onclick="closeModal('modal-4')">&times;</div>
+    </div>
+    <div class="modal-body">
+      <p>
+        Критерій Лапласа (принцип недостатньої підстави) використовується для прийняття рішень в умовах невизначеності,
+        коли відсутня інформація про ймовірності настання різних станів природи.
+      </p>
+      <p>
+        Основна ідея методу полягає в тому, що за відсутності інформації про ймовірності станів природи
+        всі стани вважаються рівноімовірними. Оптимальною вважається альтернатива, що має найбільше
+        середнє арифметичне значення результатів за всіма можливими станами природи.
+      </p>
+
+      <div class="math">
+        <p><strong>Формула критерію Лапласа:</strong></p>
+        <p>\[ W_i = \frac{1}{n} \sum_{j=1}^{n} a_{ij} \]</p>
+        <p>де \( W_i \) - оцінка i-ої альтернативи, \( a_{ij} \) - результат i-ої альтернативи при j-му стані природи, \( n \) - кількість станів природи.</p>
+      </div>
+
+      <div class="math">
+        <p><strong>Оптимальна альтернатива:</strong></p>
+        <p>\[ A^* = \arg\max_i W_i \]</p>
+      </div>
+
+      <p>
+        Критерій Лапласа найбільш доцільно застосовувати у випадках, коли:
+      </p>
+      <ul>
+        <li>Відсутні статистичні дані про ймовірності станів природи</li>
+        <li>Всі стани природи можна вважати рівноімовірними</li>
+        <li>Потрібно прийняти рішення в умовах повної невизначеності</li>
+        <li>Особа, що приймає рішення, схильна до нейтрального ризику</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <script>
-    function showDescription(methodNumber) {
-        // Отримуємо опис методу
-        var description = document.getElementById("description-" + methodNumber).innerHTML;
-        // Підставляємо опис до спливаючого блоку
-        document.getElementById("method-description-content").innerHTML = description;
-        // Відображаємо спливаюче блок
-        document.getElementById("method-description-popup").style.display = "block";
+// MathJax Configuration
+window.MathJax = {
+  tex: {
+    inlineMath: [[', '], ['\\(', '\\)']],
+    displayMath: [['$', '$'], ['\\[', '\\]']]
+  },
+  svg: {
+    fontCache: 'global'
+  }
+};
+
+// Load MathJax
+(function () {
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js';
+  script.async = true;
+  document.head.appendChild(script);
+})();
+
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  // Re-render MathJax for the modal content
+  setTimeout(() => {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([modal]).catch(function (err) {
+        console.log(err.message);
+      });
     }
+  }, 100);
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach(modal => {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+  });
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+      if (modal.style.display === 'block') {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+    });
+  }
+});
+
+// Initialize MathJax when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise().catch(function (err) {
+        console.log(err.message);
+      });
+    }
+  }, 500);
+});
 </script>
+
 {% endblock %}

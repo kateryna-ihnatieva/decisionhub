@@ -6,277 +6,991 @@
 
 {% block hierarchy %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
     --color-accent-dark: #05386B;
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
+    --color-success: #4CAF50;
+    --color-warning: #FF9800;
+    --color-error: #F44336;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 50px 20px 70px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(142, 228, 175, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 35px 35px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 35% 45%, rgba(102, 252, 241, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 65% 55%, rgba(142, 228, 175, 0.04) 0%, transparent 40%);
+    pointer-events: none;
+    animation: gentle-pulse 8s ease-in-out infinite;
+  }
+
+  @keyframes gentle-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 12px rgba(102, 252, 241, 0.4);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    letter-spacing: -0.01em;
+    text-shadow:
+      0 0 25px rgba(102, 252, 241, 0.3),
+      0 4px 10px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 20px;
+  }
+
+  .method-icon {
+    width: 70px;
+    height: 70px;
+    filter:
+      drop-shadow(0 0 15px rgba(102, 252, 241, 0.4))
+      drop-shadow(0 6px 15px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 8px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.1) rotate(-3deg);
+    filter:
+      drop-shadow(0 0 20px rgba(102, 252, 241, 0.6))
+      drop-shadow(0 12px 20px rgba(0, 0, 0, 0.4));
+  }
+
+  .step-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-top: 15px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(142, 228, 175, 0.1);
+  }
+
+  .step-indicator::before {
+    content: '🏆';
+    font-size: 1rem;
+    filter: drop-shadow(0 0 6px rgba(142, 228, 175, 0.4));
+  }
+
+  .main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .results-container {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 20px;
+    padding: 35px;
+    backdrop-filter: blur(15px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
+  }
+
+  .results-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.5),
+      rgba(142, 228, 175, 0.5),
+      transparent);
+  }
+
+  .section-title {
+    font-size: 1.6rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
   }
 
+  .section-title::before {
+    content: '📊';
+    font-size: 1.7rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
+  .criteria-section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin: 40px 0 25px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+
+  .criteria-section-title::before {
+    content: '🎯';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(142, 228, 175, 0.4));
+  }
+
+  .criteria-section-title::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg,
+      rgba(142, 228, 175, 0.3),
+      transparent);
+    margin-left: 15px;
+  }
+
+  .error-alert {
+    background: rgba(244, 67, 54, 0.15);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    color: #FFCDD2;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+  }
+
+  .error-alert::before {
+    content: '⚠️';
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 8px rgba(244, 67, 54, 0.4));
+  }
+
+  .modern-table-wrapper {
+    overflow-x: auto;
+    border-radius: 15px;
+    background: rgba(5, 56, 107, 0.08);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    backdrop-filter: blur(5px);
+    margin-bottom: 25px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 700px;
+  }
+
+  .modern-table thead th {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.2),
+      rgba(142, 228, 175, 0.1));
+    color: var(--color-text);
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 18px 15px;
+    text-align: center;
+    border-bottom: 2px solid rgba(102, 252, 241, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .modern-table thead th:first-child {
+    border-top-left-radius: 15px;
+    background: linear-gradient(135deg,
+      rgba(5, 56, 107, 0.3),
+      rgba(102, 252, 241, 0.1));
+  }
+
+  .modern-table thead th:last-child {
+    border-top-right-radius: 15px;
+  }
+
+  .modern-table tbody tr {
+    transition: all 0.3s ease;
+  }
+
+  .modern-table tbody tr:hover {
+    background: rgba(102, 252, 241, 0.03);
+  }
+
+  .modern-table tbody th {
+    background: linear-gradient(90deg,
+      rgba(5, 56, 107, 0.2),
+      rgba(102, 252, 241, 0.1));
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 15px;
+    text-align: left;
+    border-right: 1px solid rgba(102, 252, 241, 0.2);
+    border-bottom: 1px solid rgba(102, 252, 241, 0.1);
+    position: sticky;
+    left: 0;
+    z-index: 5;
+  }
+
+  .modern-table tbody td {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(102, 252, 241, 0.1);
+    border-right: 1px solid rgba(102, 252, 241, 0.1);
+    color: var(--color-text);
+    font-weight: 500;
+  }
+
+  .modern-table tbody tr:last-child th {
+    border-bottom-left-radius: 15px;
+  }
+
+  .modern-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 15px;
+  }
+
+  .sum-row {
+    background: rgba(5, 56, 107, 0.15) !important;
+    font-weight: 600;
+  }
+
+  .sum-row th,
+  .sum-row td {
+    background: rgba(5, 56, 107, 0.15) !important;
+    font-weight: 600;
+    color: var(--color-accent) !important;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 25px 0;
+  }
+
+  .stat-card {
+    background: rgba(5, 56, 107, 0.12);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.4),
+      transparent);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: rgba(102, 252, 241, 0.3);
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: rgba(237, 245, 225, 0.8);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 8px;
+  }
+
+  .conclusion {
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 25px 0;
+    backdrop-filter: blur(8px);
+    position: relative;
+  }
+
+  .conclusion::before {
+    content: '✅';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 8px rgba(142, 228, 175, 0.4));
+  }
+
+  .conclusion-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-left: 40px;
+    line-height: 1.4;
+  }
+
+  .final-conclusion {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.1),
+      rgba(142, 228, 175, 0.1));
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 35px 0;
+    backdrop-filter: blur(10px);
+    position: relative;
+    text-align: center;
+  }
+
+  .final-conclusion::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+  }
+
+  .final-conclusion-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-shadow: 0 0 10px rgba(102, 252, 241, 0.3);
+    margin-bottom: 10px;
+  }
+
+  .task-description {
+    background: rgba(5, 56, 107, 0.12);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 25px 0;
+    backdrop-filter: blur(8px);
+  }
+
+  .task-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .task-label::before {
+    content: '📝';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(142, 228, 175, 0.4));
+  }
+
+  .task-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(237, 245, 225, 0.9);
+  }
+
+  .chart-container {
+    background: rgba(5, 56, 107, 0.08);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 15px;
+    padding: 25px;
+    margin: 30px 0;
+    backdrop-filter: blur(5px);
+    text-align: center;
+  }
+
+  .hierarchy-container {
+    background: rgba(5, 56, 107, 0.08);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 30px 0;
+    backdrop-filter: blur(5px);
+    text-align: center;
+  }
+
+  .hierarchy-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .hierarchy-title::before {
+    content: '🌳';
+    font-size: 1.6rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
+  .hierarchy-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .hierarchy-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Floating decorative elements */
+  .results-container::after {
+    content: '';
+    position: absolute;
+    top: 8%;
+    right: 4%;
+    width: 25px;
+    height: 25px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.06), rgba(142, 228, 175, 0.06));
+    border-radius: 50%;
+    animation: float-gentle 5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 35px 15px 50px;
+      border-radius: 0 0 20px 20px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 12px;
+    }
+
+    .method-icon {
+      width: 55px;
+      height: 55px;
+      display: block;
+      margin: 0 auto 12px;
+    }
+
+    .results-container {
+      margin: 0 10px;
+      padding: 25px 15px;
+      border-radius: 15px;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .modern-table {
+      min-width: 600px;
+    }
+
+    .modern-table thead th,
+    .modern-table tbody th,
+    .modern-table tbody td {
+      padding: 12px 8px;
+      font-size: 0.85rem;
+    }
+
+    .final-conclusion {
+      padding: 20px;
+    }
+
+    .final-conclusion-text {
+      font-size: 1.2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 5px;
+    }
+
+    .results-container {
+      padding: 20px 10px;
+    }
+
+    .modern-table {
+      min-width: 500px;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+    }
+
+    .criteria-section-title {
+      font-size: 1.2rem;
+    }
+
+    .final-conclusion-text {
+      font-size: 1.1rem;
+    }
+  }
 </style>
 
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу
-        Ієрархій</b></h1>
-    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarcy" width="6%"
-         style="margin-bottom: 41px">
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Аналізу Ієрархій</h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarchy" class="method-icon">
+    <div class="step-indicator">Результати аналізу</div>
+  </div>
 </div>
-<br><br>
-<div>
 
-    <div class="center">
-        {% if error_krit %}
-        <div class="alert alert-danger alert-style" role="alert">
-            <i>{{ error_krit }}</i>
-        </div>
-        <br>
-        {% elif error %}
-        <div class="alert alert-danger alert-style" role="alert">
-            <i>{{ error }}</i>
-        </div>
-        <br>
-        {% endif %}
-        <form method="POST">
-            <h3 class="result-text" align="center">Матриця парних порівнянь для критеріїв</h3>
-            <br>
-            <div>
-                <table class="table table-bordered align-middle">
-                    <thead align="center" class="table-back text-white">
-                    <tr>
-                        <th></th>
-                        {% for name in name_criteria %}
-                        <th>{{ name }}</th>
-                        {% endfor %}
-                        <th>Оцінки компонент власного вектора</th>
-                        <th>Нормалізовані оцінки вектора пріоритету</th>
-                    </tr>
-                    </thead>
+<div class="main-container">
+  <div class="results-container">
 
-                    <tbody>
-                    {% for i in range(num_criteria) %}
-                    <tr>
-                        <th style="background: #222629" class="text-white">{{ name_criteria[i] }}</th>
-                        {% for j in range(num_criteria) %}
-                        <td class="text-white" align="center">{{ matrix_krit[i][j] }}</td>
-                        {% endfor %}
-                        <td class="text-white" align="center">{{ components_eigenvector[i] | round(3) }}</td>
-                        <td class="text-white" align="center">{{ normalized_eigenvector[i] | round(3) }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr>
-                        <th colspan="{{ num_criteria+1 }}" style="background: #222629" class="text-white">Сума</th>
-                        <td class="text-white" align="center">{{ components_eigenvector | sum | round(3) }}</td>
-                        <td class="text-white" align="center">{{ normalized_eigenvector | sum | round | int }}</td>
-                    </tr>
-                    </tbody>
+    {% if error_krit %}
+    <div class="error-alert">
+      {{ error_krit }}
+    </div>
+    {% elif error %}
+    <div class="error-alert">
+      {{ error }}
+    </div>
+    {% endif %}
 
-                </table>
+    <form method="POST">
+      <div class="section-title">Матриця парних порівнянь для критеріїв</div>
 
-            </div>
-
-
-            <div>
-
-                <table class="table table-bordered align-middle">
-
-                    <tbody>
-                    <tr>
-                        <th style="background: #222629" class="text-white">Сума по стовпцях</th>
-                        {% for i in range(num_criteria) %}
-                        <td class="text-white" align="center">{{ sum_col[i] | round(3) }}</td>
-                        {% endfor %}
-                        <th style="background: #222629" class="text-white">Разом (Lmax)</th>
-                    </tr>
-                    <tr>
-                        <th style="background: #222629" class="text-white">Добуток додатку по стовпцях і нормалізованої
-                            оцінки вектора
-                            пріоритету
-                        </th>
-                        {% for i in range(num_criteria) %}
-                        <td class="text-white" align="center">{{ prod_col[i] | round(3) }}</td>
-                        {% endfor %}
-                        <td class="text-white" align="center">{{ l_max[0] | round(3) }}</td>
-                    </tr>
-                    </tbody>
-
-                </table>
-
-            </div>
-
-            <p class="white-text">Індекс узгодженості = {{ index_consistency[0] | round(3) }}</p>
-            <p class="white-text">Відношення узгодженості = {{ relation_consistency[0] | round(3) }}%</p>
-            <p class="blue-text" style="color: #45A29E; font-size: 20px;"><b>Висновок: {{ ranj[0] }}</b></p>
-            <br>
-
-        </form>
-
-        <form method="POST">
-            <h3 class="result-text" align="center">Матриця парних порівнянь для альтернатив</h3>
-
-            {% for num in range(num_criteria) %}
-
-            <p class="green-text">Критерій "{{name_criteria[num]}}"</p>
-            <div>
-                <table class="table table-bordered align-middle">
-
-                    <thead align="center" class="table-back text-white">
-                    <tr>
-                        <th></th>
-                        {% for name in name_alternatives %}
-                        <th>{{ name }}</th>
-                        {% endfor %}
-                        <th>Оцінки компонент власного вектора</th>
-                        <th>Нормалізовані оцінки вектора пріоритету</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {% for i in range(name_alternatives | length) %}
-                    <tr>
-                        <th style="background: #222629" class="text-white">{{ name_alternatives[i] }}</th>
-                        {% for j in range(name_alternatives | length) %}
-                        <td class="text-white" align="center">{{ matrix_alt[num][i][j] }}</td>
-                        {% endfor %}
-                        <td class="text-white" align="center">{{ components_eigenvector_alt[num][i] | round(3) }}</td>
-                        <td class="text-white" align="center">{{ normalized_eigenvector_alt[num][i] | round(3) }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr>
-                        <th colspan="{{ num_alternatives+1 }}" style="background: #222629" class="text-white">Сума</th>
-                        <td class="text-white" align="center">{{ components_eigenvector_alt[num] | sum | round(3) }}
-                        </td>
-                        <td class="text-white" align="center">{{ normalized_eigenvector_alt[num] | sum | round | int
-                            }}
-                        </td>
-                    </tr>
-                    </tbody>
-
-                </table>
-            </div>
-
-            <div>
-                <table class="table table-bordered align-middle">
-
-                    <tbody>
-                    <tr>
-                        <th style="background: #222629" class="text-white">Сума по стовпцях</th>
-                        {% for i in range(num_alternatives) %}
-                        <td class="text-white" align="center">{{ sum_col_alt[num][i] | round(3) }}</td>
-                        {% endfor %}
-                        <th style="background: #222629" class="text-white">Разом (Lmax)</th>
-                    </tr>
-                    <tr>
-                        <th style="background: #222629" class="text-white">Добуток додатку по стовпцях і нормалізованої
-                            оцінки вектора
-                            пріоритету
-                        </th>
-                        {% for i in range(num_alternatives) %}
-                        <td class="text-white" align="center">{{ prod_col_alt[num][i] | round(3) }}</td>
-                        {% endfor %}
-                        <td class="text-white" align="center">{{ l_max_alt[num][0] | round(3) }}</td>
-                    </tr>
-                    </tbody>
-
-                </table>
-            </div>
-
-            <p class="white-text">Індекс узгодженості = {{ index_consistency_alt[num][0] | round(3) }}</p>
-            <p class="white-text">Відношення узгодженості = {{ relation_consistency_alt[num][0] | round(3) }}%</p>
-            <p class="blue-text" style="color: #45A29E; font-size: 20px;"><b>Висновок по критерію "{{ name_criteria[num]
-                }}": {{ ranj_alt[num][0] }}</b></p>
-            <br>
+      <div class="modern-table-wrapper">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th></th>
+              {% for name in name_criteria %}
+              <th>{{ name }}</th>
+              {% endfor %}
+              <th>Оцінки компонент власного вектора</th>
+              <th>Нормалізовані оцінки вектора пріоритету</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(num_criteria) %}
+            <tr>
+              <th>{{ name_criteria[i] }}</th>
+              {% for j in range(num_criteria) %}
+              <td>{{ matrix_krit[i][j] }}</td>
+              {% endfor %}
+              <td>{{ components_eigenvector[i] | round(3) }}</td>
+              <td>{{ normalized_eigenvector[i] | round(3) }}</td>
+            </tr>
             {% endfor %}
-            <br>
+            <tr class="sum-row">
+              <th colspan="{{ num_criteria+1 }}">Сума</th>
+              <td>{{ components_eigenvector | sum | round(3) }}</td>
+              <td>{{ normalized_eigenvector | sum | round | int }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        </form>
+      <div class="modern-table-wrapper">
+        <table class="modern-table">
+          <tbody>
+            <tr>
+              <th>Сума по стовпцях</th>
+              {% for i in range(num_criteria) %}
+              <td>{{ sum_col[i] | round(3) }}</td>
+              {% endfor %}
+              <th>Разом (Lmax)</th>
+            </tr>
+            <tr>
+              <th>Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету</th>
+              {% for i in range(num_criteria) %}
+              <td>{{ prod_col[i] | round(3) }}</td>
+              {% endfor %}
+              <td>{{ l_max[0] | round(3) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <h3 class="result-text" align="center">Вектор глобальних пріоритетів</h3>
-        <br>
-        <div>
-
-            <table class="table table-bordered align-middle">
-                <thead align="center">
-                <tr class="table-back text-white">
-                    <th rowspan="5" class="align-middle">Альтернативи</th>
-                    <th colspan="{{ num_criteria }}">Критерії</th>
-                    <th rowspan="5" class="align-middle">Глобальні пріоритети
-                    </th>
-                </tr>
-
-                <tr>
-                    {% for i in range(num_criteria) %}
-                    <th class="text-white"><i>{{ name_criteria[i] }}</i></th>
-                    {% endfor %}
-                </tr>
-
-                <tr class="table-back text-white">
-                    <th colspan="{{ num_criteria }}">Чисельне значення
-                        вектору пріоритету
-                    </th>
-                </tr>
-
-                <tr>
-                    {% for i in range(num_criteria) %}
-                    <td class="text-white" align="center">{{ normalized_eigenvector[i] | round(3) }}</td>
-                    {% endfor %}
-                </tr>
-                </thead>
-
-                <tbody>
-                {% for i in range(num_alternatives) %}
-                <tr>
-                    <th class="text-white"><i>{{ name_alternatives[i] }}</i></th>
-                    {% for j in range(normalized_eigenvector_alt | length) %}
-                    <td class="text-white" align="center">{{ normalized_eigenvector_alt[j][i] | round(3) }}</td>
-                    {% endfor %}
-                    <td class="text-white" align="center">{{ global_prior[i] | round(3) }}</td>
-                </tr>
-                {% endfor %}
-                <tr>
-                    <th colspan="{{ num_criteria+1 }}" style="background: #222629" class="text-white">Сума</th>
-                    <td class="text-white" align="center">{{ global_prior | sum | round | int }}</td>
-                </tr>
-                </tbody>
-            </table>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Індекс узгодженості</div>
+          <div class="stat-value">{{ index_consistency[0] | round(3) }}</div>
         </div>
-
-
-        {% if task %}
-        <p class="white-text" style="font-size: 20px;"><b>Задача:</b> {{ task }}</p>
-<!--        {% if gpt_response %}-->
-<!--        <p class="white-text" style="font-size: 20px;"><b>Результат:</b> {{ gpt_response | safe }}</p>-->
-<!--        {% endif %}-->
-        {% endif %}
-
-        <p class="blue-text" style="font-size: 24px;"><b>Висновок: {{ ranj_global[0] }}</b></p>
-        <br>
-
-        {{ global_prior_plot | safe }}
-
-        <div align="center">
-            <br>
-            <h3 class="result-text" align="center">Ієрархічне представлення</h3>
-            <br>
-            <img src="{{ url_for('static', filename='img/hierarchy_tree.png') }}" alt="Hierarchy Tree">
-            <br><br>
+        <div class="stat-card">
+          <div class="stat-label">Відношення узгодженості</div>
+          <div class="stat-value">{{ relation_consistency[0] | round(3) }}%</div>
         </div>
+      </div>
 
+      <div class="conclusion">
+        <div class="conclusion-text">{{ ranj[0] }}</div>
+      </div>
+    </form>
 
+    <form method="POST">
+      <div class="criteria-section-title">Матриці парних порівнянь для альтернатив</div>
+
+      {% for num in range(num_criteria) %}
+      <div class="criteria-section-title">Критерій "{{name_criteria[num]}}"</div>
+
+      <div class="modern-table-wrapper">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th></th>
+              {% for name in name_alternatives %}
+              <th>{{ name }}</th>
+              {% endfor %}
+              <th>Оцінки компонент власного вектора</th>
+              <th>Нормалізовані оцінки вектора пріоритету</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(name_alternatives | length) %}
+            <tr>
+              <th>{{ name_alternatives[i] }}</th>
+              {% for j in range(name_alternatives | length) %}
+              <td>{{ matrix_alt[num][i][j] }}</td>
+              {% endfor %}
+              <td>{{ components_eigenvector_alt[num][i] | round(3) }}</td>
+              <td>{{ normalized_eigenvector_alt[num][i] | round(3) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="sum-row">
+              <th colspan="{{ num_alternatives+1 }}">Сума</th>
+              <td>{{ components_eigenvector_alt[num] | sum | round(3) }}</td>
+              <td>{{ normalized_eigenvector_alt[num] | sum | round | int }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modern-table-wrapper">
+        <table class="modern-table">
+          <tbody>
+            <tr>
+              <th>Сума по стовпцях</th>
+              {% for i in range(num_alternatives) %}
+              <td>{{ sum_col_alt[num][i] | round(3) }}</td>
+              {% endfor %}
+              <th>Разом (Lmax)</th>
+            </tr>
+            <tr>
+              <th>Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету</th>
+              {% for i in range(num_alternatives) %}
+              <td>{{ prod_col_alt[num][i] | round(3) }}</td>
+              {% endfor %}
+              <td>{{ l_max_alt[num][0] | round(3) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Індекс узгодженості</div>
+          <div class="stat-value">{{ index_consistency_alt[num][0] | round(3) }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Відношення узгодженості</div>
+          <div class="stat-value">{{ relation_consistency_alt[num][0] | round(3) }}%</div>
+        </div>
+      </div>
+
+      <div class="conclusion">
+        <div class="conclusion-text">Висновок по критерію "{{ name_criteria[num] }}": {{ ranj_alt[num][0] }}</div>
+      </div>
+      {% endfor %}
+    </form>
+
+  </div>
+
+  <div class="results-container">
+    <div class="section-title">Вектор глобальних пріоритетів</div>
+
+    <div class="modern-table-wrapper">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th rowspan="4">Альтернативи</th>
+            <th colspan="{{ num_criteria }}">Критерії</th>
+            <th rowspan="4">Глобальні пріоритети</th>
+          </tr>
+          <tr>
+            {% for i in range(num_criteria) %}
+            <th><i>{{ name_criteria[i] }}</i></th>
+            {% endfor %}
+          </tr>
+          <tr>
+            <th colspan="{{ num_criteria }}">Чисельне значення вектору пріоритету</th>
+          </tr>
+          <tr style="text-align:center;">
+            {% for i in range(num_criteria) %}
+            <td>{{ normalized_eigenvector[i] | round(3) }}</td>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(num_alternatives) %}
+          <tr>
+            <th><i>{{ name_alternatives[i] }}</i></th>
+            {% for j in range(normalized_eigenvector_alt | length) %}
+            <td>{{ normalized_eigenvector_alt[j][i] | round(3) }}</td>
+            {% endfor %}
+            <td><strong>{{ global_prior[i] | round(3) }}</strong></td>
+          </tr>
+          {% endfor %}
+          <tr class="sum-row">
+            <th colspan="{{ num_criteria+1 }}">Сума</th>
+            <td>{{ global_prior | sum | round | int }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
+    {% if task %}
+    <div class="task-description">
+      <div class="task-label">Задача</div>
+      <div class="task-text">{{ task }}</div>
+    </div>
+    {% endif %}
+
+    <div class="final-conclusion">
+      <div class="final-conclusion-text">{{ ranj_global[0] }}</div>
+    </div>
+
+    <div class="chart-container">
+      {{ global_prior_plot | safe }}
+    </div>
+  </div>
+
+  <div class="hierarchy-container">
+    <div class="hierarchy-title">Ієрархічне представлення</div>
+    <img src="{{ url_for('static', filename='img/hierarchy_tree.png') }}" alt="Hierarchy Tree" class="hierarchy-image">
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Анимация появления элементов при прокрутке
+  const containers = document.querySelectorAll('.results-container');
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, observerOptions);
+
+  containers.forEach(container => {
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(20px)';
+    container.style.transition = 'all 0.6s ease';
+    observer.observe(container);
+  });
+
+  // Анимация для статистических карточек
+  const statCards = document.querySelectorAll('.stat-card');
+  statCards.forEach((card, index) => {
+    card.style.animationDelay = `${index * 0.1}s`;
+    card.style.animation = 'fadeInUp 0.6s ease forwards';
+  });
+
+  // Анимация для таблиц
+  const tableRows = document.querySelectorAll('.modern-table tbody tr');
+  tableRows.forEach((row, index) => {
+    row.addEventListener('mouseenter', function() {
+      this.style.transform = 'scale(1.01)';
+    });
+
+    row.addEventListener('mouseleave', function() {
+      this.style.transform = 'scale(1)';
+    });
+  });
+
+  // Плавное увеличение значений в статистических карточках
+  const statValues = document.querySelectorAll('.stat-value');
+  statValues.forEach(value => {
+    const finalValue = parseFloat(value.textContent);
+    if (!isNaN(finalValue)) {
+      let currentValue = 0;
+      const increment = finalValue / 50;
+      const timer = setInterval(() => {
+        currentValue += increment;
+        if (currentValue >= finalValue) {
+          currentValue = finalValue;
+          clearInterval(timer);
+        }
+
+        if (value.textContent.includes('%')) {
+          value.textContent = currentValue.toFixed(3) + '%';
+        } else {
+          value.textContent = currentValue.toFixed(3);
+        }
+      }, 20);
+    }
+  });
+
+  // Добавление эффекта пульсации для финального вывода
+  const finalConclusion = document.querySelector('.final-conclusion');
+  if (finalConclusion) {
+    finalConclusion.addEventListener('mouseenter', function() {
+      this.style.boxShadow = '0 0 30px rgba(102, 252, 241, 0.3)';
+    });
+
+    finalConclusion.addEventListener('mouseleave', function() {
+      this.style.boxShadow = '';
+    });
+  }
+
+  // Улучшенная анимация для изображения иерархии
+  const hierarchyImage = document.querySelector('.hierarchy-image');
+  if (hierarchyImage) {
+    hierarchyImage.addEventListener('click', function() {
+      this.style.transform = 'scale(1.05)';
+      setTimeout(() => {
+        this.style.transform = 'scale(1.02)';
+      }, 200);
+    });
+  }
+});
+
+// CSS для дополнительных анимаций
+const additionalStyles = document.createElement('style');
+additionalStyles.textContent = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stat-card {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .modern-table tbody tr {
+    transition: transform 0.2s ease;
+  }
+
+  .final-conclusion {
+    transition: box-shadow 0.3s ease;
+  }
+
+  .hierarchy-image {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+  }
+`;
+document.head.appendChild(additionalStyles);
+</script>
 
 {% endblock %}

@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block hierarchy %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,93 +13,709 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 50px 20px 70px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(142, 228, 175, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 35px 35px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 35% 45%, rgba(102, 252, 241, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 65% 55%, rgba(142, 228, 175, 0.04) 0%, transparent 40%);
+    pointer-events: none;
+    animation: gentle-pulse 8s ease-in-out infinite;
+  }
+
+  @keyframes gentle-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 12px rgba(102, 252, 241, 0.4);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    letter-spacing: -0.01em;
+    text-shadow:
+      0 0 25px rgba(102, 252, 241, 0.3),
+      0 4px 10px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 20px;
+  }
+
+  .method-icon {
+    width: 70px;
+    height: 70px;
+    filter:
+      drop-shadow(0 0 15px rgba(102, 252, 241, 0.4))
+      drop-shadow(0 6px 15px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 8px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.1) rotate(-3deg);
+    filter:
+      drop-shadow(0 0 20px rgba(102, 252, 241, 0.6))
+      drop-shadow(0 12px 20px rgba(0, 0, 0, 0.4));
+  }
+
+  .step-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-top: 15px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(142, 228, 175, 0.1);
+  }
+
+  .step-indicator::before {
+    content: '📊';
+    font-size: 1rem;
+    filter: drop-shadow(0 0 6px rgba(142, 228, 175, 0.4));
+  }
+
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .matrix-container {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 20px;
+    padding: 35px;
+    backdrop-filter: blur(15px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .matrix-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.5),
+      rgba(142, 228, 175, 0.5),
+      transparent);
+  }
+
+  .matrix-title {
+    font-size: 1.5rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
   }
 
+  .matrix-title::before {
+    content: '📋';
+    font-size: 1.6rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
+  .help-card {
+    background: rgba(5, 56, 107, 0.15);
+    border: 1px solid rgba(102, 252, 241, 0.25);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 35px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .help-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.4),
+      transparent);
+  }
+
+  .help-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-link);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .help-title::before {
+    content: '💡';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(142, 228, 175, 0.4));
+  }
+
+  .help-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(237, 245, 225, 0.9);
+  }
+
+  .help-content strong {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .matrix-table-wrapper {
+    overflow-x: auto;
+    border-radius: 15px;
+    background: rgba(5, 56, 107, 0.08);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    backdrop-filter: blur(5px);
+    margin-bottom: 30px;
+  }
+
+  .matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 600px;
+  }
+
+  .matrix-table thead th {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.2),
+      rgba(142, 228, 175, 0.1));
+    color: var(--color-text);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 18px 12px;
+    text-align: center;
+    border-bottom: 2px solid rgba(102, 252, 241, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .matrix-table thead th:first-child {
+    border-top-left-radius: 15px;
+    background: linear-gradient(135deg,
+      rgba(5, 56, 107, 0.3),
+      rgba(102, 252, 241, 0.1));
+  }
+
+  .matrix-table thead th:last-child {
+    border-top-right-radius: 15px;
+  }
+
+  .matrix-table tbody tr {
+    transition: all 0.3s ease;
+  }
+
+  .matrix-table tbody tr:hover {
+    background: rgba(102, 252, 241, 0.03);
+  }
+
+  .matrix-table tbody th {
+    background: linear-gradient(90deg,
+      rgba(5, 56, 107, 0.2),
+      rgba(102, 252, 241, 0.1));
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 15px 12px;
+    text-align: center;
+    border-right: 1px solid rgba(102, 252, 241, 0.2);
+    border-bottom: 1px solid rgba(102, 252, 241, 0.1);
+    position: sticky;
+    left: 0;
+    z-index: 5;
+  }
+
+  .matrix-table tbody td {
+    padding: 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(102, 252, 241, 0.1);
+    border-right: 1px solid rgba(102, 252, 241, 0.1);
+  }
+
+  .matrix-table tbody tr:last-child th {
+    border-bottom-left-radius: 15px;
+  }
+
+  .matrix-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 15px;
+  }
+
+  .matrix-input {
+    width: 80px;
+    height: 45px;
+    background: rgba(11, 12, 16, 0.6);
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 10px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+  }
+
+  .matrix-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(11, 12, 16, 0.8);
+    box-shadow:
+      0 0 0 3px rgba(102, 252, 241, 0.1),
+      0 0 15px rgba(102, 252, 241, 0.2),
+      0 3px 10px rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+  }
+
+  .matrix-input:valid:not(:placeholder-shown) {
+    border-color: rgba(142, 228, 175, 0.4);
+    background: rgba(142, 228, 175, 0.05);
+  }
+
+  .matrix-input:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: rgba(255, 107, 125, 0.4);
+    background: rgba(255, 107, 125, 0.05);
+    animation: input-shake 0.4s ease-in-out;
+  }
+
+  @keyframes input-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+
+  .matrix-input[readonly] {
+    background: rgba(5, 56, 107, 0.15);
+    border-color: rgba(102, 252, 241, 0.15);
+    color: rgba(237, 245, 225, 0.6);
+    cursor: not-allowed;
+  }
+
+  .matrix-input[readonly]:focus {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Специальные стили для диагональных элементов */
+  .diagonal-cell .matrix-input {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.1),
+      rgba(142, 228, 175, 0.1));
+    border-color: rgba(102, 252, 241, 0.3);
+    font-weight: 700;
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg,
+      var(--color-link) 0%,
+      var(--color-link-hover) 50%,
+      var(--color-link) 100%);
+    background-size: 200% 200%;
+    color: var(--color-background);
+    border: none;
+    padding: 18px 45px;
+    border-radius: 15px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    position: relative;
+    overflow: hidden;
+    margin: 35px auto 0;
+    display: block;
+    min-width: 180px;
+    box-shadow:
+      0 8px 25px rgba(142, 228, 175, 0.2),
+      0 0 0 1px rgba(142, 228, 175, 0.1);
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .submit-button::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%);
+    border-radius: 13px;
+    pointer-events: none;
+  }
+
+  .submit-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+      0 12px 30px rgba(142, 228, 175, 0.25),
+      0 0 0 3px rgba(142, 228, 175, 0.1),
+      0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+
+  /* Floating decorative elements */
+  .matrix-container::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.06), rgba(142, 228, 175, 0.06));
+    border-radius: 50%;
+    animation: float-gentle 5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 35px 15px 50px;
+      border-radius: 0 0 20px 20px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 12px;
+    }
+
+    .method-icon {
+      width: 55px;
+      height: 55px;
+      display: block;
+      margin: 0 auto 12px;
+    }
+
+    .matrix-container {
+      margin: 0 10px;
+      padding: 25px 15px;
+      border-radius: 15px;
+    }
+
+    .help-card {
+      padding: 20px 15px;
+    }
+
+    .matrix-input {
+      width: 60px;
+      height: 40px;
+      font-size: 0.9rem;
+    }
+
+    .matrix-table thead th,
+    .matrix-table tbody th {
+      padding: 12px 8px;
+      font-size: 0.85rem;
+    }
+
+    .matrix-table tbody td {
+      padding: 5px;
+    }
+
+    .submit-button {
+      padding: 16px 35px;
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 5px;
+    }
+
+    .matrix-container {
+      padding: 20px 10px;
+    }
+
+    .help-card {
+      padding: 18px 12px;
+    }
+
+    .matrix-input {
+      width: 50px;
+      height: 35px;
+      font-size: 0.8rem;
+    }
+
+    .matrix-table {
+      min-width: 500px;
+    }
+
+    .submit-button {
+      padding: 14px 30px;
+      font-size: 0.9rem;
+      min-width: 150px;
+    }
+  }
 </style>
 
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу Ієрархій</b></h1>
-    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarcy" width="6%" style="margin-bottom: 41px">
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Аналізу Ієрархій</h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarchy" class="method-icon">
+    <div class="step-indicator">Крок 3: Матриця критеріїв</div>
+  </div>
 </div>
-<br><br>
-<div>
-    <div class="center">
-        <form action="{{ url_for('hierarchy.matrix_alt') }}" method="POST">
-            <p class="input-label" align="center">Матриця парних порівнянь для критеріїв</p>
 
-            <div class="card text-bg-info mb-3 center" style="width: 22rem;">
-                <div class="card-body">
-                    <h5>Довідка</h5>
-                    <div class="complement">1 - однакова важливість
-                        <br>3 - помірна перевага одного над іншим
-                        <br>5 - істотна перевага одного над іншим
-                        <br>7 - значна перевага одного над іншим
-                        <br>9 - дуже сильна перевага одного над іншим
-                        <br>2, 4, 6, 8 - відповідні проміжні значення
-                    </div>
-                </div>
-            </div>
+<div class="main-container">
+  <div class="matrix-container">
+    <form action="{{ url_for('hierarchy.matrix_alt') }}" method="POST">
 
-            <br>
+      <div class="matrix-title">Матриця парних порівнянь для критеріїв</div>
 
+      <div class="help-card">
+        <div class="help-title">Довідка по оцінюванню</div>
+        <div class="help-content">
+          <strong>1</strong> - однакова важливість<br>
+          <strong>3</strong> - помірна перевага одного над іншим<br>
+          <strong>5</strong> - істотна перевага одного над іншим<br>
+          <strong>7</strong> - значна перевага одного над іншим<br>
+          <strong>9</strong> - дуже сильна перевага одного над іншим<br>
+          <strong>2, 4, 6, 8</strong> - відповідні проміжні значення<br>
+          <em style="color: rgba(237, 245, 225, 0.7); margin-top: 8px; display: block;">
+            Для оберненого порівняння використовуйте дроби: 1/2, 1/3, 1/4, і т.д.
+          </em>
+        </div>
+      </div>
 
-            <table class="table table-bordered align-middle">
+      <div class="matrix-table-wrapper">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th></th>
+              {% for crit_n in name_criteria %}
+              <th>{{ crit_n }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(name_criteria | length) %}
+            <tr>
+              <th>{{ name_criteria[i] }}</th>
+              {% for j in range(name_criteria | length) %}
+              <td {% if i == j %}class="diagonal-cell"{% endif %}>
+                {% if i < j %}
+                  {% if error %}
+                  <input class="matrix-input" type="text" name="matrix_krit"
+                    id="matrix_krit_up_{{ i }}_{{ j }}"
+                    value="{{ matrix_krit[i][j] }}"
+                    required
+                    pattern="^[1-9]$|^(1\/[2-9])$"
+                    title="Введіть число від 1 до 9 або дріб типу 1/2, 1/3, etc.">
+                  {% else %}
+                  <input class="matrix-input" type="text" name="matrix_krit"
+                    id="matrix_krit_up_{{ i }}_{{ j }}"
+                    required
+                    pattern="^[1-9]$|^(1\/[2-9])$"
+                    title="Введіть число від 1 до 9 або дріб типу 1/2, 1/3, etc."
+                    placeholder="?">
+                  {% endif %}
+                {% elif i > j %}
+                  <input class="matrix-input" type="text" name="matrix_krit"
+                    id="matrix_krit_low_{{ i }}_{{ j }}"
+                    value=""
+                    readonly
+                    title="Автоматично розраховується">
+                {% elif i == j %}
+                  <input class="matrix-input" type="text" name="matrix_krit"
+                    id="matrix_krit_diag_{{ i }}_{{ j }}"
+                    value="1"
+                    readonly
+                    title="Діагональний елемент завжди дорівнює 1">
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-                <thead align="center">
-                <tr>
-                    <th></th>
-                    {% for crit_n in name_criteria %}
-                    <th class="text-white">{{ crit_n }}</th>
-                    {% endfor %}
-                </tr>
-                </thead>
-
-                <tbody>
-                {% for i in range(name_criteria | length) %}
-                <tr>
-                    <th class="text-white">{{ name_criteria[i] }}</th>
-                    {% for j in range(name_criteria | length) %}
-                    <td>
-                        {% if i < j %}
-                        {% if error %}
-                        <input class="input-settings" type="text" name="matrix_krit"
-                               id="matrix_krit_up_{{ i }}_{{ j }}" value="{{ matrix_krit[i][j] }}"
-                               required pattern="^[1-9]$|^(1\/[2-9])$">
-                        {% else %}
-                        <input class="input-settings" type="text" name="matrix_krit"
-                               id="matrix_krit_up_{{ i }}_{{ j }}_" required pattern="^[1-9]$|^(1\/[2-9])$">
-                        {% endif %}
-                        {% elif i > j %}
-                        <input class="input-settings" type="text" name="matrix_krit"
-                               id="matrix_krit_up_{{ j }}_{{ i }}" value="" readonly>
-                        {% elif i == j %}
-                        <input class="input-settings" type="text" name="matrix_krit"
-                               id="matrix_krit_up_[{{ i }}_{{ j }}]" value="1" readonly>
-                        {% endif %}
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-                </tbody>
-
-            </table>
-
-
-            <br>
-            <button type="submit" class="btns first">Далі</button>
-            <br><br>
-
-        </form>
-    </div>
+      <button type="submit" class="submit-button">Далі</button>
+    </form>
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Автоматическое заполнение симметричных элементов
+  const inputs = document.querySelectorAll('.matrix-input:not([readonly])');
+
+  inputs.forEach(input => {
+    if (input.id.includes('matrix_krit_up_')) {
+      input.addEventListener('input', function() {
+        const parts = this.id.split('_');
+        const i = parts[3];
+        const j = parts[4];
+        const symmetricInput = document.getElementById(`matrix_krit_low_${j}_${i}`);
+
+        if (symmetricInput) {
+          let value = this.value;
+          if (value && !isNaN(parseFloat(value))) {
+            // Если введено число, то обратное значение
+            if (value.includes('/')) {
+              // Если это дробь типа 1/3, то обратное будет 3
+              const fraction = value.split('/');
+              if (fraction.length === 2 && fraction[0] === '1') {
+                symmetricInput.value = fraction[1];
+              }
+            } else {
+              // Если это целое число, то обратное будет 1/число
+              const num = parseFloat(value);
+              if (num !== 1) {
+                symmetricInput.value = `1/${num}`;
+              } else {
+                symmetricInput.value = '1';
+              }
+            }
+          } else {
+            symmetricInput.value = '';
+          }
+        }
+      });
+    }
+  });
+
+  // Подсветка связанных ячеек при фокусе
+  inputs.forEach(input => {
+    input.addEventListener('focus', function() {
+      if (this.id.includes('matrix_krit_up_')) {
+        const parts = this.id.split('_');
+        const i = parts[3];
+        const j = parts[4];
+        const symmetricInput = document.getElementById(`matrix_krit_low_${j}_${i}`);
+
+        if (symmetricInput) {
+          symmetricInput.style.background = 'rgba(102, 252, 241, 0.1)';
+          symmetricInput.style.borderColor = 'rgba(102, 252, 241, 0.4)';
+        }
+      }
+    });
+
+    input.addEventListener('blur', function() {
+      if (this.id.includes('matrix_krit_up_')) {
+        const parts = this.id.split('_');
+        const i = parts[3];
+        const j = parts[4];
+        const symmetricInput = document.getElementById(`matrix_krit_low_${j}_${i}`);
+
+        if (symmetricInput) {
+          symmetricInput.style.background = '';
+          symmetricInput.style.borderColor = '';
+        }
+      }
+    });
+  });
+});
+</script>
 
 {% endblock %}

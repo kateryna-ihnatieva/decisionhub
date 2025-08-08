@@ -94,8 +94,14 @@ def result(method_id=None):
     names = BinaryNames.query.get(new_record_id).names
     num = len(names)
 
-    matr = session.get("matr")
-    if matr == 0:
+    # Проверим: если матрица уже есть — session["matr"] должен быть 1
+    existing_matrix = BinaryMatrix.query.get(new_record_id)
+    if existing_matrix:
+        session["matr"] = 1
+    else:
+        session["matr"] = 0
+    print(session["matr"])
+    if session["matr"] == 0:
         matrix = process_matrix(request.form.getlist("matrix"), num)
         add_object_to_db(
             db,
@@ -140,7 +146,9 @@ def result(method_id=None):
             binary_matrix_id=new_record_id,
             sorted_sum=sorted_dict,
             ranj=ranj_str,
-            plot_data=generate_plot(sum_dict.values(), sum_dict.keys(), False),
+            plot_data=generate_plot(
+                list(sum_dict.values()), list(sum_dict.keys()), False
+            ),
         )
 
     # Перевірка на транизитивність
@@ -214,7 +222,9 @@ def result(method_id=None):
         "vidnosh": vidnosh,
         "prim": prim,
         "visnovok": visnovok,
-        "binary_plot": generate_plot(sum_dict.values(), sum_dict.keys(), False),
+        "binary_plot": generate_plot(
+            list(sum_dict.values()), list(sum_dict.keys()), False
+        ),
         "name": current_user.get_name() if current_user.is_authenticated else None,
         "task": binary_task if binary_task else None,
         "method_id": method_id,

@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block expert %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
+<style>
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -15,88 +13,688 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 60px 20px 80px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.15) 50%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 40px 40px;
+    margin-bottom: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(102, 252, 241, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 70% 60%, rgba(142, 228, 175, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    animation: pulse 6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(102, 252, 241, 0.5);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 40px rgba(102, 252, 241, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 30px;
+  }
+
+  .method-icon {
+    width: 85px;
+    height: 85px;
+    filter:
+      drop-shadow(0 0 20px rgba(102, 252, 241, 0.4))
+      drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 15px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.15) rotate(-5deg);
+    filter:
+      drop-shadow(0 0 30px rgba(102, 252, 241, 0.6))
+      drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: rgba(237, 245, 225, 0.8);
+    margin-top: 15px;
+    font-weight: 300;
+  }
+
+  .main-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .alert-danger {
+    background: linear-gradient(135deg,
+      rgba(220, 53, 69, 0.12) 0%,
+      rgba(220, 53, 69, 0.08) 100%);
+    border: 2px solid rgba(220, 53, 69, 0.3);
+    border-radius: 16px;
+    padding: 20px 25px;
+    margin-bottom: 40px;
+    color: #ff8a9b;
+    font-style: italic;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .alert-danger::before {
+    content: '⚠️';
+    font-size: 1.5rem;
+    margin-right: 10px;
+  }
+
+  .experts-form {
+    background: rgba(11, 12, 16, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.15);
+    border-radius: 24px;
+    padding: 50px;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(102, 252, 241, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .experts-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(102, 252, 241, 0.3), transparent);
+  }
+
+  .form-title {
+    font-size: 2.2rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
   }
 
+  .form-title::after {
+    content: '';
+    display: block;
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    margin: 20px auto 0;
+    border-radius: 2px;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg,
+      rgba(142, 228, 175, 0.08) 0%,
+      rgba(142, 228, 175, 0.04) 100%);
+    border: 1px solid rgba(142, 228, 175, 0.2);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top right,
+      rgba(142, 228, 175, 0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .info-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg,
+      var(--color-link),
+      rgba(142, 228, 175, 0.3));
+  }
+
+  .info-card-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .info-card h5 {
+    color: var(--color-link);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .info-card h5::before {
+    content: '💡';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 10px rgba(142, 228, 175, 0.5));
+  }
+
+  .complement {
+    color: rgba(237, 245, 225, 0.9);
+    line-height: 1.8;
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+  .rating-scale {
+    display: grid;
+    gap: 8px;
+    margin-top: 15px;
+  }
+
+  .rating-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(11, 12, 16, 0.3);
+    border-radius: 10px;
+    border-left: 3px solid;
+  }
+
+  .rating-item:nth-child(1) { border-left-color: #dc3545; }
+  .rating-item:nth-child(2) { border-left-color: #fd7e14; }
+  .rating-item:nth-child(3) { border-left-color: #ffc107; }
+  .rating-item:nth-child(4) { border-left-color: #20c997; }
+  .rating-item:nth-child(5) { border-left-color: #28a745; }
+
+  .rating-value {
+    background: rgba(102, 252, 241, 0.1);
+    color: var(--color-accent);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    min-width: 50px;
+    text-align: center;
+    border: 1px solid rgba(102, 252, 241, 0.2);
+  }
+
+  .rating-description {
+    font-size: 0.9rem;
+    flex: 1;
+  }
+
+  .table-container {
+    background: rgba(5, 56, 107, 0.08);
+    border-radius: 20px;
+    padding: 30px;
+    margin: 40px 0;
+    overflow-x: auto;
+    border: 1px solid rgba(102, 252, 241, 0.15);
+    position: relative;
+  }
+
+  .table-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.4),
+      transparent);
+  }
+
+  .experts-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 6px;
+    background: transparent;
+    margin: 0;
+  }
+
+  .experts-table th,
+  .experts-table td {
+    padding: 18px 15px;
+    text-align: center;
+    border: 1px solid rgba(102, 252, 241, 0.12);
+    background: rgba(11, 12, 16, 0.6);
+    color: var(--color-text);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .experts-table thead th {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.15) 0%,
+      rgba(102, 252, 241, 0.08) 100%);
+    color: var(--color-accent);
+    font-weight: 700;
+    font-size: 1rem;
+    text-shadow: 0 0 10px rgba(102, 252, 241, 0.3);
+    border: 1px solid rgba(102, 252, 241, 0.25);
+  }
+
+  .experts-table thead th::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.4),
+      transparent);
+  }
+
+  .experts-table tbody th {
+    background: linear-gradient(135deg,
+      rgba(142, 228, 175, 0.15) 0%,
+      rgba(142, 228, 175, 0.08) 100%);
+    color: var(--color-link);
+    font-weight: 700;
+    min-width: 100px;
+    border: 1px solid rgba(142, 228, 175, 0.25);
+    position: relative;
+  }
+
+  .experts-table tbody th::before {
+    content: '👨‍💼';
+    margin-right: 8px;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 5px rgba(142, 228, 175, 0.3));
+  }
+
+  .experts-table tbody th::after {
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(142, 228, 175, 0.4),
+      transparent);
+  }
+
+  .experts-table tr:hover td {
+    background: rgba(102, 252, 241, 0.04);
+    transform: scale(1.02);
+    border-color: rgba(102, 252, 241, 0.2);
+  }
+
+  .input-settings {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(5, 56, 107, 0.2);
+    border: 2px solid rgba(102, 252, 241, 0.2);
+    border-radius: 10px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    min-width: 80px;
+    backdrop-filter: blur(5px);
+  }
+
+  .input-settings:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.4);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.08),
+      0 0 20px rgba(102, 252, 241, 0.2),
+      0 4px 20px rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+  }
+
+  .input-settings:valid {
+    border-color: rgba(142, 228, 175, 0.4);
+    background: rgba(142, 228, 175, 0.05);
+  }
+
+  .input-settings:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: rgba(255, 107, 125, 0.4);
+    background: rgba(255, 107, 125, 0.05);
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg,
+      var(--color-link) 0%,
+      var(--color-link-hover) 50%,
+      var(--color-link) 100%);
+    background-size: 200% 200%;
+    color: var(--color-background);
+    border: none;
+    padding: 22px 50px;
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    position: relative;
+    overflow: hidden;
+    margin: 40px auto;
+    display: block;
+    min-width: 220px;
+    box-shadow:
+      0 10px 30px rgba(142, 228, 175, 0.2),
+      0 0 0 1px rgba(142, 228, 175, 0.1);
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .submit-button::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%);
+    border-radius: 15px;
+    pointer-events: none;
+  }
+
+  .submit-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      0 15px 40px rgba(142, 228, 175, 0.3),
+      0 0 0 3px rgba(142, 228, 175, 0.15),
+      0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 40px 20px 50px;
+      border-radius: 0 0 25px 25px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .method-icon {
+      width: 70px;
+      height: 70px;
+      display: block;
+      margin: 0 auto 20px;
+    }
+
+    .experts-form {
+      margin: 0 10px;
+      padding: 30px 20px;
+      border-radius: 20px;
+    }
+
+    .table-container {
+      margin: 20px -10px;
+      border-radius: 15px;
+      padding: 20px 15px;
+    }
+
+    .experts-table th,
+    .experts-table td {
+      padding: 12px 10px;
+      font-size: 0.9rem;
+      border-radius: 8px;
+    }
+
+    .input-settings {
+      min-width: 70px;
+      font-size: 0.9rem;
+      padding: 12px 14px;
+    }
+
+    .submit-button {
+      padding: 18px 40px;
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
+
+    .info-card {
+      margin: 0 auto 30px;
+      padding: 25px 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 10px;
+    }
+
+    .experts-table th,
+    .experts-table td {
+      padding: 10px 8px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+
+    .input-settings {
+      min-width: 60px;
+      padding: 10px 8px;
+      font-size: 0.85rem;
+    }
+
+    .experts-form {
+      padding: 25px 15px;
+    }
+
+    .rating-item {
+      padding: 6px 10px;
+      gap: 8px;
+    }
+
+    .rating-value {
+      min-width: 40px;
+      padding: 3px 8px;
+      font-size: 0.85rem;
+    }
+
+    .rating-description {
+      font-size: 0.8rem;
+    }
+  }
 </style>
 
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Експертних
-        Оцінок</b></h1>
-    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" width="6%" style="margin-bottom: 41px">
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Експертних Оцінок</h1>
+    <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" class="method-icon">
+    <p class="subtitle">Збір та аналіз експертних даних</p>
+  </div>
 </div>
-<br>
-<div>
-    <div class="center">
-        <form action="{{ url_for('experts.experts_result', method_id=id) }}" method="POST">
-            {% if error %}
-            <div class="alert alert-danger alert-style" role="alert"><i>{{ error }}</i></div>
-            <br>
-            {% endif %}
 
-            <p class="input-label" align="center">Вихідні експертні дані</p>
+<div class="main-container">
+  <div class="experts-form">
+    <h2 class="form-title">Вихідні експертні дані</h2>
 
-            <div class="card text-bg-info mb-3 center" style="width: 22rem;">
-                <div class="card-body">
-                    <h5>Довідка</h5>
-                    <div class="complement">0 - Напрямок не впливає на дослідження кон'юнктури ринку
-                        <br>1-2 - Напрямок робить слабкий вплив, його варто врахувати в майбутньому
-                        <br>3-5 - Напрямок впливає, але важко реалізовано
-                        <br>6-7 - Напрямок має істотний вплив
-                        <br>8-10 - Напрямок є важливим і актуальним, реалізується в першу чергу
-                    </div>
-                </div>
+    <form action="{{ url_for('experts.experts_result', method_id=id) }}" method="POST">
+      {% if error %}
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <div class="info-card">
+        <div class="info-card-content">
+          <h5>Шкала оцінювання</h5>
+          <div class="complement">
+            <div class="rating-scale">
+              <div class="rating-item">
+                <div class="rating-value">0</div>
+                <div class="rating-description">Напрямок не впливає на дослідження кон'юнктури ринку</div>
+              </div>
+              <div class="rating-item">
+                <div class="rating-value">1-2</div>
+                <div class="rating-description">Напрямок робить слабкий вплив, його варто врахувати в майбутньому</div>
+              </div>
+              <div class="rating-item">
+                <div class="rating-value">3-5</div>
+                <div class="rating-description">Напрямок впливає, але важко реалізовано</div>
+              </div>
+              <div class="rating-item">
+                <div class="rating-value">6-7</div>
+                <div class="rating-description">Напрямок має істотний вплив</div>
+              </div>
+              <div class="rating-item">
+                <div class="rating-value">8-10</div>
+                <div class="rating-description">Напрямок є важливим і актуальним, реалізується в першу чергу</div>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <br>
+      <div class="table-container">
+        <table class="experts-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Експерти</th>
+              <th colspan="{{ name_research | length }}">Часткові критерії</th>
+            </tr>
+            <tr>
+              {% for i in range(name_research | length) %}
+              <th>{{ name_research[i] }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for n_e in range(num_experts) %}
+            <tr>
+              <th>{{ n_e + 1 }}</th>
+              {% for i in range(name_research | length) %}
+              <td>
+                <input
+                  class="input-settings"
+                  type="number"
+                  name="experts_data_table"
+                  id="experts_data_table_{{ i }}_{{ n_e }}"
+                  required
+                  min="0"
+                  max="10"
+                  step="1"
+                  placeholder="0-10"
+                  title="Введіть оцінку від 0 до 10"
+                >
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-            <table class="table table-bordered align-middle">
-
-                <thead align="center">
-                <tr>
-                    <th rowspan="2" class="result-text"
-                        style="font-size: 20px; text-align: center; vertical-align: middle;"><b>Експерти</b></th>
-                    <td colspan="{{ name_research | length }}" class="result-text" style="font-size: 20px"><b>Часткові
-                        критерії</b></td>
-                </tr>
-                <tr>
-                    {% for i in range(name_research | length) %}
-                    <th class="text-white">{{ name_research[i] }}</th>
-                    {% endfor %}
-                </tr>
-                </thead>
-
-                <tbody>
-                {% for n_e in range(num_experts) %}
-                <tr>
-                    <th class="text-white" style="text-align: center;">{{ n_e + 1 }}</th>
-                    {% for i in range(name_research | length) %}
-                    <td>
-                        <input class="input-settings" type="text" name="experts_data_table"
-                               id="experts_data_table_{{ i }}_{{ j }}" required pattern="^(10|[0-9])$">
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-                </tbody>
-
-            </table>
-
-
-            <br>
-            <button type="submit" class="btns first">Далі</button>
-            <br><br>
-
-        </form>
-    </div>
+      <button type="submit" class="submit-button">Далі</button>
+    </form>
+  </div>
 </div>
 
 {% endblock %}

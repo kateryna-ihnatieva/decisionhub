@@ -1,41 +1,11 @@
 {% extends 'base.html' %}
-
 {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block hierarchy %} active {% endblock %}
 {% block content %}
-    <style>
-    :root {
-    --color-background: #0B0C10;
-    --color-text: #EDF5E1;
-    --color-accent: #66FCF1;
-    --color-accent-dark: #05386B;
-    --color-link: #8EE4AF;
-    --color-link-hover: #5CDB95;
-  }
-    body {
-    background-color: var(--color-background);
-    color: var(--color-text);
-  }
-
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
-
-</style>
-
-<div style="text-align: center;">
-    <h1 class="display-3 method-name" align="center" style="display: inline-block; margin-right: 1%"><b>Метод Аналізу Ієрархій</b></h1>
-    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarchy" width="6%" style="margin-bottom: 41px">
-</div>
-<br><br><br>
-<div>
 <style>
-    :root {
+  :root {
     --color-background: #0B0C10;
     --color-text: #EDF5E1;
     --color-accent: #66FCF1;
@@ -43,39 +13,554 @@
     --color-link: #8EE4AF;
     --color-link-hover: #5CDB95;
   }
-    body {
+
+  body {
     background-color: var(--color-background);
     color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 70% 80%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
   }
 
-    .method-name {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  .page-header {
+    text-align: center;
+    padding: 70px 20px 90px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(142, 228, 175, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 50px 50px;
+    margin-bottom: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 25% 35%, rgba(102, 252, 241, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 75% 65%, rgba(142, 228, 175, 0.08) 0%, transparent 40%),
+      linear-gradient(135deg, transparent 0%, rgba(102, 252, 241, 0.02) 50%, transparent 100%);
+    pointer-events: none;
+    animation: shimmer 10s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 4px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 20px rgba(102, 252, 241, 0.5);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 25px;
+    letter-spacing: -0.02em;
+    text-shadow:
+      0 0 40px rgba(102, 252, 241, 0.4),
+      0 5px 15px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 30px;
+  }
+
+  .method-icon {
+    width: 95px;
+    height: 95px;
+    filter:
+      drop-shadow(0 0 25px rgba(102, 252, 241, 0.5))
+      drop-shadow(0 12px 25px rgba(0, 0, 0, 0.4));
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 15px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.2) rotate(-8deg);
+    filter:
+      drop-shadow(0 0 35px rgba(102, 252, 241, 0.7))
+      drop-shadow(0 20px 35px rgba(0, 0, 0, 0.5));
+  }
+
+  .subtitle {
+    font-size: 1.3rem;
+    color: rgba(237, 245, 225, 0.8);
+    margin-top: 20px;
+    font-weight: 300;
+    line-height: 1.4;
+  }
+
+  .step-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(142, 228, 175, 0.08);
+    border: 1px solid rgba(142, 228, 175, 0.25);
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-top: 25px;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 25px rgba(142, 228, 175, 0.1);
+  }
+
+  .step-indicator::before {
+    content: '🎯';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 10px rgba(142, 228, 175, 0.5));
+  }
+
+  .main-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .setup-form {
+    background: rgba(11, 12, 16, 0.7);
+    border: 1px solid rgba(102, 252, 241, 0.15);
+    border-radius: 28px;
+    padding: 50px;
+    backdrop-filter: blur(25px);
+    box-shadow:
+      0 30px 60px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(102, 252, 241, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .setup-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.4),
+      rgba(142, 228, 175, 0.4),
+      transparent);
+  }
+
+  .form-section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title.task::before {
+    content: '📝';
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .section-title.parameters::before {
+    content: '⚙️';
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .task-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 20px;
+    background: rgba(5, 56, 107, 0.15);
+    border: 2px solid rgba(102, 252, 241, 0.2);
+    border-radius: 16px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    line-height: 1.6;
+    resize: vertical;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+  }
+
+  .task-textarea::placeholder {
+    color: rgba(237, 245, 225, 0.5);
+    font-style: italic;
+  }
+
+  .task-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.25);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.08),
+      0 0 25px rgba(102, 252, 241, 0.2),
+      0 5px 20px rgba(0, 0, 0, 0.1);
+    transform: scale(1.01);
+  }
+
+  .parameters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 25px;
+  }
+
+  .parameter-group {
+    background: rgba(5, 56, 107, 0.08);
+    border: 1px solid rgba(102, 252, 241, 0.15);
+    border-radius: 18px;
+    padding: 25px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  .parameter-group::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.3),
+      transparent);
+  }
+
+  .parameter-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .parameter-label.criteria::before {
+    content: '📊';
+    font-size: 1.1rem;
+  }
+
+  .parameter-label.alternatives::before {
+    content: '🔄';
+    font-size: 1.1rem;
+  }
+
+  .parameter-input {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(11, 12, 16, 0.4);
+    border: 2px solid rgba(102, 252, 241, 0.2);
+    border-radius: 12px;
+    color: var(--color-text);
+    font-size: 1.1rem;
+    font-family: inherit;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+  }
+
+  .parameter-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(11, 12, 16, 0.6);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.08),
+      0 0 20px rgba(102, 252, 241, 0.2),
+      0 4px 20px rgba(0, 0, 0, 0.1);
+    transform: scale(1.03);
+  }
+
+  .parameter-input:valid {
+    border-color: rgba(142, 228, 175, 0.4);
+    background: rgba(142, 228, 175, 0.05);
+  }
+
+  .parameter-input:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: rgba(255, 107, 125, 0.4);
+    background: rgba(255, 107, 125, 0.05);
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .info-hint {
+    font-size: 0.9rem;
+    color: rgba(237, 245, 225, 0.6);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg,
+      var(--color-link) 0%,
+      var(--color-link-hover) 50%,
+      var(--color-link) 100%);
+    background-size: 200% 200%;
+    color: var(--color-background);
+    border: none;
+    padding: 24px 60px;
+    border-radius: 18px;
+    font-size: 1.3rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+    margin: 50px auto 0;
+    display: block;
+    min-width: 250px;
+    box-shadow:
+      0 12px 35px rgba(142, 228, 175, 0.25),
+      0 0 0 1px rgba(142, 228, 175, 0.1);
   }
 
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.25),
+      transparent);
+    transition: left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .submit-button::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%);
+    border-radius: 16px;
+    pointer-events: none;
+  }
+
+  .submit-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-4px) scale(1.03);
+    box-shadow:
+      0 18px 45px rgba(142, 228, 175, 0.35),
+      0 0 0 4px rgba(142, 228, 175, 0.15),
+      0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:active {
+    transform: translateY(-2px) scale(0.98);
+  }
+
+  /* Floating geometric shapes */
+  .setup-form::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    right: 10%;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.1), rgba(142, 228, 175, 0.1));
+    border-radius: 50%;
+    animation: float-shape 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-shape {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 50px 20px 60px;
+      border-radius: 0 0 30px 30px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .method-icon {
+      width: 75px;
+      height: 75px;
+      display: block;
+      margin: 0 auto 20px;
+    }
+
+    .setup-form {
+      margin: 0 10px;
+      padding: 35px 25px;
+      border-radius: 22px;
+    }
+
+    .parameters-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .parameter-group {
+      padding: 20px;
+    }
+
+    .submit-button {
+      padding: 20px 50px;
+      font-size: 1.1rem;
+      letter-spacing: 1.5px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 10px;
+    }
+
+    .setup-form {
+      padding: 25px 20px;
+    }
+
+    .task-textarea {
+      min-height: 100px;
+      padding: 16px;
+    }
+
+    .parameter-input {
+      padding: 14px 16px;
+      font-size: 1rem;
+    }
+
+    .parameter-group {
+      padding: 18px;
+    }
+
+    .submit-button {
+      padding: 18px 40px;
+      font-size: 1rem;
+      min-width: 200px;
+    }
+  }
 </style>
+
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Метод Аналізу Ієрархій</h1>
+    <img src="{{ url_for('static', filename='img/hierarchy.png') }}" alt="Hierarchy" class="method-icon">
+    <p class="subtitle">Структурований підхід до прийняття складних рішень</p>
+    <div class="step-indicator">Крок 1: Налаштування параметрів</div>
+  </div>
+</div>
+
+<div class="main-container">
+  <div class="setup-form">
     <form action="{{ url_for('hierarchy.names') }}" method="GET">
-        <p class="input-label">Введіть вашу задачу (необов’язково):</p>
-        <textarea class="input-settings" name="hierarchy_task" id="hierarchy_task" style="height: 75px"></textarea>
-        <br><br>
-        <div class="row gx-5">
-            <div class="col">
-                <p class="input-label">Введіть кількість критеріїв:</p>
-                <input class="input-settings" type="number" min="2" name="num_criteria" id="num_criteria" required>
-            </div>
-            <div class="col">
-                <p class="input-label">Введіть кількість альтернатив:</p>
-                <input class="input-settings" type="number" min="2" name="num_alternatives" id="num_alternatives"
-                       required>
-            </div>
+
+      <div class="form-section">
+        <div class="section-title task">Опис задачі</div>
+        <textarea
+          class="task-textarea"
+          name="hierarchy_task"
+          id="hierarchy_task"
+          placeholder="Опишіть задачу, яку потрібно розв'язати (необов'язково)...&#10;&#10;Наприклад: Вибір найкращої альтернативи для інвестування коштів компанії"
+        ></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title parameters">Параметри аналізу</div>
+
+        <div class="parameters-grid">
+          <div class="parameter-group">
+            <div class="parameter-label criteria">Кількість критеріїв</div>
+            <input
+              class="parameter-input"
+              type="number"
+              min="2"
+              max="10"
+              name="num_criteria"
+              id="num_criteria"
+              placeholder="2"
+              required
+            >
+            <div class="info-hint">Мінімум 2, рекомендовано до 7</div>
+          </div>
+
+          <div class="parameter-group">
+            <div class="parameter-label alternatives">Кількість альтернатив</div>
+            <input
+              class="parameter-input"
+              type="number"
+              min="2"
+              max="10"
+              name="num_alternatives"
+              id="num_alternatives"
+              placeholder="2"
+              required
+            >
+            <div class="info-hint">Мінімум 2, рекомендовано до 5</div>
+          </div>
         </div>
-        <br><br>
-        <div>
-            <button type="submit" class="btns first">Далі</button>
-            <br><br>
-        </div>
+      </div>
+
+      <button type="submit" class="submit-button">Далі</button>
     </form>
+  </div>
 </div>
 
 {% endblock %}
