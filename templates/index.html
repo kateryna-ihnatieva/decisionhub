@@ -77,6 +77,17 @@
     </div>
 
     <div class="method-card">
+      <a href="{{ url_for('maximin.index') }}" class="card-link">
+        <div class="card-icon-wrapper">
+          <img src="{{ url_for('static', filename='img/maximin.png') }}" class="card-icon" alt="Maximin">
+        </div>
+        <h5 class="card-title">Максимінний критерій</h5>
+        <p class="card-description">Розрахуйте найкращу альтернативу на основі мінімальних значень.</p>
+        <div class="action-hint">Розрахувати</div>
+      </a>
+    </div>
+
+    <div class="method-card">
       <a href="{{ url_for('documentation') }}" class="card-link">
         <div class="card-icon-wrapper">
           <img src="{{ url_for('static', filename='img/documentation.png') }}" class="card-icon" alt="Documentation">

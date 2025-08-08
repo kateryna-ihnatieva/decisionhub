@@ -217,7 +217,13 @@
             </div>
           </div>
         </a>
-        {% endif %}
+
+        {% elif result.method_name == 'Maximin' %}
+        <a href="{{ url_for('maximin.result', method_id=result.method_id) }}" class="result-link">
+          <div class="result-icon-wrapper">
+            <img src="{{ url_for('static', filename='img/maximin.png') }}" alt="maximin" class="result-icon">
+          </div>
+        </a>
       </div>
       {% endfor %}
     </div>
