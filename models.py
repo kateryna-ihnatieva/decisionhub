@@ -111,6 +111,38 @@ class LaplasaCostMatrix(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey("laplasa_tasks.id"), nullable=True)
 
 
+# --- MAXIMIN ---
+
+
+class MaximinConditions(db.Model):
+    __tablename__ = "maximin_conditions"
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(JSON, nullable=False)
+
+
+class MaximinAlternatives(db.Model):
+    __tablename__ = "maximin_alternatives"
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(JSON, nullable=False)
+
+
+class MaximinTask(db.Model):
+    __tablename__ = "maximin_tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    task = db.Column(db.Text)
+
+
+class MaximinCostMatrix(db.Model):
+    __tablename__ = "maximin_cost_matrix"
+    id = db.Column(db.Integer, primary_key=True)
+    maximin_alternatives_id = db.Column(
+        db.Integer, db.ForeignKey("maximin_alternatives.id"), nullable=False
+    )
+    matrix = db.Column(JSON, nullable=False)
+    optimal_variants = db.Column(JSON, nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey("maximin_tasks.id"), nullable=True)
+
+
 # --- BINARY ---
 
 
