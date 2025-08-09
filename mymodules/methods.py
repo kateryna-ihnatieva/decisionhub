@@ -13,6 +13,7 @@ def generate_plot(
     font_size: int = 13,
     height: int = 550,
     width: Optional[int] = None,
+    savage: bool = False,
 ) -> str:
     """
     Generates a modern styled bar chart with enhanced customization options.
@@ -215,29 +216,54 @@ def generate_plot(
 
     # Highlight best alternative
     if datas:
-        max_value = max(datas)
-        max_indices = [i for i, x in enumerate(datas) if x == max_value]
-        for max_idx in max_indices:
-            fig.add_shape(
-                type="rect",
-                x0=max_idx - 0.42,
-                y0=min_value,
-                x1=max_idx + 0.42,
-                y1=max_value if max_value > 0 else 0,
-                line=dict(color="rgba(102, 252, 241, 0.4)", width=0),
-                fillcolor="rgba(102, 252, 241, 0.06)",
-                layer="below",
-            )
-            fig.add_shape(
-                type="rect",
-                x0=max_idx - 0.42,
-                y0=0 if max_value > 0 else max_value,
-                x1=max_idx + 0.42,
-                y1=max_value if max_value > 0 else 0,
-                line=dict(color="rgba(102, 252, 241, 0.6)", width=2),
-                fillcolor="rgba(0, 0, 0, 0)",
-                layer="above",
-            )
+        if not savage:
+            max_value = max(datas)
+            max_indices = [i for i, x in enumerate(datas) if x == max_value]
+            for max_idx in max_indices:
+                fig.add_shape(
+                    type="rect",
+                    x0=max_idx - 0.42,
+                    y0=min_value,
+                    x1=max_idx + 0.42,
+                    y1=max_value if max_value > 0 else 0,
+                    line=dict(color="rgba(102, 252, 241, 0.4)", width=0),
+                    fillcolor="rgba(102, 252, 241, 0.06)",
+                    layer="below",
+                )
+                fig.add_shape(
+                    type="rect",
+                    x0=max_idx - 0.42,
+                    y0=0 if max_value > 0 else max_value,
+                    x1=max_idx + 0.42,
+                    y1=max_value if max_value > 0 else 0,
+                    line=dict(color="rgba(102, 252, 241, 0.6)", width=2),
+                    fillcolor="rgba(0, 0, 0, 0)",
+                    layer="above",
+                )
+        else:
+            min_value = min(datas)
+            min_indices = [i for i, x in enumerate(datas) if x == min_value]
+            for min_idx in min_indices:
+                fig.add_shape(
+                    type="rect",
+                    x0=min_idx - 0.42,
+                    y0=min_value,
+                    x1=min_idx + 0.42,
+                    y1=max_value if max_value > 0 else 0,
+                    line=dict(color="rgba(102, 252, 241, 0.4)", width=0),
+                    fillcolor="rgba(102, 252, 241, 0.06)",
+                    layer="below",
+                )
+                fig.add_shape(
+                    type="rect",
+                    x0=min_idx - 0.42,
+                    y0=0 if min_value > 0 else min_value,
+                    x1=min_idx + 0.42,
+                    y1=min_value if min_value > 0 else 0,
+                    line=dict(color="rgba(102, 252, 241, 0.6)", width=2),
+                    fillcolor="rgba(0, 0, 0, 0)",
+                    layer="above",
+                )
 
     # Add negative value shading
     if any(x < 0 for x in datas):

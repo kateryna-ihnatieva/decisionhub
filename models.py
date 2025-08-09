@@ -143,6 +143,38 @@ class MaximinCostMatrix(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey("maximin_tasks.id"), nullable=True)
 
 
+# --- SAVAGE ---
+
+
+class SavageConditions(db.Model):
+    __tablename__ = "savage_conditions"
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(JSON, nullable=False)
+
+
+class SavageAlternatives(db.Model):
+    __tablename__ = "savage_alternatives"
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(JSON, nullable=False)
+
+
+class SavageTask(db.Model):
+    __tablename__ = "savage_tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    task = db.Column(db.Text)
+
+
+class SavageCostMatrix(db.Model):
+    __tablename__ = "savage_cost_matrix"
+    id = db.Column(db.Integer, primary_key=True)
+    savage_alternatives_id = db.Column(
+        db.Integer, db.ForeignKey("savage_alternatives.id"), nullable=False
+    )
+    matrix = db.Column(JSON, nullable=False)
+    optimal_variants = db.Column(JSON, nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey("savage_tasks.id"), nullable=True)
+
+
 # --- BINARY ---
 
 

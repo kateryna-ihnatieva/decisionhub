@@ -1,0 +1,494 @@
+{% extends 'base.html' %}
+{% block title %}
+{{ title }}
+{% endblock %}
+{% block savage %} active {% endblock %}
+{% block content %}
+<style>
+  :root {
+    --color-background: #0B0C10;
+    --color-text: #EDF5E1;
+    --color-accent: #66FCF1;
+    --color-accent-dark: #05386B;
+    --color-link: #8EE4AF;
+    --color-link-hover: #5CDB95;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(102, 252, 241, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(142, 228, 175, 0.04) 0%, transparent 50%),
+      var(--color-background);
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 60px 20px 80px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.16) 40%,
+      rgba(102, 252, 241, 0.04) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 45px 45px;
+    margin-bottom: 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(102, 252, 241, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 75% 75%, rgba(142, 228, 175, 0.04) 0%, transparent 40%),
+      linear-gradient(135deg, transparent 0%, rgba(102, 252, 241, 0.015) 50%, transparent 100%);
+    pointer-events: none;
+    animation: shimmer 14s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.6; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 12px rgba(102, 252, 241, 0.3);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .method-title {
+    font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+    text-shadow:
+      0 0 25px rgba(102, 252, 241, 0.3),
+      0 3px 10px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: inline-block;
+    margin-right: 20px;
+  }
+
+  .method-icon {
+    width: 75px;
+    height: 75px;
+    filter:
+      drop-shadow(0 0 15px rgba(102, 252, 241, 0.3))
+      drop-shadow(0 6px 15px rgba(0, 0, 0, 0.4));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    vertical-align: middle;
+    margin-bottom: 10px;
+  }
+
+  .method-icon:hover {
+    transform: scale(1.12) rotate(-5deg);
+    filter:
+      drop-shadow(0 0 25px rgba(102, 252, 241, 0.5))
+      drop-shadow(0 12px 25px rgba(0, 0, 0, 0.5));
+  }
+
+  .step-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(142, 228, 175, 0.06);
+    border: 1px solid rgba(142, 228, 175, 0.2);
+    padding: 10px 24px;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-link);
+    margin-top: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 20px rgba(142, 228, 175, 0.08);
+  }
+
+  .step-indicator::before {
+    content: '📝';
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 8px rgba(142, 228, 175, 0.4));
+  }
+
+  .main-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .setup-form {
+    background: rgba(11, 12, 16, 0.7);
+    border: 1px solid rgba(102, 252, 241, 0.1);
+    border-radius: 28px;
+    padding: 40px 35px;
+    backdrop-filter: blur(18px);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(102, 252, 241, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .setup-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.25),
+      rgba(142, 228, 175, 0.25),
+      transparent);
+  }
+
+  .alert-style {
+    background: rgba(255, 107, 125, 0.1);
+    border: 1px solid rgba(255, 107, 125, 0.3);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 30px;
+    color: #FFB3BA;
+    font-size: 0.95rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(255, 107, 125, 0.1);
+  }
+
+  .form-section {
+    margin-bottom: 35px;
+  }
+
+  .section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-bottom: 25px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .section-title.alternatives::before {
+    content: '🔄';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .section-title.conditions::before {
+    content: '🎯';
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .input-group {
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 18px 20px;
+    background: rgba(5, 56, 107, 0.1);
+    border: 2px solid rgba(102, 252, 241, 0.15);
+    border-radius: 16px;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(5px);
+    position: relative;
+  }
+
+  .input-field::placeholder {
+    color: rgba(237, 245, 225, 0.4);
+    font-style: italic;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.18);
+    box-shadow:
+      0 0 0 4px rgba(102, 252, 241, 0.05),
+      0 0 15px rgba(102, 252, 241, 0.12),
+      0 3px 12px rgba(0, 0, 0, 0.1);
+    transform: scale(1.005);
+  }
+
+  .input-field:valid {
+    border-color: rgba(142, 228, 175, 0.3);
+    background: rgba(142, 228, 175, 0.03);
+  }
+
+  .input-field:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: rgba(255, 107, 125, 0.3);
+    background: rgba(255, 107, 125, 0.03);
+    animation: shake 0.4s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  .input-counter {
+    position: absolute;
+    top: -8px;
+    right: 15px;
+    background: linear-gradient(135deg, var(--color-link), var(--color-link-hover));
+    color: var(--color-background);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(142, 228, 175, 0.2);
+    z-index: 2;
+  }
+
+  .submit-button {
+    background: linear-gradient(135deg,
+      var(--color-link) 0%,
+      var(--color-link-hover) 50%,
+      var(--color-link) 100%);
+    background-size: 200% 200%;
+    color: var(--color-background);
+    border: none;
+    padding: 20px 50px;
+    border-radius: 15px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    position: relative;
+    overflow: hidden;
+    margin: 40px auto 0;
+    display: block;
+    min-width: 200px;
+    box-shadow:
+      0 8px 25px rgba(142, 228, 175, 0.18),
+      0 0 0 1px rgba(142, 228, 175, 0.06);
+  }
+
+  .submit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.18),
+      transparent);
+    transition: left 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .submit-button::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      transparent 50%);
+    border-radius: 13px;
+    pointer-events: none;
+  }
+
+  .submit-button:hover {
+    background-position: 100% 0;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+      0 12px 30px rgba(142, 228, 175, 0.25),
+      0 0 0 4px rgba(142, 228, 175, 0.1),
+      0 5px 15px rgba(0, 0, 0, 0.12);
+  }
+
+  .submit-button:hover::before {
+    left: 100%;
+  }
+
+  .submit-button:active {
+    transform: translateY(0px) scale(0.98);
+  }
+
+  /* Floating decoration */
+  .setup-form::after {
+    content: '';
+    position: absolute;
+    top: 12%;
+    right: 6%;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.06), rgba(142, 228, 175, 0.06));
+    border-radius: 50%;
+    animation: float-decoration 12s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-decoration {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(180deg); }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 45px 20px 55px;
+      border-radius: 0 0 25px 25px;
+    }
+
+    .method-title {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 15px;
+    }
+
+    .method-icon {
+      width: 60px;
+      height: 60px;
+      display: block;
+      margin: 0 auto 12px;
+    }
+
+    .setup-form {
+      margin: 0 15px;
+      padding: 30px 22px;
+      border-radius: 22px;
+    }
+
+    .input-field {
+      padding: 16px 18px;
+    }
+
+    .submit-button {
+      padding: 18px 40px;
+      font-size: 1rem;
+      letter-spacing: 1.4px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-container {
+      padding: 0 12px;
+    }
+
+    .setup-form {
+      padding: 25px 18px;
+    }
+
+    .input-field {
+      padding: 14px 16px;
+      font-size: 0.95rem;
+    }
+
+    .submit-button {
+      padding: 16px 32px;
+      font-size: 0.95rem;
+      min-width: 160px;
+    }
+
+    .input-counter {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div class="header-content">
+    <h1 class="method-title">Критерій Севіджа</h1>
+    <img src="{{ url_for('static', filename='img/savage.png') }}" alt="Savage" class="method-icon">
+    <div class="step-indicator">Крок 2: Налаштування імен</div>
+  </div>
+</div>
+
+<div class="main-container">
+  <div class="setup-form">
+    <form action="{{ url_for('savage.cost_matrix') }}" method="POST">
+
+      {% if error %}
+      <div class="alert alert-danger alert-style" role="alert">
+        <i>{{ error }}</i>
+      </div>
+      {% endif %}
+
+      <div class="form-section">
+        <div class="section-title alternatives">Введіть імена альтернатив</div>
+        {% for n in range(num_alt) %}
+        <div class="input-group">
+          <span class="input-counter">{{ n+1 }}</span>
+          <input
+            class="input-field"
+            type="text"
+            name="name_alternatives"
+            id="alternative{{ n+1 }}"
+            placeholder="Альтернатива {{ n+1 }}"
+            value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+            required
+          >
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="form-section">
+        <div class="section-title conditions">Введіть імена умов</div>
+        {% for m in range(num_conditions) %}
+        <div class="input-group">
+          <span class="input-counter">{{ m+1 }}</span>
+          <input
+            class="input-field"
+            type="text"
+            name="name_conditions"
+            id="condition{{ m+1 }}"
+            placeholder="Умова {{ m+1 }}"
+            value="{% if name_conditions %}{{ name_conditions[m] }}{% endif %}"
+            required
+          >
+        </div>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="submit-button">Далі</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

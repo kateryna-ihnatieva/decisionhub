@@ -223,7 +223,83 @@
           <div class="result-icon-wrapper">
             <img src="{{ url_for('static', filename='img/maximin.png') }}" alt="maximin" class="result-icon">
           </div>
+          <div class="result-content">
+            <h5 class="result-title">Максимінний критерій</h5>
+            <div class="result-details">
+              <div class="detail-section">
+                <div class="detail-label">Імена альтернатив:</div>
+                <ul class="detail-list">
+                  <li class="detail-item">
+                    {% for alternative_name in result.name_alternatives %}
+                      {{ alternative_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Імена умов:</div>
+                <ul class="detail-list">
+                  <li class="detail-item">
+                    {% for condition_name in result.name_conditions %}
+                      {{ condition_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
+              </div>
+              {% if current_user.get_name() == 'admin' %}
+              <div class="detail-section">
+                <div class="detail-label">Власник результату:</div>
+                <ul class="detail-list">
+                  <li class="detail-item owner-info">{{ result.owner_name }}</li>
+                </ul>
+              </div>
+              {% endif %}
+            </div>
+          </div>
         </a>
+
+        {% elif result.method_name == 'Savage' %}
+        <a href="{{ url_for('savage.result', method_id=result.method_id) }}" class="result-link">
+          <div class="result-icon-wrapper">
+            <img src="{{ url_for('static', filename='img/savage.png') }}" alt="savage" class="result-icon">
+          </div>
+          <div class="result-content">
+            <h5 class="result-title">Критерій Севіджа</h5>
+            <div class="result-details">
+              <div class="detail-section">
+                <div class="detail-label">Імена альтернатив:</div>
+                <ul class="detail-list">
+                  <li class="detail-item">
+                    {% for alternative_name in result.name_alternatives %}
+                      {{ alternative_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Імена умов:</div>
+                <ul class="detail-list">
+                  <li class="detail-item">
+                    {% for condition_name in result.name_conditions %}
+                      {{ condition_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
+              </div>
+              {% if current_user.get_name() == 'admin' %}
+              <div class="detail-section">
+                <div class="detail-label">Власник результату:</div>
+                <ul class="detail-list">
+                  <li class="detail-item owner-info">{{ result.owner_name }}</li>
+                </ul>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+
+
+        {% endif %}
       </div>
       {% endfor %}
     </div>
