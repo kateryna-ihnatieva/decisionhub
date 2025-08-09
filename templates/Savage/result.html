@@ -2,7 +2,7 @@
 {% block title %}
 {{ title }}
 {% endblock %}
-{% block maximin %} active {% endblock %}
+{% block savage %} active {% endblock %}
 {% block content %}
 <style>
   :root {
@@ -81,7 +81,7 @@
   .header-content {
     position: relative;
     z-index: 2;
-    max-width: 700px;
+    max-width: 600px;
     margin: 0 auto;
   }
 
@@ -485,8 +485,8 @@
 
 <div class="page-header">
   <div class="header-content">
-      <h1 class="method-title">Максимінний критерій</h1>
-    <img src="{{ url_for('static', filename='img/maximin.png') }}" alt="Maximin" class="method-icon">
+    <h1 class="method-title">Критерій Севіджа</h1>
+    <img src="{{ url_for('static', filename='img/savage.png') }}" alt="Savage" class="method-icon">
     <div class="step-indicator">Результати аналізу</div>
   </div>
 </div>
@@ -522,10 +522,10 @@
         </table>
       </div>
 
-      {% if maximin_task %}
+      {% if savage_task %}
       <div class="task-section">
         <div class="task-label">Задача</div>
-        <div class="task-text">{{ maximin_task }}</div>
+        <div class="task-text">{{ savage_task }}</div>
       </div>
       {% endif %}
 
@@ -535,7 +535,7 @@
       </div>
 
       <div class="chart-container">
-        {{ maximin_plot | safe }}
+        {{ savage_plot | safe }}
       </div>
 
     </form>
