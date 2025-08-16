@@ -287,6 +287,11 @@
     border-left: 2px solid rgba(142, 228, 175, 0.12);
   }
 
+  .invisible-cell {
+    display: none;
+  }
+
+
   .task-section {
     background: rgba(5, 56, 107, 0.05);
     border: 1px solid rgba(102, 252, 241, 0.08);
@@ -485,7 +490,7 @@
 
 <div class="page-header">
   <div class="header-content">
-    <h1 class="method-title">Критерій Гурвиця</h1>
+    <h1 class="method-title">Критерій Гурвіца</h1>
     <img src="{{ url_for('static', filename='img/hurwitz.png') }}" alt="Hurwitz" class="method-icon">
     <div class="step-indicator">Результати аналізу</div>
   </div>
@@ -505,7 +510,7 @@
               {% for name in name_conditions %}
               <th class="header-cell">{{ name }}</th>
               {% endfor %}
-              <th class="header-cell">M</th>
+              <th class="header-cell invisible-cell"></th>
             </tr>
           </thead>
           <tbody>
@@ -515,12 +520,37 @@
               {% for j in range(name_conditions | length) %}
               <td class="matrix-cell">{{ cost_matrix[i][j] }}</td>
               {% endfor %}
-              <td class="matrix-cell">{{ optimal_variants[i] }}</td>
+              <td class="matrix-cell invisible-cell"></td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+
+        <div class="matrix-title">Рішення (α = {{ alpha }})</div>
+
+        <div class="matrix-container">
+          <table class="results-matrix">
+            <thead class="matrix-header">
+              <tr>
+                <th class="header-cell">Альтернатива</th>
+                <th class="header-cell">max</th>
+                <th class="header-cell">min</th>
+                <th class="header-cell">H</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in range(name_alternatives | length) %}
+              <tr class="matrix-row">
+                <td class="row-header">{{ name_alternatives[i] }}</td>
+                <td class="matrix-cell">{{ max_values[i] }}</td>
+                <td class="matrix-cell">{{ min_values[i] }}</td>
+                <td class="matrix-cell">{{ hurwitz_values[i]|round(2) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
 
       {% if hurwitz_task %}
       <div class="task-section">
@@ -535,7 +565,7 @@
       </div>
 
       <div class="chart-container">
-        {{ hurwitz_plot | safe }}
+          {{ hurwitz_plot | safe }}
       </div>
 
     </form>

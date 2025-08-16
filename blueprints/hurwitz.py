@@ -31,11 +31,13 @@ def names():
     hurwitz_task = (
         request.args.get("hurwitz_task") if request.args.get("hurwitz_task") else None
     )
+    alpha = float(request.args.get("alpha"))
 
     # Збереження змінниї у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
     session["hurwitz_task"] = hurwitz_task
+    session["alpha"] = alpha
 
     context = {
         "title": "Імена",
@@ -52,6 +54,7 @@ def cost_matrix():
     num_alt = int(session.get("num_alt"))
     num_conditions = int(session.get("num_conditions"))
     hurwitz_task = session.get("hurwitz_task")
+    alpha = float(session.get("alpha"))
 
     name_alternatives = request.form.getlist("name_alternatives")
     name_conditions = request.form.getlist("name_conditions")
@@ -110,7 +113,7 @@ def result(method_id=None):
     name_conditions = HurwitzConditions.query.get(new_record_id).names
 
     hurwitz_task = session.get("hurwitz_task")
-
+    alpha = float(session.get("alpha"))
     try:
         hurwitz_task_record = HurwitzTask.query.get(new_record_id)
         hurwitz_task = hurwitz_task_record.task if hurwitz_task_record else None
@@ -120,16 +123,28 @@ def result(method_id=None):
     flag = session.get("flag")
     if flag != 0:
         cost_matrix = HurwitzCostMatrix.query.get(new_record_id).matrix
+        alpha = HurwitzCostMatrix.query.get(new_record_id).alpha
     else:
         cost_matrix_raw = request.form.getlist("cost_matrix")
         cost_matrix = make_table(num_alt, num_conditions, cost_matrix_raw)
 
-    min_values = [min(map(int, sublist)) for sublist in cost_matrix]
-    max_value = max(min_values)
-    max_index = min_values.index(max_value)
+    max_values = []
+    min_values = []
+    hurwitz_values = []
+    for row in cost_matrix:
+        row_int = list(map(float, row))  # Перетворюємо в float
+        min_val = min(row_int)
+        max_val = max(row_int)
+        H = alpha * max_val + (1 - alpha) * min_val
+        hurwitz_values.append(H)
+        max_values.append(max_val)
+        min_values.append(min_val)
+
+    max_value = max(hurwitz_values)
+    max_index = hurwitz_values.index(max_value)
     optimal_alternative = name_alternatives[max_index]
 
-    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення критерію Гурвіца: {max_value:.2f}."
 
     existing_record = HurwitzCostMatrix.query.get(new_record_id)
     if existing_record is None:
@@ -139,7 +154,8 @@ def result(method_id=None):
             id=new_record_id,
             hurwitz_alternatives_id=new_record_id,
             matrix=cost_matrix,
-            optimal_variants=min_values,
+            optimal_variants=hurwitz_values,
+            alpha=alpha,
         )
         if current_user.is_authenticated:
             add_object_to_db(
@@ -156,11 +172,14 @@ def result(method_id=None):
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "cost_matrix": cost_matrix,
-        "optimal_variants": min_values,
+        "min_values": min_values,
+        "max_values": max_values,
+        "hurwitz_values": hurwitz_values,
+        "alpha": alpha,
         "id": new_record_id,
         "hurwitz_task": hurwitz_task,
         "optimal_message": optimal_message,
-        "hurwitz_plot": generate_plot(min_values, name_alternatives, False),
+        "hurwitz_plot": generate_plot(hurwitz_values, name_alternatives, False),
     }
 
     session["flag"] = 1

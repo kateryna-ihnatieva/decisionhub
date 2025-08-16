@@ -207,6 +207,7 @@ class HurwitzCostMatrix(db.Model):
     )
     matrix = db.Column(JSON, nullable=False)
     optimal_variants = db.Column(JSON, nullable=False)
+    alpha = db.Column(db.Float, nullable=False)
     task_id = db.Column(db.Integer, db.ForeignKey("hurwitz_tasks.id"), nullable=True)
 
 
