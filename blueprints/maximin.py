@@ -113,14 +113,8 @@ def result(method_id=None):
     name_alternatives = MaximinAlternatives.query.get(new_record_id).names
     name_conditions = MaximinConditions.query.get(new_record_id).names
 
-    maximin_task = session.get("maximin_task")
-    matrix_type = session.get("matrix_type")
-
-    try:
-        maximin_task_record = MaximinTask.query.get(new_record_id)
-        maximin_task = maximin_task_record.task if maximin_task_record else None
-    except Exception as e:
-        print("[!] Error:", e)
+    maximin_task = MaximinTask.query.get(new_record_id).task
+    matrix_type = MaximinTask.query.get(new_record_id).matrix_type
 
     flag = session.get("flag")
     if flag != 0:
@@ -134,15 +128,15 @@ def result(method_id=None):
         max_value = max(min_values)
         max_index = min_values.index(max_value)
         optimal_alternative = name_alternatives[max_index]
-
         optimal_message = f"Оптимальною за критерієм максимуму мінімальних значень є альтернатива {optimal_alternative} (максимальне значення {max_value})."
+        optimal_variants = min_values
     else:
         max_values = [max(map(int, sublist)) for sublist in cost_matrix]
         min_value = min(max_values)
         min_index = max_values.index(min_value)
         optimal_alternative = name_alternatives[min_index]
-
         optimal_message = f"Оптимальною за критерієм мінімуму максимальних значень є альтернатива {optimal_alternative} (мінімальне значення {min_value})."
+        optimal_variants = max_values
 
     existing_record = MaximinCostMatrix.query.get(new_record_id)
     if existing_record is None:
@@ -152,7 +146,7 @@ def result(method_id=None):
             id=new_record_id,
             maximin_alternatives_id=new_record_id,
             matrix=cost_matrix,
-            optimal_variants=min_values,
+            optimal_variants=optimal_variants,
         )
         if current_user.is_authenticated:
             add_object_to_db(
@@ -169,12 +163,17 @@ def result(method_id=None):
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "cost_matrix": cost_matrix,
-        "optimal_variants": min_values,
+        "optimal_variants": optimal_variants,
         "id": new_record_id,
         "maximin_task": maximin_task,
         "matrix_type": matrix_type,
         "optimal_message": optimal_message,
-        "maximin_plot": generate_plot(min_values, name_alternatives, False),
+        "maximin_plot": generate_plot(
+            optimal_variants,
+            name_alternatives,
+            percent=False,
+            savage=False if matrix_type == "profit" else True,
+        ),
     }
 
     session["flag"] = 1
