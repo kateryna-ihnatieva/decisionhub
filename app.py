@@ -19,6 +19,7 @@ from blueprints import (
     kriteriy_laplasa_bp,
     maximin_bp,
     savage_bp,
+    hurwitz_bp,
 )
 from models import *
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -50,6 +51,7 @@ app.register_blueprint(experts_bp)
 app.register_blueprint(kriteriy_laplasa_bp)
 app.register_blueprint(maximin_bp)
 app.register_blueprint(savage_bp)
+app.register_blueprint(hurwitz_bp)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -57,7 +59,8 @@ login_manager.login_view = "login"
 
 @login_manager.user_loader
 def load_user(user_id):
-    return UserLogin().fromDB(user_id, User)
+    user = User.query.get(user_id)
+    return UserLogin().create(user) if user else None
 
 
 @app.route("/")
@@ -259,6 +262,23 @@ def profile():
             session = Session(bind=db.engine)
             name_alternatives = session.get(SavageAlternatives, result.method_id).names
             name_conditions = session.get(SavageConditions, result.method_id).names
+            owner_name = session.get(User, result.user_id).name
+            result_history.append(
+                {
+                    "result_id": result_id,
+                    "method_id": method_id,
+                    "method_name": method_name,
+                    "name_alternatives": name_alternatives,
+                    "name_conditions": name_conditions,
+                    "owner_name": owner_name,
+                }
+            )
+            session.close()
+
+        if method_name == "Hurwitz":
+            session = Session(bind=db.engine)
+            name_alternatives = session.get(HurwitzAlternatives, result.method_id).names
+            name_conditions = session.get(HurwitzConditions, result.method_id).names
             owner_name = session.get(User, result.user_id).name
             result_history.append(
                 {

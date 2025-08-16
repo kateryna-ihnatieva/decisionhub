@@ -2,7 +2,7 @@
 {% block title %}
 {{ title }}
 {% endblock %}
-{% block maximin %} active {% endblock %}
+{% block hurwitz %} active {% endblock %}
 {% block content %}
 <style>
   :root {
@@ -489,22 +489,22 @@
 
 <div class="page-header">
   <div class="header-content">
-    <h1 class="method-title">Максимінний критерій</h1>
-    <img src="{{ url_for('static', filename='img/maximin.png') }}" alt="Maximin" class="method-icon">
+    <h1 class="method-title">Критерій Гурвиця</h1>
+    <img src="{{ url_for('static', filename='img/hurwitz.png') }}" alt="Hurwitz" class="method-icon">
     <p class="subtitle">Метод прийняття рішень в умовах невизначеності</p>
   </div>
 </div>
 
 <div class="main-container">
   <div class="setup-form">
-    <form action="{{ url_for('maximin.names') }}" method="GET">
+    <form action="{{ url_for('hurwitz.names') }}" method="GET">
 
       <div class="form-section">
         <div class="section-title task">Опис задачі</div>
         <textarea
           class="task-textarea"
-          name="maximin_task"
-          id="maximin_task"
+          name="hurwitz_task"
+          id="hurwitz_task"
           placeholder="Опишіть задачу, яку потрібно розв'язати (необов'язково)...&#10;&#10;Наприклад: Вибір стратегії інвестування при невизначеності ринкових умов"
         ></textarea>
       </div>
@@ -542,18 +542,6 @@
             >
             <div class="info-hint">Мінімум 2, рекомендовано до 6</div>
           </div>
-          <div class="parameter-group" style="grid-column: span 2; text-align: center;">
-    <div class="parameter-label" style="justify-content: center;">Тип значень у матриці</div>
-    <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; margin-right: 20px;">
-      <input type="radio" name="matrix_type" id="matrix_type" value="profit" required style="accent-color: var(--color-accent);">
-      Прибуток
-    </label>
-    <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
-      <input type="radio" name="matrix_type" id="matrix_type" value="loss" style="accent-color: var(--color-accent);">
-      Втрати
-    </label>
-    <div class="info-hint">Виберіть, що відображає платіжна матриця</div>
-  </div>
         </div>
       </div>
 

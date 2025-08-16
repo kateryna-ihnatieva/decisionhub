@@ -1,4 +1,4 @@
-class UserLogin():
+class UserLogin:
     def fromDB(self, user_id, User):
         self.__user = User.query.get(user_id)
         return self
@@ -20,7 +20,7 @@ class UserLogin():
         return str(self.__user.id)
 
     def get_name(self):
-        return str(self.__user.name)
+        return str(self.__user.name) if self.__user.name else None
 
     def get_email(self):
         return str(self.__user.email)

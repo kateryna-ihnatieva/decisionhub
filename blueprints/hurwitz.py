@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, session
 from mymodules.mai import *
 from models import (
-    MaximinConditions,
-    MaximinAlternatives,
-    MaximinCostMatrix,
-    MaximinTask,
+    HurwitzConditions,
+    HurwitzAlternatives,
+    HurwitzCostMatrix,
+    HurwitzTask,
     db,
     Result,
 )
@@ -12,33 +12,30 @@ from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 
-maximin_bp = Blueprint("maximin", __name__, url_prefix="/maximin")
+hurwitz_bp = Blueprint("hurwitz", __name__, url_prefix="/hurwitz")
 
 
-@maximin_bp.route("/")
+@hurwitz_bp.route("/")
 def index():
     context = {
-        "title": "Максимінний критерій",
+        "title": "Критерій Гурвиця",
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
-    return render_template("Maximin/index.html", **context)
+    return render_template("Hurwitz/index.html", **context)
 
 
-@maximin_bp.route("/names", methods=["GET", "POST"])
+@hurwitz_bp.route("/names", methods=["GET", "POST"])
 def names():
     num_alt = int(request.args.get("num_alt"))
     num_conditions = int(request.args.get("num_conditions"))
-    maximin_task = (
-        request.args.get("maximin_task") if request.args.get("maximin_task") else None
+    hurwitz_task = (
+        request.args.get("hurwitz_task") if request.args.get("hurwitz_task") else None
     )
-    matrix_type = request.args.get("matrix_type")
-    print(matrix_type)
 
     # Збереження змінниї у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
-    session["maximin_task"] = maximin_task
-    session["matrix_type"] = matrix_type
+    session["hurwitz_task"] = hurwitz_task
 
     context = {
         "title": "Імена",
@@ -47,15 +44,15 @@ def names():
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 
-    return render_template("Maximin/names.html", **context)
+    return render_template("Hurwitz/names.html", **context)
 
 
-@maximin_bp.route("/cost-matrix", methods=["GET", "POST"])
+@hurwitz_bp.route("/cost-matrix", methods=["GET", "POST"])
 def cost_matrix():
     num_alt = int(session.get("num_alt"))
     num_conditions = int(session.get("num_conditions"))
-    maximin_task = session.get("maximin_task")
-    matrix_type = session.get("matrix_type")
+    hurwitz_task = session.get("hurwitz_task")
+
     name_alternatives = request.form.getlist("name_alternatives")
     name_conditions = request.form.getlist("name_conditions")
 
@@ -72,16 +69,15 @@ def cost_matrix():
             "name": current_user.get_name() if current_user.is_authenticated else None,
         }
 
-        return render_template("Maximin/names.html", **context)
+        return render_template("Hurwitz/names.html", **context)
 
     # Збереження даних у БД
-    new_record_id = add_object_to_db(db, MaximinConditions, names=name_conditions)
+    new_record_id = add_object_to_db(db, HurwitzConditions, names=name_conditions)
 
-    add_object_to_db(db, MaximinAlternatives, id=new_record_id, names=name_alternatives)
+    add_object_to_db(db, HurwitzAlternatives, id=new_record_id, names=name_alternatives)
 
-    add_object_to_db(
-        db, MaximinTask, id=new_record_id, task=maximin_task, matrix_type=matrix_type
-    )
+    if hurwitz_task:
+        add_object_to_db(db, HurwitzTask, id=new_record_id, task=hurwitz_task)
 
     session["new_record_id"] = new_record_id
     session["flag"] = 0
@@ -96,10 +92,10 @@ def cost_matrix():
         "id": new_record_id,
     }
 
-    return render_template("Maximin/cost_matrix.html", **context)
+    return render_template("Hurwitz/cost_matrix.html", **context)
 
 
-@maximin_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
+@hurwitz_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None):
     if not method_id:
         new_record_id = int(session.get("new_record_id"))
@@ -107,50 +103,41 @@ def result(method_id=None):
         num_conditions = int(session.get("num_conditions"))
     else:
         new_record_id = method_id
-        num_alt = len(MaximinAlternatives.query.get(new_record_id).names)
-        num_conditions = len(MaximinConditions.query.get(new_record_id).names)
+        num_alt = len(HurwitzAlternatives.query.get(new_record_id).names)
+        num_conditions = len(HurwitzConditions.query.get(new_record_id).names)
 
-    name_alternatives = MaximinAlternatives.query.get(new_record_id).names
-    name_conditions = MaximinConditions.query.get(new_record_id).names
+    name_alternatives = HurwitzAlternatives.query.get(new_record_id).names
+    name_conditions = HurwitzConditions.query.get(new_record_id).names
 
-    maximin_task = session.get("maximin_task")
-    matrix_type = session.get("matrix_type")
+    hurwitz_task = session.get("hurwitz_task")
 
     try:
-        maximin_task_record = MaximinTask.query.get(new_record_id)
-        maximin_task = maximin_task_record.task if maximin_task_record else None
+        hurwitz_task_record = HurwitzTask.query.get(new_record_id)
+        hurwitz_task = hurwitz_task_record.task if hurwitz_task_record else None
     except Exception as e:
         print("[!] Error:", e)
 
     flag = session.get("flag")
     if flag != 0:
-        cost_matrix = MaximinCostMatrix.query.get(new_record_id).matrix
+        cost_matrix = HurwitzCostMatrix.query.get(new_record_id).matrix
     else:
         cost_matrix_raw = request.form.getlist("cost_matrix")
         cost_matrix = make_table(num_alt, num_conditions, cost_matrix_raw)
 
-    if matrix_type == "profit":
-        min_values = [min(map(int, sublist)) for sublist in cost_matrix]
-        max_value = max(min_values)
-        max_index = min_values.index(max_value)
-        optimal_alternative = name_alternatives[max_index]
+    min_values = [min(map(int, sublist)) for sublist in cost_matrix]
+    max_value = max(min_values)
+    max_index = min_values.index(max_value)
+    optimal_alternative = name_alternatives[max_index]
 
-        optimal_message = f"Оптимальною за критерієм максимуму мінімальних значень є альтернатива {optimal_alternative} (максимальне значення {max_value})."
-    else:
-        max_values = [max(map(int, sublist)) for sublist in cost_matrix]
-        min_value = min(max_values)
-        min_index = max_values.index(min_value)
-        optimal_alternative = name_alternatives[min_index]
+    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
 
-        optimal_message = f"Оптимальною за критерієм мінімуму максимальних значень є альтернатива {optimal_alternative} (мінімальне значення {min_value})."
-
-    existing_record = MaximinCostMatrix.query.get(new_record_id)
+    existing_record = HurwitzCostMatrix.query.get(new_record_id)
     if existing_record is None:
         add_object_to_db(
             db,
-            MaximinCostMatrix,
+            HurwitzCostMatrix,
             id=new_record_id,
-            maximin_alternatives_id=new_record_id,
+            hurwitz_alternatives_id=new_record_id,
             matrix=cost_matrix,
             optimal_variants=min_values,
         )
@@ -158,7 +145,7 @@ def result(method_id=None):
             add_object_to_db(
                 db,
                 Result,
-                method_name="Maximin",
+                method_name="Hurwitz",
                 method_id=new_record_id,
                 user_id=current_user.get_id(),
             )
@@ -171,12 +158,11 @@ def result(method_id=None):
         "cost_matrix": cost_matrix,
         "optimal_variants": min_values,
         "id": new_record_id,
-        "maximin_task": maximin_task,
-        "matrix_type": matrix_type,
+        "hurwitz_task": hurwitz_task,
         "optimal_message": optimal_message,
-        "maximin_plot": generate_plot(min_values, name_alternatives, False),
+        "hurwitz_plot": generate_plot(min_values, name_alternatives, False),
     }
 
     session["flag"] = 1
 
-    return render_template("Maximin/result.html", **context)
+    return render_template("Hurwitz/result.html", **context)

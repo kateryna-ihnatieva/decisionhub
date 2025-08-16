@@ -129,7 +129,8 @@ class MaximinAlternatives(db.Model):
 class MaximinTask(db.Model):
     __tablename__ = "maximin_tasks"
     id = db.Column(db.Integer, primary_key=True)
-    task = db.Column(db.Text)
+    task = db.Column(db.Text, nullable=False, default="")
+    matrix_type = db.Column(db.String(20), nullable=False, default="profit")
 
 
 class MaximinCostMatrix(db.Model):
@@ -173,6 +174,38 @@ class SavageCostMatrix(db.Model):
     matrix = db.Column(JSON, nullable=False)
     optimal_variants = db.Column(JSON, nullable=False)
     task_id = db.Column(db.Integer, db.ForeignKey("savage_tasks.id"), nullable=True)
+
+
+# --- HURWITZ ---
+
+
+class HurwitzConditions(db.Model):
+    __tablename__ = "hurwitz_conditions"
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(JSON, nullable=False)
+
+
+class HurwitzAlternatives(db.Model):
+    __tablename__ = "hurwitz_alternatives"
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(JSON, nullable=False)
+
+
+class HurwitzTask(db.Model):
+    __tablename__ = "hurwitz_tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    task = db.Column(db.Text)
+
+
+class HurwitzCostMatrix(db.Model):
+    __tablename__ = "hurwitz_cost_matrix"
+    id = db.Column(db.Integer, primary_key=True)
+    hurwitz_alternatives_id = db.Column(
+        db.Integer, db.ForeignKey("hurwitz_alternatives.id"), nullable=False
+    )
+    matrix = db.Column(JSON, nullable=False)
+    optimal_variants = db.Column(JSON, nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey("hurwitz_tasks.id"), nullable=True)
 
 
 # --- BINARY ---
