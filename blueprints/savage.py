@@ -119,27 +119,37 @@ def result(method_id=None):
 
     flag = session.get("flag")
     if flag != 0:
-        cost_matrix = SavageCostMatrix.query.get(new_record_id).matrix
+        cost_record = SavageCostMatrix.query.get(new_record_id)
+        cost_matrix = cost_record.matrix
+        loss_matrix = cost_record.loss_matrix
+        max_losses = cost_record.max_losses
+        optimal_alternative = cost_record.optimal_variants[0]
     else:
         cost_matrix_raw = request.form.getlist("cost_matrix")
         cost_matrix = make_table(num_alt, num_conditions, cost_matrix_raw)
 
-    max_values = [max(map(int, sublist)) for sublist in cost_matrix]
-    min_value = min(max_values)
-    min_index = max_values.index(min_value)
-    optimal_alternative = name_alternatives[min_index]
+        loss_matrix = []
+        for j in range(num_conditions):
+            # Преобразуем все элементы столбца в float
+            col = [float(cost_matrix[i][j]) for i in range(num_alt)]
+            max_in_col = max(col)
+            loss_matrix.append([abs(max_in_col - val) for val in col])
 
-    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має мінімальне значення очікуваної втрати ('{min_value}')."
+        loss_matrix = list(map(list, zip(*loss_matrix)))
+        max_losses = [max(row) for row in loss_matrix]
+        min_loss = min(max_losses)
+        min_index = max_losses.index(min_loss)
+        optimal_alternative = name_alternatives[min_index]
 
-    existing_record = SavageCostMatrix.query.get(new_record_id)
-    if existing_record is None:
         add_object_to_db(
             db,
             SavageCostMatrix,
             id=new_record_id,
             savage_alternatives_id=new_record_id,
             matrix=cost_matrix,
-            optimal_variants=max_values,
+            loss_matrix=loss_matrix,
+            max_losses=max_losses,
+            optimal_variants=[optimal_alternative],
         )
         if current_user.is_authenticated:
             add_object_to_db(
@@ -150,19 +160,24 @@ def result(method_id=None):
                 user_id=current_user.get_id(),
             )
 
+    optimal_message = (
+        f"Оптимальна альтернатива за критерієм Севіджа: {optimal_alternative} "
+        f"(мінімальні максимальні втрати = {min(max_losses)})"
+    )
+
     context = {
         "title": "Результат",
         "name": current_user.get_name() if current_user.is_authenticated else None,
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "cost_matrix": cost_matrix,
-        "optimal_variants": max_values,
+        "loss_matrix": loss_matrix,
+        "max_losses": max_losses,
         "id": new_record_id,
         "savage_task": savage_task,
         "optimal_message": optimal_message,
-        "savage_plot": generate_plot(max_values, name_alternatives, False, savage=True),
+        "savage_plot": generate_plot(max_losses, name_alternatives, False, savage=True),
     }
 
     session["flag"] = 1
-
     return render_template("Savage/result.html", **context)

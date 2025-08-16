@@ -172,6 +172,8 @@ class SavageCostMatrix(db.Model):
         db.Integer, db.ForeignKey("savage_alternatives.id"), nullable=False
     )
     matrix = db.Column(JSON, nullable=False)
+    loss_matrix = db.Column(JSON, nullable=False)
+    max_losses = db.Column(JSON, nullable=False)
     optimal_variants = db.Column(JSON, nullable=False)
     task_id = db.Column(db.Integer, db.ForeignKey("savage_tasks.id"), nullable=True)
 
