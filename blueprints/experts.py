@@ -175,14 +175,19 @@ def experts_result(method_id=None):
         print("[!] Error:", e)
 
     name_research = ExpertsNameResearch.query.get(new_record_id).names
-    flag = session.get("flag")
-    if flag != 0:
-        experts_data_table = ExpertsData.query.get(new_record_id).experts_data_table
-    else:
+    if request.method == "POST":
         experts_data_table_temp = request.form.getlist("experts_data_table")
+        if not experts_data_table_temp:
+            return "Помилка: форма не передала жодних даних.", 400
         experts_data_table = make_table(
             num_experts, len(name_research), experts_data_table_temp
         )
+    else:
+        existing_record = ExpertsData.query.get(new_record_id)
+        if existing_record:
+            experts_data_table = existing_record.experts_data_table
+        else:
+            return "Помилка: дані відсутні для цього запису.", 404
 
     name_research = ExpertsNameResearch.query.get(new_record_id).names
     k_k = ExpertsCompetency.query.get(new_record_id).k_k

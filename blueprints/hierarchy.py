@@ -1,4 +1,13 @@
-from flask import Flask, Blueprint, render_template, request, session
+from flask import (
+    Flask,
+    Blueprint,
+    render_template,
+    request,
+    session,
+    redirect,
+    url_for,
+    flash,
+)
 from mymodules.mai import *
 from models import *
 from flask_login import current_user
@@ -196,8 +205,21 @@ def result(method_id=None):
         num_criteria = session.get("num_criteria")
     else:
         new_record_id = method_id
-        num_alternatives = len(HierarchyAlternatives.query.get(new_record_id).names)
-        num_criteria = len(HierarchyCriteria.query.get(new_record_id).names)
+        # Получаем данные из БД вместо session
+        alternatives_record = HierarchyAlternatives.query.get(new_record_id)
+        criteria_record = HierarchyCriteria.query.get(new_record_id)
+
+        if not alternatives_record or not criteria_record:
+            flash("Данные не найдены", "error")
+            return redirect(url_for("hierarchy.index"))
+
+        num_alternatives = len(alternatives_record.names)
+        num_criteria = len(criteria_record.names)
+
+        # Устанавливаем данные в session для корректной работы остального кода
+        session["new_record_id"] = new_record_id
+        session["num_alternatives"] = num_alternatives
+        session["num_criteria"] = num_criteria
 
     name_alternatives = HierarchyAlternatives.query.get(new_record_id).names
     name_criteria = HierarchyCriteria.query.get(new_record_id).names
@@ -227,17 +249,54 @@ def result(method_id=None):
         hierarchy_task = hierarchy_task_record.task if hierarchy_task_record else None
     except Exception as e:
         print("[!] Error:", e)
+        hierarchy_task = None
 
-    matr_alt = session.get("matr_alt")
-    if matr_alt != 0:
-        matr_alt = HierarchyAlternativesMatrix.query.get(new_record_id).matr_alt
+    # Загружаем матрицу альтернатив из БД
+    existing_alternatives_matrix = HierarchyAlternativesMatrix.query.get(new_record_id)
+
+    if existing_alternatives_matrix and existing_alternatives_matrix.matr_alt:
+        # Данные есть в БД
+        matr_alt = existing_alternatives_matrix.matr_alt
+        print(f"[DEBUG] Загружена матрица альтернатив из БД: {len(matr_alt)} элементов")
     else:
-        matr_alt = request.form.getlist("matrix_alt")
+        # Данных нет в БД - это прямая ссылка на результат
+        if method_id and not request.form.getlist("matrix_alt"):
+            flash(
+                "Неполные данные для отображения результата. Матрица альтернатив не найдена.",
+                "error",
+            )
+            return redirect(url_for("hierarchy.index"))
+        else:
+            matr_alt = request.form.getlist("matrix_alt")
+            print(f"[DEBUG] Матрица альтернатив из формы: {len(matr_alt)} элементов")
+
+    # Проверяем размеры данных перед созданием матрицы
+    expected_matrix_size = num_criteria * num_alternatives * num_alternatives
+    if len(matr_alt) != expected_matrix_size:
+        print(f"[ERROR] Неправильный размер матрицы альтернатив!")
+        print(f"[ERROR] Ожидается: {expected_matrix_size}, получено: {len(matr_alt)}")
+        print(
+            f"[ERROR] num_criteria: {num_criteria}, num_alternatives: {num_alternatives}"
+        )
+        flash(
+            f"Ошибка в данных матрицы альтернатив. Неправильный размер данных.", "error"
+        )
+        return redirect(url_for("hierarchy.index"))
 
     # Створення списку з матриць по рівнях
-    matrix_alt = do_matrix(
-        num_alt=num_alternatives, matrix=matr_alt, criteria=num_criteria
-    )
+    try:
+        matrix_alt = do_matrix(
+            num_alt=num_alternatives, matrix=matr_alt, criteria=num_criteria
+        )
+        print(
+            f"[DEBUG] Матрица альтернатив создана успешно: {len(matrix_alt)} критериев"
+        )
+    except (IndexError, ValueError) as e:
+        print(f"[!] Error creating matrix_alt: {e}")
+        print(f"[DEBUG] matr_alt: {matr_alt}")
+        print(f"[DEBUG] num_alt: {num_alternatives}, criteria: {num_criteria}")
+        flash("Ошибка в данных матрицы альтернатив", "error")
+        return redirect(url_for("hierarchy.index"))
 
     # Оцінки компонент власного вектора
     components_eigenvector_alt = do_comp_vector(
@@ -250,11 +309,19 @@ def result(method_id=None):
         comp_vector=components_eigenvector_alt,
         criteria=num_criteria,
     )
-
     # Сума по стовпцям
-    sum_col_alt = do_sum_col(
-        num_alt=num_alternatives, matr=matrix_alt, criteria=num_criteria
-    )
+    try:
+        sum_col_alt = do_sum_col(
+            num_alt=num_alternatives, matr=matrix_alt, criteria=num_criteria
+        )
+        print(f"[DEBUG] Сумма по столбцам вычислена успешно")
+    except (IndexError, ValueError) as e:
+        print(f"[!] Error computing sum_col_alt: {e}")
+        print(f"[DEBUG] matrix_alt structure: {len(matrix_alt)} criteria")
+        for i, crit in enumerate(matrix_alt):
+            print(f"[DEBUG] Criteria {i}: {len(crit)} alternatives")
+        flash("Ошибка при вычислении суммы по столбцам матрицы альтернатив", "error")
+        return redirect(url_for("hierarchy.index"))
 
     # Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету
     prod_col_alt = do_prod_col(
@@ -293,7 +360,6 @@ def result(method_id=None):
     )
 
     # Ранжування глобальних пріоритетів
-
     lst_normalized_eigenvector_global = do_lst_norm_vector(
         num_alt=num_alternatives,
         name=name_alternatives,
