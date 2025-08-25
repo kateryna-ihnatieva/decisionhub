@@ -11,6 +11,8 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
 <script src="https://cdn.jsdelivr.net/npm/core-js-bundle/minified.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="{{ url_for('static', filename='js/drafts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/navigation-handler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/test-navigation.js') }}"></script>
 <style>
 /* Общие улучшения сайдбара */
 .sidebar {
@@ -570,6 +572,27 @@ console.log('Base template loaded');
 console.log('DraftsManager available:', typeof window.draftsManager !== 'undefined');
 console.log('Save button element:', document.getElementById('draft-save-button'));
 
+// Функция для пометки всех ссылок навигации как внутренних
+function markNavigationLinks() {
+    // Помечаем все ссылки в сайдбаре как внутренние
+    const navLinks = document.querySelectorAll('.sidebar .nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            sessionStorage.setItem('isInternalNavigation', 'true');
+            console.log('Navigation link clicked, marked as internal navigation');
+        });
+    });
+
+    // Помечаем ссылки профиля и выхода как внутренние
+    const profileLinks = document.querySelectorAll('.profile-btn, .login-btn, .logout-btn, .logout-icon, .login-icon');
+    profileLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            sessionStorage.setItem('isInternalNavigation', 'true');
+            console.log('Profile/login/logout link clicked, marked as internal navigation');
+        });
+    });
+}
+
 // Function to save sidebar state to localStorage
 function saveSidebarState(isCollapsed) {
     localStorage.setItem('sidebarCollapsed', isCollapsed);
@@ -614,6 +637,9 @@ function toggleSidebar() {
 document.addEventListener('DOMContentLoaded', function() {
     loadSidebarState();
 
+    // Помечаем все ссылки навигации как внутренние
+    markNavigationLinks();
+
     // Дополнительная проверка для черновиков
     console.log('DOM loaded, checking drafts system...');
     console.log('DraftsManager available:', typeof window.draftsManager !== 'undefined');
@@ -621,12 +647,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.draftsManager) {
         console.log('Forcing showSaveButton call...');
         window.draftsManager.showSaveButton();
+        window.draftsManager.markAllPageLinks();
     } else {
         console.error('DraftsManager not available, creating manually...');
         // Создаем DraftsManager вручную, если он не был создан
         if (typeof DraftsManager !== 'undefined') {
             window.draftsManager = new DraftsManager();
             window.draftsManager.showSaveButton();
+            window.draftsManager.markAllPageLinks();
         }
     }
 });

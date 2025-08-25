@@ -31,6 +31,7 @@ class DraftsManager {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.showSaveButton();
+                this.markAllPageLinks();
             });
         }
 
@@ -53,6 +54,9 @@ class DraftsManager {
         setInterval(() => {
             this.showSaveButton();
         }, 2000);
+
+        // Дополнительная проверка для всех ссылок на странице
+        this.markAllPageLinks();
     }
 
     /**
@@ -784,11 +788,13 @@ class DraftsManager {
                 if (target.tagName === 'A' && target.href && !target.href.startsWith('javascript:') && !target.href.startsWith('#')) {
                     // Это ссылка на другую страницу
                     sessionStorage.setItem('isInternalNavigation', 'true');
+                    console.log('Internal navigation detected: link click');
                 } else if (target.tagName === 'BUTTON' || target.type === 'submit') {
                     // Это кнопка, которая может вести к навигации
                     const form = target.closest('form');
                     if (form) {
                         sessionStorage.setItem('isInternalNavigation', 'true');
+                        console.log('Internal navigation detected: form button');
                     }
 
                     // Проверяем текст кнопки на наличие слов навигации
@@ -799,12 +805,14 @@ class DraftsManager {
                         buttonText.includes('submit') || buttonText.includes('відправити') ||
                         buttonText.includes('завершити') || buttonText.includes('finish')) {
                         sessionStorage.setItem('isInternalNavigation', 'true');
+                        console.log('Internal navigation detected: navigation button');
                     }
 
                     // Проверяем атрибуты кнопки
                     const buttonType = target.getAttribute('type');
                     if (buttonType === 'submit') {
                         sessionStorage.setItem('isInternalNavigation', 'true');
+                        console.log('Internal navigation detected: submit button');
                     }
                 }
             }
@@ -814,6 +822,7 @@ class DraftsManager {
         document.addEventListener('submit', (event) => {
             // Все формы считаем внутренней навигацией
             sessionStorage.setItem('isInternalNavigation', 'true');
+            console.log('Internal navigation detected: form submit');
         });
     }
 
@@ -827,29 +836,53 @@ class DraftsManager {
         if (isInternalNavigation === 'true') {
             // Это навигация внутри приложения, не показываем предупреждение
             sessionStorage.removeItem('isInternalNavigation');
+            console.log('BeforeUnload: Internal navigation detected, no warning shown');
             return;
+        }
+
+        // Дополнительная проверка: если это переход на другую страницу того же сайта, не показываем предупреждение
+        if (event.target && event.target.location) {
+            const currentHost = window.location.hostname;
+            const targetHost = event.target.location.hostname;
+
+            if (currentHost === targetHost) {
+                console.log('BeforeUnload: Same host navigation, no warning shown');
+                return;
+            }
         }
 
         // Проверяем, есть ли несохраненные изменения
         if (this.hasUnsavedChanges()) {
             // Показываем предупреждение только если есть реальные изменения
+            console.log('BeforeUnload: Unsaved changes detected, showing warning');
             event.preventDefault();
             event.returnValue = 'У вас є незбережені зміни. Дійсно хочете покинути сторінку?';
             return event.returnValue;
         }
 
         // Если нет изменений, не показываем предупреждение
+        console.log('BeforeUnload: No changes detected, no warning shown');
         return;
     }
 
     /**
-     * Проверяет, есть ли несохраненные изменения
-     */
+ * Проверяет, есть ли несохраненные изменения
+ */
     hasUnsavedChanges() {
-        if (!this.lastSavedData) return this.hasFormData();
+        // Если нет сохраненных данных, не показываем предупреждение
+        if (!this.lastSavedData) {
+            console.log('hasUnsavedChanges: No lastSavedData, no warning shown');
+            return false;
+        }
 
         const currentData = this.gatherFormData();
-        return JSON.stringify(currentData) !== JSON.stringify(this.lastSavedData);
+        const hasChanges = JSON.stringify(currentData) !== JSON.stringify(this.lastSavedData);
+
+        console.log('hasUnsavedChanges: Current data:', currentData);
+        console.log('hasUnsavedChanges: Last saved data:', this.lastSavedData);
+        console.log('hasUnsavedChanges: Has changes:', hasChanges);
+
+        return hasChanges;
     }
 
     /**
@@ -965,6 +998,40 @@ class DraftsManager {
         const urlParams = new URLSearchParams(window.location.search);
         const value = urlParams.get(paramName);
         return value ? parseInt(value) || value : null;
+    }
+
+    /**
+     * Помечает все ссылки на странице как внутренние
+     */
+    markAllPageLinks() {
+        // Помечаем все существующие ссылки
+        const allLinks = document.querySelectorAll('a[href]');
+        allLinks.forEach(link => {
+            if (link.href && !link.href.startsWith('javascript:') && !link.href.startsWith('#')) {
+                link.addEventListener('click', () => {
+                    sessionStorage.setItem('isInternalNavigation', 'true');
+                    console.log('DraftsManager: Link marked as internal navigation:', link.href);
+                });
+            }
+        });
+
+        // Помечаем все кнопки
+        const allButtons = document.querySelectorAll('button, input[type="submit"]');
+        allButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                sessionStorage.setItem('isInternalNavigation', 'true');
+                console.log('DraftsManager: Button marked as internal navigation');
+            });
+        });
+
+        // Помечаем все формы
+        const allForms = document.querySelectorAll('form');
+        allForms.forEach(form => {
+            form.addEventListener('submit', () => {
+                sessionStorage.setItem('isInternalNavigation', 'true');
+                console.log('DraftsManager: Form marked as internal navigation');
+            });
+        });
     }
 
     /**
