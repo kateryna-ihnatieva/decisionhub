@@ -405,6 +405,163 @@
       padding: 20px 15px;
     }
   }
+
+  /* Стили для пагинации */
+  #pagination-controls {
+    margin-top: 40px;
+    padding: 30px;
+    background: rgba(5, 56, 107, 0.1);
+    border-radius: 20px;
+    border: 1px solid rgba(102, 252, 241, 0.1);
+  }
+
+  .pagination-info {
+    text-align: center;
+    margin-bottom: 25px;
+    color: var(--color-text);
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .pagination-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .per-page-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-text);
+    font-size: 14px;
+  }
+
+  .per-page-selector select {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    border-radius: 8px;
+    color: var(--color-text);
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .per-page-selector select:hover {
+    border-color: var(--color-accent);
+    background: rgba(11, 12, 16, 0.9);
+  }
+
+  .per-page-selector select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(102, 252, 241, 0.2);
+  }
+
+  .pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .pagination-btn {
+    background: rgba(5, 56, 107, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    border-radius: 10px;
+    color: var(--color-text);
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: rgba(5, 56, 107, 0.8);
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 252, 241, 0.2);
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(11, 12, 16, 0.3);
+    border-color: rgba(102, 252, 241, 0.1);
+  }
+
+  .page-numbers {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .page-number {
+    background: rgba(11, 12, 16, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 8px;
+    color: var(--color-text);
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .page-number:hover {
+    background: rgba(5, 56, 107, 0.6);
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+  }
+
+  .page-number.active {
+    background: var(--color-accent);
+    color: var(--color-background);
+    border-color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .page-number.ellipsis {
+    cursor: default;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    opacity: 0.6;
+  }
+
+  .page-number.ellipsis:hover {
+    background: transparent;
+    transform: none;
+  }
+
+  /* Адаптивность для пагинации */
+  @media (max-width: 768px) {
+    #pagination-controls {
+      padding: 20px 15px;
+    }
+
+    .pagination-controls {
+      gap: 15px;
+    }
+
+    .pagination-buttons {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .page-numbers {
+      order: -1;
+    }
+
+    .pagination-btn {
+      min-width: 100px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
 </style>
 
 <div class="drafts-container">
@@ -426,22 +583,78 @@
       <p>Завантаження чернеток...</p>
     </div>
   </div>
+
+  <!-- Элементы управления пагинацией -->
+  <div id="pagination-controls" style="display: none;">
+    <div class="pagination-info">
+      <span id="pagination-text">Показано 0-0 з 0 чернеток</span>
+    </div>
+
+    <div class="pagination-controls">
+      <div class="per-page-selector">
+        <label for="per-page">На сторінці:</label>
+        <select id="per-page" onchange="changePerPage()">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+
+      <div class="pagination-buttons">
+        <button id="prev-page" class="pagination-btn" onclick="goToPage('prev')" disabled>
+          ← Попередня
+        </button>
+
+        <div class="page-numbers" id="page-numbers">
+          <!-- Номера страниц будут добавлены динамически -->
+        </div>
+
+        <button id="next-page" class="pagination-btn" onclick="goToPage('next')" disabled>
+          Наступна →
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+// Глобальные переменные для пагинации
+let currentPage = 1;
+let currentPerPage = 10;
+let totalPages = 1;
+let totalItems = 0;
+
 document.addEventListener('DOMContentLoaded', function() {
+  // Устанавливаем значение per-page из URL параметров или по умолчанию
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageParam = urlParams.get('page');
+  const perPageParam = urlParams.get('per_page');
+
+  if (pageParam) currentPage = parseInt(pageParam);
+  if (perPageParam) currentPerPage = parseInt(perPageParam);
+
+  // Устанавливаем выбранное значение в селект
+  document.getElementById('per-page').value = currentPerPage;
+
   loadDrafts();
 });
 
 async function loadDrafts() {
   try {
-    const response = await fetch('/drafts/api');
+    const response = await fetch(`/drafts/api?page=${currentPage}&per_page=${currentPerPage}`);
     if (!response.ok) {
       throw new Error('Failed to fetch drafts');
     }
 
     const data = await response.json();
     displayDrafts(data.drafts);
+
+    // Обновляем информацию о пагинации
+    if (data.pagination) {
+      updatePaginationInfo(data.pagination);
+      displayPagination(data.pagination);
+    }
   } catch (error) {
     console.error('Error loading drafts:', error);
     showError('Помилка завантаження чернеток');
@@ -461,6 +674,9 @@ function displayDrafts(drafts) {
         </div>
       </div>
     `;
+
+    // Скрываем элементы пагинации если нет черновиков
+    document.getElementById('pagination-controls').style.display = 'none';
     return;
   }
 
@@ -495,6 +711,110 @@ function displayDrafts(drafts) {
       ${draftsHTML}
     </div>
   `;
+
+  // Показываем элементы пагинации
+  document.getElementById('pagination-controls').style.display = 'block';
+}
+
+function updatePaginationInfo(pagination) {
+  currentPage = pagination.page;
+  currentPerPage = pagination.per_page;
+  totalPages = pagination.pages;
+  totalItems = pagination.total;
+
+  // Обновляем текст информации о пагинации
+  const startItem = (currentPage - 1) * currentPerPage + 1;
+  const endItem = Math.min(currentPage * currentPerPage, totalItems);
+
+  document.getElementById('pagination-text').textContent =
+    `Показано ${startItem}-${endItem} з ${totalItems} чернеток`;
+}
+
+function displayPagination(pagination) {
+  const pageNumbersContainer = document.getElementById('page-numbers');
+  const prevButton = document.getElementById('prev-page');
+  const nextButton = document.getElementById('next-page');
+
+  // Обновляем состояние кнопок
+  prevButton.disabled = !pagination.has_prev;
+  nextButton.disabled = !pagination.has_next;
+
+  // Генерируем номера страниц
+  let pageNumbersHTML = '';
+
+  if (totalPages <= 7) {
+    // Если страниц мало, показываем все
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbersHTML += createPageNumber(i, i === currentPage);
+    }
+  } else {
+    // Если страниц много, показываем с многоточием
+    if (currentPage <= 4) {
+      // В начале
+      for (let i = 1; i <= 5; i++) {
+        pageNumbersHTML += createPageNumber(i, i === currentPage);
+      }
+      pageNumbersHTML += createEllipsis();
+      pageNumbersHTML += createPageNumber(totalPages, false);
+    } else if (currentPage >= totalPages - 3) {
+      // В конце
+      pageNumbersHTML += createPageNumber(1, false);
+      pageNumbersHTML += createEllipsis();
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pageNumbersHTML += createPageNumber(i, i === currentPage);
+      }
+    } else {
+      // В середине
+      pageNumbersHTML += createPageNumber(1, false);
+      pageNumbersHTML += createEllipsis();
+      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+        pageNumbersHTML += createPageNumber(i, i === currentPage);
+      }
+      pageNumbersHTML += createEllipsis();
+      pageNumbersHTML += createPageNumber(totalPages, false);
+    }
+  }
+
+  pageNumbersContainer.innerHTML = pageNumbersHTML;
+}
+
+function createPageNumber(pageNum, isActive) {
+  return `<span class="page-number ${isActive ? 'active' : ''}" onclick="goToPage(${pageNum})">${pageNum}</span>`;
+}
+
+function createEllipsis() {
+  return `<span class="page-number ellipsis">...</span>`;
+}
+
+function goToPage(page) {
+  if (page === 'prev') {
+    page = currentPage - 1;
+  } else if (page === 'next') {
+    page = currentPage + 1;
+  }
+
+  if (page >= 1 && page <= totalPages && page !== currentPage) {
+    currentPage = page;
+    updateURL();
+    loadDrafts();
+  }
+}
+
+function changePerPage() {
+  const newPerPage = parseInt(document.getElementById('per-page').value);
+  if (newPerPage !== currentPerPage) {
+    currentPerPage = newPerPage;
+    currentPage = 1; // Сбрасываем на первую страницу
+    updateURL();
+    loadDrafts();
+  }
+}
+
+function updateURL() {
+  const url = new URL(window.location);
+  url.searchParams.set('page', currentPage);
+  url.searchParams.set('per_page', currentPerPage);
+  window.history.pushState({}, '', url);
 }
 
 async function continueDraft(draftId) {
@@ -506,15 +826,13 @@ async function continueDraft(draftId) {
 
     const draft = await response.json();
 
-    // Сохраняем данные черновика в sessionStorage для восстановления
-    sessionStorage.setItem('draftData', JSON.stringify(draft.form_data));
-    sessionStorage.setItem('draftRoute', draft.current_route);
-
-    // Перенаправляем на страницу черновика
-    window.location.href = draft.current_route + `?draft=${draftId}`;
+    // Перенаправляем на соответствующую страницу с параметром draft
+    const url = new URL(draft.current_route, window.location.origin);
+    url.searchParams.set('draft', draftId);
+    window.location.href = url.toString();
 
   } catch (error) {
-    console.error('Error loading draft:', error);
+    console.error('Error continuing draft:', error);
     showError('Помилка завантаження чернетки');
   }
 }
@@ -533,19 +851,14 @@ async function deleteDraft(draftId) {
       throw new Error('Failed to delete draft');
     }
 
-    // Удаляем карточку черновика из DOM
-    const draftCard = document.querySelector(`[data-draft-id="${draftId}"]`);
-    if (draftCard) {
-      draftCard.remove();
-    }
+    const result = await response.json();
 
-    // Проверяем, остались ли еще черновики
-    const remainingCards = document.querySelectorAll('.draft-card');
-    if (remainingCards.length === 0) {
-      loadDrafts(); // Показываем пустое состояние
+    if (result.success) {
+      // Перезагружаем черновики
+      loadDrafts();
+    } else {
+      showError('Помилка видалення чернетки');
     }
-
-    showSuccess('Чернетку видалено');
 
   } catch (error) {
     console.error('Error deleting draft:', error);
@@ -555,9 +868,9 @@ async function deleteDraft(draftId) {
 
 function getMethodDisplayName(methodType) {
   const methodNames = {
-    'hierarchy': 'Аналіз Ієрархій',
-    'binary': 'Бінарні Відношення',
-    'experts': 'Експертні Оцінки',
+    'hierarchy': 'Метод Аналізу Ієрархій',
+    'binary': 'Метод Бінарних Відношень',
+    'experts': 'Метод Експертних Оцінок',
     'laplasa': 'Критерій Лапласа',
     'maximin': 'Критерій Максиміна',
     'savage': 'Критерій Севіджа',
@@ -584,15 +897,15 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function showSuccess(message) {
-  // Простое уведомление об успехе
-  console.log('Success:', message);
-}
-
 function showError(message) {
-  // Простое уведомление об ошибке
-  console.error('Error:', message);
-  alert(message);
+  const container = document.getElementById('drafts-content');
+  container.innerHTML = `
+    <div class="error-state">
+      <div class="error-icon">❌</div>
+      <div class="error-text">${message}</div>
+      <button onclick="loadDrafts()" class="btn-retry">Спробувати знову</button>
+    </div>
+  `;
 }
 </script>
 {% endblock %}

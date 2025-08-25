@@ -18,16 +18,32 @@ drafts_bp = Blueprint("drafts", __name__, url_prefix="/drafts")
 @login_required
 def index():
     """Страница со списком черновиков пользователя"""
-    user_drafts = (
+    # Получаем параметры пагинации
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+
+    # Ограничиваем количество элементов на странице
+    if per_page > 50:
+        per_page = 50
+    elif per_page < 1:
+        per_page = 10
+
+    # Получаем черновики с пагинацией
+    pagination = (
         Draft.query.filter_by(user_id=current_user.get_id())
         .order_by(Draft.updated_at.desc())
-        .all()
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
+
+    user_drafts = pagination.items
 
     context = {
         "title": "Мої чернетки",
         "name": current_user.get_name(),
         "drafts": user_drafts,
+        "pagination": pagination,
+        "current_page": page,
+        "per_page": per_page,
     }
     return render_template("drafts/index.html", **context)
 
@@ -75,13 +91,26 @@ def save_draft():
 @drafts_bp.route("/api", methods=["GET"])
 @login_required
 def get_drafts():
-    """API для получения списка черновиков пользователя"""
+    """API для получения списка черновиков пользователя с пагинацией"""
     try:
-        drafts = (
+        # Получаем параметры пагинации
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 10, type=int)
+
+        # Ограничиваем количество элементов на странице
+        if per_page > 50:
+            per_page = 50
+        elif per_page < 1:
+            per_page = 10
+
+        # Получаем черновики с пагинацией
+        pagination = (
             Draft.query.filter_by(user_id=current_user.get_id())
             .order_by(Draft.updated_at.desc())
-            .all()
+            .paginate(page=page, per_page=per_page, error_out=False)
         )
+
+        drafts = pagination.items
 
         drafts_list = []
         for draft in drafts:
@@ -96,7 +125,24 @@ def get_drafts():
                 }
             )
 
-        return jsonify({"drafts": drafts_list}), 200
+        return (
+            jsonify(
+                {
+                    "drafts": drafts_list,
+                    "pagination": {
+                        "page": pagination.page,
+                        "per_page": pagination.per_page,
+                        "pages": pagination.pages,
+                        "total": pagination.total,
+                        "has_prev": pagination.has_prev,
+                        "has_next": pagination.has_next,
+                        "prev_num": pagination.prev_num,
+                        "next_num": pagination.next_num,
+                    },
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error getting drafts: {str(e)}")
