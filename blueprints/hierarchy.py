@@ -28,17 +28,12 @@ def index():
 
 @hierarchy_bp.route("/names", methods=["GET", "POST"])
 def names():
-    num_alternatives = int(request.args.get("num_alternatives"))
-    num_criteria = int(request.args.get("num_criteria"))
-    hierarchy_task = (
-        request.args.get("hierarchy_task")
-        if request.args.get("hierarchy_task")
-        else None
-    )
-
     # Проверяем, загружается ли черновик
     draft_id = request.args.get("draft")
     draft_data = None
+    num_alternatives = 0
+    num_criteria = 0
+    hierarchy_task = None
 
     if draft_id:
         try:
@@ -50,7 +45,7 @@ def names():
 
             if draft and draft.form_data:
                 draft_data = draft.form_data
-                # Восстанавливаем данные в сессии
+                # Восстанавливаем данные из черновика
                 if draft_data.get("numAlternatives"):
                     num_alternatives = int(draft_data["numAlternatives"])
                 if draft_data.get("numCriteria"):
@@ -59,6 +54,20 @@ def names():
                     hierarchy_task = draft_data["task"]
         except Exception as e:
             current_app.logger.error(f"Error loading draft: {str(e)}")
+            # В случае ошибки используем значения по умолчанию
+            num_alternatives = 0
+            num_criteria = 0
+            hierarchy_task = None
+    else:
+        # Если черновик не загружается, получаем данные из URL параметров
+        try:
+            num_alternatives = int(request.args.get("num_alternatives") or 0)
+            num_criteria = int(request.args.get("num_criteria") or 0)
+            hierarchy_task = request.args.get("hierarchy_task")
+        except (ValueError, TypeError):
+            num_alternatives = 0
+            num_criteria = 0
+            hierarchy_task = None
 
     # Збереження змінної у сесії
     session["num_criteria"] = num_criteria
@@ -69,6 +78,7 @@ def names():
         "title": "Імена",
         "num_alternatives": num_alternatives,
         "num_criteria": num_criteria,
+        "hierarchy_task": hierarchy_task,
         "name_alternatives": draft_data.get("alternatives") if draft_data else None,
         "name_criteria": draft_data.get("criteria") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,

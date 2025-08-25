@@ -415,6 +415,11 @@ class DraftsManager {
                     formData.task = parsed.task || null;
                 }
 
+                // Используем восстановленные матрицы, если текущие пусты
+                if (!formData.matrices || Object.keys(formData.matrices).length === 0) {
+                    formData.matrices = parsed.matrices || {};
+                }
+
             } catch (e) {
                 console.error('Error parsing restored draft data:', e);
             }

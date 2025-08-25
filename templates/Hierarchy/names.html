@@ -217,6 +217,12 @@
     filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
   }
 
+  .section-title.task::before {
+    content: '📝';
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
   .section-title::after {
     content: '';
     flex: 1;
@@ -249,6 +255,12 @@
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     backdrop-filter: blur(5px);
     position: relative;
+  }
+
+  textarea.input-field {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
   }
 
   .input-field::placeholder {
@@ -466,19 +478,32 @@
       {% endif %}
 
       <div class="input-section">
+        <div class="section-title task">Опис завдання</div>
+        <div class="input-group">
+          <textarea
+            class="input-field"
+            name="hierarchy_task"
+            id="hierarchy_task"
+            placeholder="Опишіть завдання для аналізу..."
+            rows="3"
+          >{% if hierarchy_task %}{{ hierarchy_task }}{% endif %}</textarea>
+        </div>
+      </div>
+
+      <div class="input-section">
         <div class="section-title criteria">Назви критеріїв</div>
         <div class="input-grid">
-          {% for i in range(num_criteria) %}
+          {% for i in range(num_criteria | int) %}
           <div class="input-group">
-            <span class="input-counter">{{ i+1 }}</span>
+            <div class="input-number">{{ i+1 }}</div>
             <input
               class="input-field"
               type="text"
               name="name_criteria"
-              id="criteria{{ i+1 }}"
+              id="criter{{ i+1 }}"
+              data-index="{{ i }}"
               placeholder="Критерій {{ i+1 }}"
               value="{% if name_criteria and name_criteria[i] is defined %}{{ name_criteria[i] }}{% endif %}"
-              data-index="{{ i }}"
               required
             >
           </div>
@@ -487,22 +512,24 @@
       </div>
 
       <div class="input-section">
-        <div class="section-title alternatives">Введіть імена альтернатив</div>
-        {% for n in range(num_alt) %}
-        <div class="input-group">
-          <span class="input-counter">{{ n+1 }}</span>
-          <input
-            class="input-field"
-            type="text"
-            name="name_alternatives"
-            id="alternative{{ n+1 }}"
-            placeholder="Альтернатива {{ n+1 }}"
-            value="{% if name_alternatives and name_alternatives[n] is defined %}{{ name_alternatives[n] }}{% endif %}"
-            data-index="{{ n }}"
-            required
-          >
+        <div class="section-title alternatives">Назви альтернатив</div>
+        <div class="input-grid">
+          {% for n in range(num_alternatives) %}
+          <div class="input-group">
+            <div class="input-number">{{ n+1 }}</div>
+            <input
+              class="input-field"
+              type="text"
+              name="name_alternatives"
+              id="alternative{{ n+1 }}"
+              placeholder="Альтернатива {{ n+1 }}"
+              value="{% if name_alternatives and name_alternatives[n] is defined %}{{ name_alternatives[n] }}{% endif %}"
+              data-index="{{ n }}"
+              required
+            >
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
       </div>
 
       <button type="submit" class="submit-button">Далі</button>
