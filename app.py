@@ -20,6 +20,7 @@ from blueprints import (
     maximin_bp,
     savage_bp,
     hurwitz_bp,
+    drafts_bp,
 )
 from models import *
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -52,6 +53,7 @@ app.register_blueprint(kriteriy_laplasa_bp)
 app.register_blueprint(maximin_bp)
 app.register_blueprint(savage_bp)
 app.register_blueprint(hurwitz_bp)
+app.register_blueprint(drafts_bp)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"

@@ -476,6 +476,7 @@
               type="text"
               name="name_criteria"
               id="criter{{ i+1 }}"
+              data-index="{{ i }}"
               placeholder="Критерій {{ i+1 }}"
               value="{% if name_criteria %}{{ name_criteria[i] }}{% endif %}"
               required
@@ -498,6 +499,7 @@
               id="alternative{{ n+1 }}"
               placeholder="Альтернатива {{ n+1 }}"
               value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+              data-index="{{ n }}"
               required
             >
           </div>

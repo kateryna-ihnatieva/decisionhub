@@ -1,5 +1,4 @@
 from flask import (
-    Flask,
     Blueprint,
     render_template,
     request,
@@ -7,6 +6,7 @@ from flask import (
     redirect,
     url_for,
     flash,
+    current_app,
 )
 from mymodules.mai import *
 from models import *
@@ -36,6 +36,30 @@ def names():
         else None
     )
 
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные в сессии
+                if draft_data.get("numAlternatives"):
+                    num_alternatives = int(draft_data["numAlternatives"])
+                if draft_data.get("numCriteria"):
+                    num_criteria = int(draft_data["numCriteria"])
+                if draft_data.get("task"):
+                    hierarchy_task = draft_data["task"]
+        except Exception as e:
+            current_app.logger.error(f"Error loading draft: {str(e)}")
+
     # Збереження змінної у сесії
     session["num_criteria"] = num_criteria
     session["num_alternatives"] = num_alternatives
@@ -45,6 +69,8 @@ def names():
         "title": "Імена",
         "num_alternatives": num_alternatives,
         "num_criteria": num_criteria,
+        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
+        "name_criteria": draft_data.get("criteria") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 
@@ -53,6 +79,52 @@ def names():
 
 @hierarchy_bp.route("/matrix-krit", methods=["GET", "POST"])
 def matrix_krit():
+    if request.method == "GET":
+        # GET запрос - показываем страницу с возможностью загрузки черновика
+        num_alternatives = int(session.get("num_alternatives", 0))
+        num_criteria = int(session.get("num_criteria", 0))
+
+        if num_alternatives == 0 or num_criteria == 0:
+            # Если нет данных в сессии, перенаправляем на главную страницу метода
+            return redirect(url_for("hierarchy.index"))
+
+        # Проверяем, загружается ли черновик
+        draft_id = request.args.get("draft")
+        draft_data = None
+
+        if draft_id:
+            try:
+                from models import Draft
+
+                draft = Draft.query.filter_by(
+                    id=draft_id, user_id=current_user.get_id()
+                ).first()
+
+                if draft and draft.form_data:
+                    draft_data = draft.form_data
+            except Exception as e:
+                current_app.logger.error(f"Error loading draft: {str(e)}")
+
+        # Получаем имена из сессии или черновика
+        name_alternatives = session.get("name_alternatives", [])
+        name_criteria = session.get("name_criteria", [])
+
+        if draft_data:
+            name_alternatives = draft_data.get("alternatives", name_alternatives)
+            name_criteria = draft_data.get("criteria", name_criteria)
+
+        context = {
+            "title": "Матриця",
+            "num_alternatives": num_alternatives,
+            "num_criteria": num_criteria,
+            "name_alternatives": name_alternatives,
+            "name_criteria": name_criteria,
+            "name": current_user.get_name() if current_user.is_authenticated else None,
+        }
+
+        return render_template("Hierarchy/matrix_krit.html", **context)
+
+    # POST запрос - обработка формы
     num_alternatives = int(session.get("num_alternatives"))
     num_criteria = int(session.get("num_criteria"))
     hierarchy_task = session.get("hierarchy_task")
@@ -74,6 +146,10 @@ def matrix_krit():
         }
 
         return render_template("Hierarchy/names.html", **context)
+
+    # Сохраняем имена в сессии для возможного восстановления
+    session["name_alternatives"] = name_alternatives
+    session["name_criteria"] = name_criteria
 
     # Збереження даних у БД
     new_record_id = add_object_to_db(db, HierarchyCriteria, names=name_criteria)
