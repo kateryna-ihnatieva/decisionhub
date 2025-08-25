@@ -317,7 +317,7 @@ def profile():
 def delete_result(result_id):
     result = db.session.get(Result, result_id)
     if result:
-        # Удаление связанных записей
+        # Видалення пов'язаних записів
         if result.method_name == "Hierarchy":
             HierarchyCriteriaMatrix.query.filter_by(id=result.method_id).delete()
             HierarchyAlternativesMatrix.query.filter_by(id=result.method_id).delete()
@@ -339,7 +339,7 @@ def delete_result(result_id):
             ExpertsCompetency.query.filter_by(id=result.method_id).delete()
             ExpertsNameResearch.query.filter_by(id=result.method_id).delete()
 
-        # Удаление самого результата
+        # Видалення самого результату
         db.session.delete(result)
         db.session.commit()
         return redirect(url_for("profile"))

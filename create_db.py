@@ -1,6 +1,6 @@
 from app import app, db
 
 with app.app_context():
-    print("Создаём таблицы...")
+    print("Створюємо таблиці...")
     db.create_all()
-    print("Таблицы созданы ✅")
+    print("Таблиці створені ✅")

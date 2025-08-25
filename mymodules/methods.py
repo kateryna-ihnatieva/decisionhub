@@ -385,7 +385,7 @@ def generate_plot(
                 filter: drop-shadow(0 0 4px rgba(102, 252, 241, 0.4)) !important;
             }}
 
-            /* Enhanced responsiveness */
+            /* Покращена адаптивність */
             @media (max-width: 768px) {{
                 .chart-container {{
                     margin: 20px -10px;

@@ -112,10 +112,10 @@ def result(method_id=None):
     name_alternatives = HurwitzAlternatives.query.get(new_record_id).names
     name_conditions = HurwitzConditions.query.get(new_record_id).names
 
-    # Сначала пробуем достать из сессии
+    # Спочатку пробуємо дістати з сесії
     alpha = session.get("alpha")
 
-    # Если в сессии нет — берём из БД
+    # Якщо в сесії немає — беремо з БД
     if alpha is None:
         existing_record = HurwitzCostMatrix.query.get(new_record_id)
         if existing_record:
@@ -125,7 +125,7 @@ def result(method_id=None):
     else:
         alpha = float(alpha)
 
-    # Аналогично с hurwitz_task
+    # Аналогічно з hurwitz_task
     hurwitz_task_record = HurwitzTask.query.get(new_record_id)
     hurwitz_task = (
         hurwitz_task_record.task if hurwitz_task_record else session.get("hurwitz_task")

@@ -32,7 +32,7 @@ def names():
         request.args.get("savage_task") if request.args.get("savage_task") else None
     )
 
-    # Збереження змінниї у сесії
+    # Збереження змінної у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
     session["savage_task"] = savage_task
@@ -130,7 +130,7 @@ def result(method_id=None):
 
         loss_matrix = []
         for j in range(num_conditions):
-            # Преобразуем все элементы столбца в float
+            # Перетворюємо всі елементи стовпця в float
             col = [float(cost_matrix[i][j]) for i in range(num_alt)]
             max_in_col = max(col)
             loss_matrix.append([abs(max_in_col - val) for val in col])

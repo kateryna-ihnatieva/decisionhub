@@ -205,7 +205,7 @@ def result(method_id=None):
         num_criteria = session.get("num_criteria")
     else:
         new_record_id = method_id
-        # Получаем данные из БД вместо session
+        # Отримуємо дані з БД замість сесії
         alternatives_record = HierarchyAlternatives.query.get(new_record_id)
         criteria_record = HierarchyCriteria.query.get(new_record_id)
 
@@ -216,7 +216,7 @@ def result(method_id=None):
         num_alternatives = len(alternatives_record.names)
         num_criteria = len(criteria_record.names)
 
-        # Устанавливаем данные в session для корректной работы остального кода
+        # Встановлюємо дані в сесію для коректної роботи решти коду
         session["new_record_id"] = new_record_id
         session["num_alternatives"] = num_alternatives
         session["num_criteria"] = num_criteria
@@ -251,15 +251,15 @@ def result(method_id=None):
         print("[!] Error:", e)
         hierarchy_task = None
 
-    # Загружаем матрицу альтернатив из БД
+    # Завантажуємо матрицю альтернатив з БД
     existing_alternatives_matrix = HierarchyAlternativesMatrix.query.get(new_record_id)
 
     if existing_alternatives_matrix and existing_alternatives_matrix.matr_alt:
-        # Данные есть в БД
+        # Дані є в БД
         matr_alt = existing_alternatives_matrix.matr_alt
         print(f"[DEBUG] Загружена матрица альтернатив из БД: {len(matr_alt)} элементов")
     else:
-        # Данных нет в БД - это прямая ссылка на результат
+        # Даних немає в БД - це пряме посилання на результат
         if method_id and not request.form.getlist("matrix_alt"):
             flash(
                 "Неполные данные для отображения результата. Матрица альтернатив не найдена.",
@@ -270,7 +270,7 @@ def result(method_id=None):
             matr_alt = request.form.getlist("matrix_alt")
             print(f"[DEBUG] Матрица альтернатив из формы: {len(matr_alt)} элементов")
 
-    # Проверяем размеры данных перед созданием матрицы
+    # Перевіряємо розміри даних перед створенням матриці
     expected_matrix_size = num_criteria * num_alternatives * num_alternatives
     if len(matr_alt) != expected_matrix_size:
         print(f"[ERROR] Неправильный размер матрицы альтернатив!")

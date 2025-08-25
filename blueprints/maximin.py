@@ -34,7 +34,7 @@ def names():
     matrix_type = request.args.get("matrix_type")
     print(matrix_type)
 
-    # Збереження змінниї у сесії
+    # Збереження змінної у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
     session["maximin_task"] = maximin_task

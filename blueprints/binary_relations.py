@@ -94,7 +94,7 @@ def result(method_id=None):
     names = BinaryNames.query.get(new_record_id).names
     num = len(names)
 
-    # Проверим: если матрица уже есть — session["matr"] должен быть 1
+    # Перевіримо: якщо матриця вже є — session["matr"] має бути 1
     existing_matrix = BinaryMatrix.query.get(new_record_id)
     if existing_matrix:
         session["matr"] = 1
