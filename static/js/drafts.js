@@ -473,8 +473,27 @@ class DraftsManager {
         // Дополнительная отладочная информация
         console.log('Form inputs found:');
         console.log('- name_alternatives:', document.querySelectorAll('input[name="name_alternatives"]').length);
-        console.log('- name_conditions:', document.querySelectorAll('input[name="name_conditions"]').length);
-        console.log('- savage_task:', document.querySelector('textarea[name="savage_task"]') ? 'found' : 'not found');
+        console.log('- name_criteria:', document.querySelectorAll('input[name="name_criteria"]').length);
+        console.log('- num_alternatives:', document.querySelectorAll('input[name="num_alternatives"]').length);
+        console.log('- num_criteria:', document.querySelectorAll('input[name="num_criteria"]').length);
+        console.log('- hierarchy_task:', document.querySelector('textarea[name="hierarchy_task"]') ? 'found' : 'not found');
+        console.log('- matrix_krit:', document.querySelectorAll('input[name="matrix_krit"]').length);
+
+        // Проверяем значения полей
+        const numAltInput = document.querySelector('input[name="num_alternatives"]');
+        const numCritInput = document.querySelector('input[name="num_criteria"]');
+        const taskInput = document.querySelector('textarea[name="hierarchy_task"]');
+
+        if (numAltInput) console.log('num_alternatives value:', numAltInput.value);
+        if (numCritInput) console.log('num_criteria value:', numCritInput.value);
+        if (taskInput) console.log('hierarchy_task value:', taskInput.value);
+
+        // Проверяем имена альтернатив и критериев
+        const altInputs = document.querySelectorAll('input[name="name_alternatives"]');
+        const critInputs = document.querySelectorAll('input[name="name_criteria"]');
+
+        console.log('Alternative inputs:', Array.from(altInputs).map(input => ({ index: input.getAttribute('data-index'), value: input.value })));
+        console.log('Criteria inputs:', Array.from(critInputs).map(input => ({ index: input.getAttribute('data-index'), value: input.value })));
 
         return formData;
     }
@@ -601,19 +620,23 @@ class DraftsManager {
      */
     gatherMatrices() {
         const matrices = {};
+        console.log('Gathering matrices...');
 
         // Собираем матрицу критериев
         const criteriaMatrix = this.gatherMatrix('criteria');
+        console.log('Criteria matrix gathered:', criteriaMatrix);
         if (criteriaMatrix) {
             matrices.criteria = criteriaMatrix;
         }
 
         // Собираем матрицы альтернатив
         const alternativesMatrices = this.gatherAlternativesMatrices();
+        console.log('Alternatives matrices gathered:', alternativesMatrices);
         if (Object.keys(alternativesMatrices).length > 0) {
             matrices.alternatives = alternativesMatrices;
         }
 
+        console.log('Final matrices object:', matrices);
         return matrices;
     }
 
@@ -621,19 +644,58 @@ class DraftsManager {
     * Собирает конкретную матрицу
     */
     gatherMatrix(matrixType) {
+        console.log(`Gathering matrix: ${matrixType}`);
         const matrixContainer = document.querySelector(`[data-matrix="${matrixType}"]`);
-        if (!matrixContainer) return null;
+        if (!matrixContainer) {
+            console.log(`Matrix container not found for: ${matrixType}`);
+            return null;
+        }
 
         let inputs = null;
         let size = 0;
 
         if (matrixType === 'criteria') {
-            // Для матрицы критериев используем скрытые поля
+            // Для матрицы критериев используем все поля с name="matrix_krit"
             inputs = matrixContainer.querySelectorAll('input[name="matrix_krit"]');
+            console.log(`Found ${inputs.length} matrix_krit inputs`);
             if (inputs.length === 0) return null;
-            // Размер матрицы = квадратный корень из количества полей
-            size = Math.sqrt(inputs.length);
-            if (size !== Math.floor(size)) return null; // Проверяем, что это квадрат
+
+            // Определяем размер матрицы по количеству строк в таблице
+            const rows = matrixContainer.querySelectorAll('tbody tr');
+            size = rows.length;
+            console.log(`Matrix size determined from rows: ${size}`);
+            if (size === 0) return null;
+
+            // Создаем матрицу и заполняем её данными
+            const matrix = [];
+            for (let i = 0; i < size; i++) {
+                matrix[i] = [];
+                for (let j = 0; j < size; j++) {
+                    if (i === j) {
+                        // Диагональные элементы всегда 1
+                        matrix[i][j] = '1';
+                    } else {
+                        // Ищем соответствующий input
+                        let input = null;
+                        if (i < j) {
+                            // Верхняя часть матрицы
+                            input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
+                        } else {
+                            // Нижняя часть матрицы
+                            input = matrixContainer.querySelector(`#matrix_krit_low_${i}_${j}`);
+                        }
+
+                        if (input) {
+                            matrix[i][j] = input.value || '';
+                        } else {
+                            matrix[i][j] = '';
+                        }
+                    }
+                }
+            }
+
+            console.log(`Criteria matrix built:`, matrix);
+            return matrix;
         } else {
             // Для других матриц используем текстовые поля
             inputs = matrixContainer.querySelectorAll('input[type="text"]');
@@ -656,14 +718,16 @@ class DraftsManager {
                     const criteriaNum = matrixType.replace('alternatives_', '');
                     input = matrixContainer.querySelector(`[name="matrix_alt_${criteriaNum}_${i}_${j}"]`);
                 } else if (matrixType === 'criteria') {
-                    // Для матрицы критериев используем скрытые поля с name="matrix_krit"
-                    // Поля уже отсортированы в правильном порядке (i, j)
-                    const inputIndex = i * size + j;
-                    if (inputs[inputIndex]) {
-                        input = inputs[inputIndex];
+                    // Для матрицы критериев используем старые имена (fallback)
+                    if (i < j) {
+                        input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
+                    } else if (i > j) {
+                        input = matrixContainer.querySelector(`#matrix_krit_low_${i}_${j}`);
+                    } else {
+                        input = matrixContainer.querySelector(`#matrix_krit_diag_${i}_${j}`);
                     }
                 } else {
-                    // Для матрицы критериев используем старые имена (fallback)
+                    // Для других матриц используем старые имена (fallback)
                     if (i < j) {
                         input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
                     } else if (i > j) {

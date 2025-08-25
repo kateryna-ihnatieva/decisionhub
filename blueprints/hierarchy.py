@@ -34,8 +34,6 @@ def names():
     num_alternatives = 0
     num_criteria = 0
     hierarchy_task = None
-    name_alternatives = []
-    name_criteria = []
 
     if draft_id:
         try:
@@ -47,8 +45,6 @@ def names():
 
             if draft and draft.form_data:
                 draft_data = draft.form_data
-                print(f"[DEBUG] Загружаем черновик {draft_id}: {draft_data}")
-                
                 # Восстанавливаем данные из черновика
                 if draft_data.get("numAlternatives"):
                     num_alternatives = int(draft_data["numAlternatives"])
@@ -56,21 +52,12 @@ def names():
                     num_criteria = int(draft_data["numCriteria"])
                 if draft_data.get("task"):
                     hierarchy_task = draft_data["task"]
-                if draft_data.get("alternatives"):
-                    name_alternatives = draft_data["alternatives"]
-                if draft_data.get("criteria"):
-                    name_criteria = draft_data["criteria"]
-                    
-                print(f"[DEBUG] Восстановлено: alternatives={name_alternatives}, criteria={name_criteria}")
         except Exception as e:
             current_app.logger.error(f"Error loading draft: {str(e)}")
-            print(f"[ERROR] Ошибка загрузки черновика: {e}")
             # В случае ошибки используем значения по умолчанию
             num_alternatives = 0
             num_criteria = 0
             hierarchy_task = None
-            name_alternatives = []
-            name_criteria = []
     else:
         # Если черновик не загружается, получаем данные из URL параметров
         try:
@@ -86,20 +73,17 @@ def names():
     session["num_criteria"] = num_criteria
     session["num_alternatives"] = num_alternatives
     session["hierarchy_task"] = hierarchy_task
-    session["name_alternatives"] = name_alternatives
-    session["name_criteria"] = name_criteria
 
     context = {
         "title": "Імена",
         "num_alternatives": num_alternatives,
         "num_criteria": num_criteria,
         "hierarchy_task": hierarchy_task,
-        "name_alternatives": name_alternatives,
-        "name_criteria": name_criteria,
+        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
+        "name_criteria": draft_data.get("criteria") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
-    
-    print(f"[DEBUG] Контекст для шаблона: {context}")
+
     return render_template("Hierarchy/names.html", **context)
 
 
