@@ -398,6 +398,11 @@ def matrix_alt():
 
 @hierarchy_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None):
+    print(f"[DEBUG] Метод result вызван с method_id: {method_id}")
+    print(f"[DEBUG] Метод запроса: {request.method}")
+    print(f"[DEBUG] Данные формы: {dict(request.form)}")
+    print(f"[DEBUG] Данные сессии: {dict(session)}")
+
     if not method_id:
         new_record_id = int(session.get("new_record_id"))
         num_alternatives = int(session.get("num_alternatives"))
@@ -419,6 +424,10 @@ def result(method_id=None):
         session["new_record_id"] = new_record_id
         session["num_alternatives"] = num_alternatives
         session["num_criteria"] = num_criteria
+
+    print(f"[DEBUG] new_record_id: {new_record_id}")
+    print(f"[DEBUG] num_alternatives: {num_alternatives}")
+    print(f"[DEBUG] num_criteria: {num_criteria}")
 
     name_alternatives = HierarchyAlternatives.query.get(new_record_id).names
     name_criteria = HierarchyCriteria.query.get(new_record_id).names
@@ -452,6 +461,9 @@ def result(method_id=None):
 
     # Завантажуємо матрицю альтернатив з БД
     existing_alternatives_matrix = HierarchyAlternativesMatrix.query.get(new_record_id)
+    print(f"[DEBUG] existing_alternatives_matrix: {existing_alternatives_matrix}")
+    if existing_alternatives_matrix:
+        print(f"[DEBUG] matr_alt в БД: {existing_alternatives_matrix.matr_alt}")
 
     if existing_alternatives_matrix and existing_alternatives_matrix.matr_alt:
         # Дані є в БД
@@ -496,6 +508,10 @@ def result(method_id=None):
             skip_calculations = False
     else:
         # Даних немає в БД - проверяем форму
+        print(f"[DEBUG] Проверяем форму на наличие matrix_alt")
+        print(
+            f"[DEBUG] request.form.getlist('matrix_alt'): {request.form.getlist('matrix_alt')}"
+        )
         if request.form.getlist("matrix_alt"):
             # Данные есть в форме - используем их для вычислений
             matr_alt = request.form.getlist("matrix_alt")
