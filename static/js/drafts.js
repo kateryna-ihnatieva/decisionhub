@@ -12,6 +12,9 @@ class DraftsManager {
     }
 
     init() {
+        // Очищаем старые данные черновика из sessionStorage при инициализации
+        sessionStorage.removeItem('draft_form_data');
+
         // Проверяем, загружается ли страница из черновика
         this.checkForDraft();
 
@@ -23,6 +26,33 @@ class DraftsManager {
 
         // Показываем кнопку сохранения на страницах методов
         this.showSaveButton();
+
+        // Дополнительная проверка после полной загрузки DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.showSaveButton();
+            });
+        }
+
+        // Обработчик изменения URL (для SPA)
+        window.addEventListener('popstate', () => {
+            setTimeout(() => this.showSaveButton(), 100);
+        });
+
+        // Обработчик изменения истории (для программной навигации)
+        const originalPushState = history.pushState;
+        history.pushState = function (...args) {
+            originalPushState.apply(history, args);
+            setTimeout(() => this.showSaveButton(), 100);
+        }.bind(this);
+
+        // Перехватываем клики по ссылкам и кнопкам навигации
+        this.interceptNavigationClicks();
+
+        // Периодическая проверка кнопки (каждые 2 секунды)
+        setInterval(() => {
+            this.showSaveButton();
+        }, 2000);
     }
 
     /**
@@ -68,9 +98,24 @@ class DraftsManager {
     restoreFormData(formData) {
         if (!formData) return;
 
-        // Восстанавливаем основные данные
+        // Восстанавливаем задачу (проверяем все возможные имена полей)
         if (formData.task) {
-            const taskInput = document.querySelector('input[name="task"], textarea[name="task"]');
+            const taskInput = document.querySelector('input[name="task"]') ||
+                document.querySelector('textarea[name="task"]') ||
+                document.querySelector('input[name="hierarchy_task"]') ||
+                document.querySelector('textarea[name="hierarchy_task"]') ||
+                document.querySelector('input[name="binary_task"]') ||
+                document.querySelector('textarea[name="binary_task"]') ||
+                document.querySelector('input[name="experts_task"]') ||
+                document.querySelector('textarea[name="experts_task"]') ||
+                document.querySelector('input[name="laplasa_task"]') ||
+                document.querySelector('textarea[name="laplasa_task"]') ||
+                document.querySelector('input[name="maximin_task"]') ||
+                document.querySelector('textarea[name="maximin_task"]') ||
+                document.querySelector('input[name="hurwitz_task"]') ||
+                document.querySelector('textarea[name="hurwitz_task"]') ||
+                document.querySelector('input[name="savage_task"]') ||
+                document.querySelector('textarea[name="savage_task"]');
             if (taskInput) {
                 taskInput.value = formData.task;
             }
@@ -115,6 +160,42 @@ class DraftsManager {
             });
         }
 
+        // Восстанавливаем имена условий (для Savage)
+        if (formData.conditions && Array.isArray(formData.conditions)) {
+            formData.conditions.forEach((cond, index) => {
+                if (cond && cond.trim() !== '') {
+                    const condInput = document.querySelector(`input[name="name_conditions"][data-index="${index}"]`);
+                    if (condInput) {
+                        condInput.value = cond;
+                    }
+                }
+            });
+        }
+
+        // Восстанавливаем имена объектов (для Binary Relations)
+        if (formData.objects && Array.isArray(formData.objects)) {
+            formData.objects.forEach((obj, index) => {
+                if (obj && obj.trim() !== '') {
+                    const objInput = document.querySelector(`input[name="names"][data-index="${index}"]`);
+                    if (objInput) {
+                        objInput.value = obj;
+                    }
+                }
+            });
+        }
+
+        // Восстанавливаем имена исследований (для Experts)
+        if (formData.research && Array.isArray(formData.research)) {
+            formData.research.forEach((res, index) => {
+                if (res && res.trim() !== '') {
+                    const resInput = document.querySelector(`input[name="name_research"][data-index="${index}"]`);
+                    if (resInput) {
+                        resInput.value = res;
+                    }
+                }
+            });
+        }
+
         // Восстанавливаем матрицы
         if (formData.matrices) {
             this.restoreMatrices(formData.matrices);
@@ -124,7 +205,21 @@ class DraftsManager {
         if (formData.otherData) {
             this.restoreOtherData(formData.otherData);
         }
+
+        // Принудительно обновляем форму после восстановления числовых значений
+        this.forceFormUpdate();
+
+        // Сохраняем восстановленные данные в sessionStorage для использования при повторном сохранении
+        try {
+            // Правильно обрабатываем Unicode символы
+            const cleanFormData = JSON.parse(JSON.stringify(formData));
+            sessionStorage.setItem('draft_form_data', JSON.stringify(cleanFormData));
+        } catch (e) {
+            console.error('Error saving draft data to sessionStorage:', e);
+        }
     }
+
+
 
     /**
      * Восстанавливает матрицы из черновика
@@ -144,8 +239,8 @@ class DraftsManager {
     }
 
     /**
- * Восстанавливает конкретную матрицу
- */
+    * Восстанавливает конкретную матрицу
+    */
     restoreMatrix(matrixType, matrixData) {
         const matrixContainer = document.querySelector(`[data-matrix="${matrixType}"]`);
         if (!matrixContainer || !matrixData) return;
@@ -221,16 +316,79 @@ class DraftsManager {
      * Собирает все данные форм для сохранения
      */
     gatherFormData() {
+        // Собираем данные со всех возможных источников
         const formData = {
-            task: this.getFieldValue('task'),
-            numAlternatives: this.getFieldValue('num_alternatives'),
-            numCriteria: this.getFieldValue('num_criteria'),
+            task: this.getFieldValue('task') || this.getFieldValue('hierarchy_task') || this.getFieldValue('binary_task') || this.getFieldValue('experts_task') || this.getFieldValue('laplasa_task') || this.getFieldValue('maximin_task') || this.getFieldValue('hurwitz_task') || this.getFieldValue('savage_task') || this.getFieldValue('savage_task'),
+            numAlternatives: this.getFieldValue('num_alternatives') || this.getFieldValue('num_alt') || this.getUrlParam('num_alternatives') || this.getUrlParam('num_alt') || 0,
+            numCriteria: this.getFieldValue('num_criteria') || this.getUrlParam('num_criteria') || 0,
+            numConditions: this.getFieldValue('num_conditions') || this.getUrlParam('num_conditions') || 0,
+            numObjects: this.getFieldValue('num') || this.getUrlParam('num') || 0,
+            numExperts: this.getFieldValue('num_experts') || this.getUrlParam('num_experts') || 0,
+            numResearch: this.getFieldValue('num_research') || this.getUrlParam('num_research') || 0,
             alternatives: this.getAlternativesNames(),
             criteria: this.getCriteriaNames(),
+            conditions: this.getConditionsNames(),
+            objects: this.getObjectsNames(),
+            research: this.getResearchNames(),
+            alpha: this.getFieldValue('alpha') || this.getUrlParam('alpha') || 0.5,
+            matrixType: this.getFieldValue('matrix_type') || this.getUrlParam('matrix_type'),
             matrices: this.gatherMatrices(),
             otherData: this.gatherOtherData(),
             timestamp: new Date().toISOString()
         };
+
+        // Всегда пытаемся получить дополнительные данные из sessionStorage (восстановленные данные)
+        const restoredData = sessionStorage.getItem('draft_form_data');
+        if (restoredData) {
+            try {
+                const parsed = JSON.parse(restoredData);
+
+                // Используем восстановленные данные как fallback для числовых полей
+                if (!formData.numAlternatives || formData.numAlternatives === 0) {
+                    formData.numAlternatives = parsed.numAlternatives || 0;
+                }
+                if (!formData.numCriteria || formData.numCriteria === 0) {
+                    formData.numCriteria = parsed.numCriteria || 0;
+                }
+                if (!formData.numConditions || formData.numConditions === 0) {
+                    formData.numConditions = parsed.numConditions || 0;
+                }
+                if (!formData.numObjects || formData.numObjects === 0) {
+                    formData.numObjects = parsed.numObjects || 0;
+                }
+                if (!formData.numExperts || formData.numExperts === 0) {
+                    formData.numExperts = parsed.numExperts || 0;
+                }
+                if (!formData.numResearch || formData.numResearch === 0) {
+                    formData.numResearch = parsed.numResearch || 0;
+                }
+
+                // Используем восстановленные данные как fallback для имен, если текущие пусты
+                if (!formData.alternatives || formData.alternatives.length === 0 || formData.alternatives.every(alt => !alt || alt.trim() === '')) {
+                    formData.alternatives = parsed.alternatives || [];
+                }
+                if (!formData.criteria || formData.criteria.length === 0 || formData.criteria.every(crit => !crit || crit.trim() === '')) {
+                    formData.criteria = parsed.criteria || [];
+                }
+                if (!formData.conditions || formData.conditions.length === 0 || formData.conditions.every(cond => !cond || cond.trim() === '')) {
+                    formData.conditions = parsed.conditions || [];
+                }
+                if (!formData.objects || formData.objects.length === 0 || formData.objects.every(obj => !obj || obj.trim() === '')) {
+                    formData.objects = parsed.objects || [];
+                }
+                if (!formData.research || formData.research.length === 0 || formData.research.every(res => !res || res.trim() === '')) {
+                    formData.research = parsed.research || [];
+                }
+
+                // Используем восстановленную задачу, если текущая пуста
+                if (!formData.task || formData.task.trim() === '') {
+                    formData.task = parsed.task || null;
+                }
+
+            } catch (e) {
+                console.error('Error parsing restored draft data:', e);
+            }
+        }
 
         // Фильтруем пустые значения
         if (formData.alternatives) {
@@ -239,6 +397,29 @@ class DraftsManager {
         if (formData.criteria) {
             formData.criteria = formData.criteria.filter(crit => crit && crit.trim() !== '');
         }
+        if (formData.conditions) {
+            formData.conditions = formData.conditions.filter(cond => cond && cond.trim() !== '');
+        }
+        if (formData.objects) {
+            formData.objects = formData.objects.filter(obj => obj && obj.trim() !== '');
+        }
+        if (formData.research) {
+            formData.research = formData.research.filter(res => res && res.trim() !== '');
+        }
+
+        // Отладочная информация для проверки собранных данных
+        console.log('Gathered form data:', formData);
+        console.log('Alternatives:', formData.alternatives);
+        console.log('Conditions:', formData.conditions);
+        console.log('Task:', formData.task);
+        console.log('NumAlternatives:', formData.numAlternatives);
+        console.log('NumConditions:', formData.numConditions);
+
+        // Дополнительная отладочная информация
+        console.log('Form inputs found:');
+        console.log('- name_alternatives:', document.querySelectorAll('input[name="name_alternatives"]').length);
+        console.log('- name_conditions:', document.querySelectorAll('input[name="name_conditions"]').length);
+        console.log('- savage_task:', document.querySelector('textarea[name="savage_task"]') ? 'found' : 'not found');
 
         return formData;
     }
@@ -265,7 +446,19 @@ class DraftsManager {
      */
     getAlternativesNames() {
         const inputs = document.querySelectorAll('input[name="name_alternatives"]');
-        return Array.from(inputs).map(input => input.value || '');
+        const names = new Array(inputs.length);
+
+        inputs.forEach(input => {
+            const index = input.getAttribute('data-index');
+            if (index !== null) {
+                const idx = parseInt(index);
+                if (!isNaN(idx) && idx >= 0 && idx < names.length) {
+                    names[idx] = input.value || '';
+                }
+            }
+        });
+
+        return names;
     }
 
     /**
@@ -273,7 +466,79 @@ class DraftsManager {
      */
     getCriteriaNames() {
         const inputs = document.querySelectorAll('input[name="name_criteria"]');
-        return Array.from(inputs).map(input => input.value || '');
+        const names = new Array(inputs.length);
+
+        inputs.forEach(input => {
+            const index = input.getAttribute('data-index');
+            if (index !== null) {
+                const idx = parseInt(index);
+                if (!isNaN(idx) && idx >= 0 && idx < names.length) {
+                    names[idx] = input.value || '';
+                }
+            }
+        });
+
+        return names;
+    }
+
+    /**
+     * Собирает имена условий (для Savage)
+     */
+    getConditionsNames() {
+        const inputs = document.querySelectorAll('input[name="name_conditions"]');
+        const names = new Array(inputs.length);
+
+        inputs.forEach(input => {
+            const index = input.getAttribute('data-index');
+            if (index !== null) {
+                const idx = parseInt(index);
+                if (!isNaN(idx) && idx >= 0 && idx < names.length) {
+                    names[idx] = names[idx] || input.value || '';
+                }
+            }
+        });
+
+        return names;
+    }
+
+    /**
+     * Собирает имена объектов (для Binary Relations)
+     */
+    getObjectsNames() {
+        const inputs = document.querySelectorAll('input[name="names"]');
+        const names = new Array(inputs.length);
+
+        inputs.forEach(input => {
+            const index = input.getAttribute('data-index');
+            if (index !== null) {
+                const idx = parseInt(index);
+                if (!isNaN(idx) && idx >= 0 && idx < names.length) {
+                    names[idx] = input.value || '';
+                }
+            }
+        });
+
+        return names;
+    }
+
+    /**
+     * Собирает имена исследований (для Experts)
+     */
+    getResearchNames() {
+        const inputs = document.querySelectorAll('input[name="name_research"]');
+        const names = new Array(inputs.length);
+
+        inputs.forEach(input => {
+            const index = input.getAttribute('data-index');
+            if (index !== null) {
+                const idx = parseInt(index);
+                if (!isNaN(idx) && idx >= 0 && idx < names.length) {
+                    names[idx] = input.value || '';
+                }
+            }
+        });
+
+        return names;
     }
 
     /**
@@ -298,8 +563,8 @@ class DraftsManager {
     }
 
     /**
- * Собирает конкретную матрицу
- */
+    * Собирает конкретную матрицу
+    */
     gatherMatrix(matrixType) {
         const matrixContainer = document.querySelector(`[data-matrix="${matrixType}"]`);
         if (!matrixContainer) return null;
@@ -359,8 +624,8 @@ class DraftsManager {
     }
 
     /**
- * Собирает другие данные форм
- */
+    * Собирает другие данные форм
+    */
     gatherOtherData() {
         const otherData = {};
         const otherInputs = document.querySelectorAll('input:not([name="task"]):not([name="num_alternatives"]):not([name="num_criteria"]):not([name="name_alternatives"]):not([name="name_criteria"]):not([name="matrix_krit"]), textarea:not([name="task"]), select');
@@ -438,15 +703,18 @@ class DraftsManager {
      */
     getCurrentMethodType() {
         const path = window.location.pathname;
+        console.log('Checking path:', path);
 
-        if (path.includes('/hierarchy')) return 'hierarchy';
-        if (path.includes('/binary')) return 'binary';
-        if (path.includes('/experts')) return 'experts';
-        if (path.includes('/laplasa')) return 'laplasa';
-        if (path.includes('/maximin')) return 'maximin';
-        if (path.includes('/savage')) return 'savage';
-        if (path.includes('/hurwitz')) return 'hurwitz';
+        // Проверяем точные совпадения для основных страниц методов
+        if (path === '/hierarchy' || path.startsWith('/hierarchy/')) return 'hierarchy';
+        if (path === '/binary' || path.startsWith('/binary/')) return 'binary';
+        if (path === '/experts' || path.startsWith('/experts/')) return 'experts';
+        if (path === '/laplasa' || path.startsWith('/laplasa/')) return 'laplasa';
+        if (path === '/maximin' || path.startsWith('/maximin/')) return 'maximin';
+        if (path === '/savage' || path.startsWith('/savage/')) return 'savage';
+        if (path === '/hurwitz' || path.startsWith('/hurwitz/')) return 'hurwitz';
 
+        console.log('No method found, returning unknown');
         return 'unknown';
     }
 
@@ -468,20 +736,89 @@ class DraftsManager {
     hasFormData() {
         const formData = this.gatherFormData();
         return formData.task ||
+            (formData.numAlternatives && formData.numAlternatives > 0) ||
+            (formData.numCriteria && formData.numCriteria > 0) ||
+            (formData.numConditions && formData.numConditions > 0) ||
+            (formData.numObjects && formData.numObjects > 0) ||
+            (formData.numExperts && formData.numExperts > 0) ||
+            (formData.numResearch && formData.numResearch > 0) ||
             (formData.alternatives && formData.alternatives.some(alt => alt && alt.trim() !== '')) ||
             (formData.criteria && formData.criteria.some(crit => crit && crit.trim() !== '')) ||
+            (formData.conditions && formData.conditions.some(cond => cond && cond.trim() !== '')) ||
+            (formData.objects && formData.objects.some(obj => obj && obj.trim() !== '')) ||
+            (formData.research && formData.research.some(res => res && res.trim() !== '')) ||
             (formData.matrices && Object.keys(formData.matrices).length > 0);
+    }
+
+    /**
+     * Перехватывает клики по ссылкам и кнопкам навигации
+     */
+    interceptNavigationClicks() {
+        // Перехватываем клики по ссылкам и кнопкам
+        document.addEventListener('click', (event) => {
+            const target = event.target.closest('a, button, input[type="submit"]');
+
+            if (target) {
+                // Проверяем, является ли это навигацией
+                if (target.tagName === 'A' && target.href && !target.href.startsWith('javascript:') && !target.href.startsWith('#')) {
+                    // Это ссылка на другую страницу
+                    sessionStorage.setItem('isInternalNavigation', 'true');
+                } else if (target.tagName === 'BUTTON' || target.type === 'submit') {
+                    // Это кнопка, которая может вести к навигации
+                    const form = target.closest('form');
+                    if (form) {
+                        sessionStorage.setItem('isInternalNavigation', 'true');
+                    }
+
+                    // Проверяем текст кнопки на наличие слов навигации
+                    const buttonText = target.textContent.toLowerCase();
+                    if (buttonText.includes('далі') || buttonText.includes('дальше') ||
+                        buttonText.includes('next') || buttonText.includes('продовжити') ||
+                        buttonText.includes('continue') || buttonText.includes('вперед') ||
+                        buttonText.includes('submit') || buttonText.includes('відправити') ||
+                        buttonText.includes('завершити') || buttonText.includes('finish')) {
+                        sessionStorage.setItem('isInternalNavigation', 'true');
+                    }
+
+                    // Проверяем атрибуты кнопки
+                    const buttonType = target.getAttribute('type');
+                    if (buttonType === 'submit') {
+                        sessionStorage.setItem('isInternalNavigation', 'true');
+                    }
+                }
+            }
+        });
+
+        // Перехватываем отправку форм
+        document.addEventListener('submit', (event) => {
+            // Все формы считаем внутренней навигацией
+            sessionStorage.setItem('isInternalNavigation', 'true');
+        });
     }
 
     /**
      * Обрабатывает событие перед уходом со страницы
      */
     handleBeforeUnload(event) {
+        // Проверяем, является ли это навигацией внутри приложения
+        const isInternalNavigation = sessionStorage.getItem('isInternalNavigation');
+
+        if (isInternalNavigation === 'true') {
+            // Это навигация внутри приложения, не показываем предупреждение
+            sessionStorage.removeItem('isInternalNavigation');
+            return;
+        }
+
+        // Проверяем, есть ли несохраненные изменения
         if (this.hasUnsavedChanges()) {
+            // Показываем предупреждение только если есть реальные изменения
             event.preventDefault();
             event.returnValue = 'У вас є незбережені зміни. Дійсно хочете покинути сторінку?';
             return event.returnValue;
         }
+
+        // Если нет изменений, не показываем предупреждение
+        return;
     }
 
     /**
@@ -501,9 +838,15 @@ class DraftsManager {
         // Создаем уведомление
         const notification = document.createElement('div');
         notification.className = `draft-notification draft-notification-${type}`;
+
+        // Правильно обрабатываем Unicode символы в сообщении
+        const cleanMessage = message.replace(/\\u[\dA-F]{4}/gi, (match) => {
+            return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
+        });
+
         notification.innerHTML = `
             <div class="notification-content">
-                <span class="notification-message">${message}</span>
+                <span class="notification-message">${cleanMessage}</span>
                 <button class="notification-close">&times;</button>
             </div>
         `;
@@ -555,16 +898,52 @@ class DraftsManager {
      */
     showSaveButton() {
         const saveButton = document.getElementById('draft-save-button');
-        if (!saveButton) return;
+        if (!saveButton) {
+            console.error('Save button not found');
+            return;
+        }
 
         // Показываем кнопку только на страницах методов
-        const isMethodPage = this.getCurrentMethodType() !== 'unknown';
+        const methodType = this.getCurrentMethodType();
+        const isMethodPage = methodType !== 'unknown';
 
+        console.log('Current path:', window.location.pathname);
+        console.log('Method type:', methodType);
+        console.log('Is method page:', isMethodPage);
+
+        // Показываем кнопку на всех страницах методов
         if (isMethodPage) {
             saveButton.style.display = 'block';
+            console.log('Save button shown');
         } else {
             saveButton.style.display = 'none';
+            console.log('Save button hidden');
         }
+    }
+
+    /**
+     * Принудительно обновляет форму после изменения числовых значений
+     */
+    forceFormUpdate() {
+        // Находим все числовые поля и вызываем событие change
+        const numericInputs = document.querySelectorAll('input[name="num_alternatives"], input[name="num_criteria"], input[name="num_conditions"], input[name="num"], input[name="num_experts"], input[name="num_research"], input[name="num_alt"]');
+
+        numericInputs.forEach(input => {
+            if (input.value && input.value > 0) {
+                // Создаем событие change для обновления формы
+                const event = new Event('change', { bubbles: true });
+                input.dispatchEvent(event);
+            }
+        });
+    }
+
+    /**
+     * Получает значение параметра из URL
+     */
+    getUrlParam(paramName) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const value = urlParams.get(paramName);
+        return value ? parseInt(value) || value : null;
     }
 
     /**
@@ -583,6 +962,28 @@ class DraftsManager {
 
 // Создаем глобальный экземпляр менеджера черновиков
 window.draftsManager = new DraftsManager();
+
+// Отладочная информация
+console.log('DraftsManager initialized');
+console.log('Current path:', window.location.pathname);
+console.log('Save button element:', document.getElementById('draft-save-button'));
+
+// Дополнительная проверка
+if (window.draftsManager) {
+    console.log('DraftsManager created successfully');
+    // Инициализируем после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            window.draftsManager.init();
+            window.draftsManager.showSaveButton();
+        });
+    } else {
+        window.draftsManager.init();
+        window.draftsManager.showSaveButton();
+    }
+} else {
+    console.error('Failed to create DraftsManager');
+}
 
 // Добавляем CSS для уведомлений
 const notificationStyles = document.createElement('style');

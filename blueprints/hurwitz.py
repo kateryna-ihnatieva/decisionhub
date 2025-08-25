@@ -26,12 +26,54 @@ def index():
 
 @hurwitz_bp.route("/names", methods=["GET", "POST"])
 def names():
-    num_alt = int(request.args.get("num_alt"))
-    num_conditions = int(request.args.get("num_conditions"))
-    hurwitz_task = (
-        request.args.get("hurwitz_task") if request.args.get("hurwitz_task") else None
-    )
-    alpha = float(request.args.get("alpha"))
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+    num_alt = 0
+    num_conditions = 0
+    hurwitz_task = None
+    alpha = 0.5
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_alt = int(draft_data.get("numAlternatives") or 0)
+                num_conditions = int(draft_data.get("numConditions") or 0)
+                hurwitz_task = draft_data.get("task")
+                alpha = float(draft_data.get("alpha") or 0.5)
+            else:
+                # Если черновик не найден, используем значения по умолчанию
+                num_alt = 0
+                num_conditions = 0
+                hurwitz_task = None
+                alpha = 0.5
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+            # В случае ошибки используем значения по умолчанию
+            num_alt = 0
+            num_conditions = 0
+            hurwitz_task = None
+            alpha = 0.5
+    else:
+        # Если черновик не загружается, получаем данные из URL параметров
+        try:
+            num_alt = int(request.args.get("num_alt") or 0)
+            num_conditions = int(request.args.get("num_conditions") or 0)
+            hurwitz_task = request.args.get("hurwitz_task")
+            alpha = float(request.args.get("alpha") or 0.5)
+        except (ValueError, TypeError):
+            num_alt = 0
+            num_conditions = 0
+            hurwitz_task = None
+            alpha = 0.5
 
     # Збереження змінниї у сесії
     session["num_alt"] = num_alt
@@ -43,6 +85,10 @@ def names():
         "title": "Імена",
         "num_alt": num_alt,
         "num_conditions": num_conditions,
+        "hurwitz_task": hurwitz_task,
+        "alpha": alpha,
+        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
+        "name_conditions": draft_data.get("conditions") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 

@@ -38,11 +38,48 @@ def index():
 
 @experts_bp.route("/names", methods=["GET", "POST"])
 def names():
-    num_experts = int(request.args.get("num_experts"))
-    num_research = int(request.args.get("num_research"))
-    experts_task = (
-        request.args.get("experts_task") if request.args.get("experts_task") else None
-    )
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+    num_experts = 0
+    num_research = 0
+    experts_task = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_experts = int(draft_data.get("numExperts") or 0)
+                num_research = int(draft_data.get("numResearch") or 0)
+                experts_task = draft_data.get("task")
+            else:
+                # Если черновик не найден, используем значения по умолчанию
+                num_experts = 0
+                num_research = 0
+                experts_task = None
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+            # В случае ошибки используем значения по умолчанию
+            num_experts = 0
+            num_research = 0
+            experts_task = None
+    else:
+        # Если черновик не загружается, получаем данные из URL параметров
+        try:
+            num_experts = int(request.args.get("num_experts") or 0)
+            num_research = int(request.args.get("num_research") or 0)
+            experts_task = request.args.get("experts_task")
+        except (ValueError, TypeError):
+            num_experts = 0
+            num_research = 0
+            experts_task = None
 
     # Збереження змінних у сесії
     session["num_experts"] = num_experts
@@ -51,7 +88,10 @@ def names():
 
     context = {
         "title": "Імена",
+        "num_experts": num_experts,
         "num_research": num_research,
+        "experts_task": experts_task,
+        "names": draft_data.get("research") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 

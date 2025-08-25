@@ -462,6 +462,7 @@
             id="alternative{{ n+1 }}"
             placeholder="Альтернатива {{ n+1 }}"
             value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+            data-index="{{ n }}"
             required
           >
         </div>
@@ -480,6 +481,7 @@
             id="condition{{ m+1 }}"
             placeholder="Умова {{ m+1 }}"
             value="{% if name_conditions %}{{ name_conditions[m] }}{% endif %}"
+            data-index="{{ m }}"
             required
           >
         </div>

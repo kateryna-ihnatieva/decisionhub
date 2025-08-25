@@ -24,10 +24,42 @@ def index():
 
 @binary_relations_bp.route("/names", methods=["GET", "POST"])
 def names():
-    num = int(request.args.get("num"))
-    binary_task = (
-        request.args.get("binary_task") if request.args.get("binary_task") else None
-    )
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+    num = 0
+    binary_task = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num = int(draft_data.get("numObjects") or 0)
+                binary_task = draft_data.get("task")
+            else:
+                # Если черновик не найден, используем значения по умолчанию
+                num = 0
+                binary_task = None
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+            # В случае ошибки используем значения по умолчанию
+            num = 0
+            binary_task = None
+    else:
+        # Если черновик не загружается, получаем данные из URL параметров
+        try:
+            num = int(request.args.get("num") or 0)
+            binary_task = request.args.get("binary_task")
+        except (ValueError, TypeError):
+            num = 0
+            binary_task = None
 
     # Збереження змінної у сесії
     session["num"] = num
@@ -36,6 +68,8 @@ def names():
     context = {
         "title": "Імена",
         "num": num,
+        "binary_task": binary_task,
+        "names": draft_data.get("objects") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
     return render_template("Binary/names.html", **context)

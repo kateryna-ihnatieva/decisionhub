@@ -28,11 +28,48 @@ def index():
 
 @kriteriy_laplasa_bp.route("/names", methods=["GET", "POST"])
 def names():
-    num_alt = int(request.args.get("num_alt"))
-    num_conditions = int(request.args.get("num_conditions"))
-    laplasa_task = (
-        request.args.get("laplasa_task") if request.args.get("laplasa_task") else None
-    )
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+    num_alt = 0
+    num_conditions = 0
+    laplasa_task = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_alt = int(draft_data.get("numAlternatives") or 0)
+                num_conditions = int(draft_data.get("numConditions") or 0)
+                laplasa_task = draft_data.get("task")
+            else:
+                # Если черновик не найден, используем значения по умолчанию
+                num_alt = 0
+                num_conditions = 0
+                laplasa_task = None
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+            # В случае ошибки используем значения по умолчанию
+            num_alt = 0
+            num_conditions = 0
+            laplasa_task = None
+    else:
+        # Если черновик не загружается, получаем данные из URL параметров
+        try:
+            num_alt = int(request.args.get("num_alt") or 0)
+            num_conditions = int(request.args.get("num_conditions") or 0)
+            laplasa_task = request.args.get("laplasa_task")
+        except (ValueError, TypeError):
+            num_alt = 0
+            num_conditions = 0
+            laplasa_task = None
 
     # Збереження змінної у сесії
     session["num_alt"] = num_alt
@@ -43,6 +80,9 @@ def names():
         "title": "Імена",
         "num_alt": num_alt,
         "num_conditions": num_conditions,
+        "laplasa_task": laplasa_task,
+        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
+        "name_conditions": draft_data.get("conditions") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 

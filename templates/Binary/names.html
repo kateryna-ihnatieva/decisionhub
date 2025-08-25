@@ -302,6 +302,7 @@
           id="name_{{ i }}"
           placeholder="Назва об'єкта {{ i+1 }}"
           value="{% if names %}{{ names[i] }}{% endif %}"
+          data-index="{{ i }}"
           required
         >
       </div>

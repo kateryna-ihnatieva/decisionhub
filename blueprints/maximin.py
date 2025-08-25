@@ -26,13 +26,54 @@ def index():
 
 @maximin_bp.route("/names", methods=["GET", "POST"])
 def names():
-    num_alt = int(request.args.get("num_alt"))
-    num_conditions = int(request.args.get("num_conditions"))
-    maximin_task = (
-        request.args.get("maximin_task") if request.args.get("maximin_task") else None
-    )
-    matrix_type = request.args.get("matrix_type")
-    print(matrix_type)
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+    num_alt = 0
+    num_conditions = 0
+    maximin_task = None
+    matrix_type = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_alt = int(draft_data.get("numAlternatives") or 0)
+                num_conditions = int(draft_data.get("numConditions") or 0)
+                maximin_task = draft_data.get("task")
+                matrix_type = draft_data.get("matrixType")
+            else:
+                # Если черновик не найден, используем значения по умолчанию
+                num_alt = 0
+                num_conditions = 0
+                maximin_task = None
+                matrix_type = None
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+            # В случае ошибки используем значения по умолчанию
+            num_alt = 0
+            num_conditions = 0
+            maximin_task = None
+            matrix_type = None
+    else:
+        # Если черновик не загружается, получаем данные из URL параметров
+        try:
+            num_alt = int(request.args.get("num_alt") or 0)
+            num_conditions = int(request.args.get("num_conditions") or 0)
+            maximin_task = request.args.get("maximin_task")
+            matrix_type = request.args.get("matrix_type")
+        except (ValueError, TypeError):
+            num_alt = 0
+            num_conditions = 0
+            maximin_task = None
+            matrix_type = None
 
     # Збереження змінної у сесії
     session["num_alt"] = num_alt
@@ -44,6 +85,10 @@ def names():
         "title": "Імена",
         "num_alt": num_alt,
         "num_conditions": num_conditions,
+        "maximin_task": maximin_task,
+        "matrix_type": matrix_type,
+        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
+        "name_conditions": draft_data.get("conditions") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 

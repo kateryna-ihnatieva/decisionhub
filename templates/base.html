@@ -565,6 +565,11 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
 </main>
 </div>
 <script>
+// Отладочная информация для черновиков
+console.log('Base template loaded');
+console.log('DraftsManager available:', typeof window.draftsManager !== 'undefined');
+console.log('Save button element:', document.getElementById('draft-save-button'));
+
 // Function to save sidebar state to localStorage
 function saveSidebarState(isCollapsed) {
     localStorage.setItem('sidebarCollapsed', isCollapsed);
@@ -608,6 +613,22 @@ function toggleSidebar() {
 // Load sidebar state when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadSidebarState();
+
+    // Дополнительная проверка для черновиков
+    console.log('DOM loaded, checking drafts system...');
+    console.log('DraftsManager available:', typeof window.draftsManager !== 'undefined');
+
+    if (window.draftsManager) {
+        console.log('Forcing showSaveButton call...');
+        window.draftsManager.showSaveButton();
+    } else {
+        console.error('DraftsManager not available, creating manually...');
+        // Создаем DraftsManager вручную, если он не был создан
+        if (typeof DraftsManager !== 'undefined') {
+            window.draftsManager = new DraftsManager();
+            window.draftsManager.showSaveButton();
+        }
+    }
 });
 </script>
 </body>
