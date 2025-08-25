@@ -742,6 +742,15 @@
          {% endfor %}
        </div>
 
+       <!-- Скрытые поля для сохранения данных матрицы критериев (альтернативный способ) -->
+       <div style="display: none;">
+         {% for i in range(num_criteria) %}
+           {% for j in range(num_criteria) %}
+             <input type="hidden" name="matrix_krit_{{ i }}_{{ j }}" value="{{ matrix_krit[i][j] if matrix_krit and i < matrix_krit|length and j < matrix_krit[i]|length else '1' }}">
+           {% endfor %}
+         {% endfor %}
+       </div>
+
        <div class="page-title">Матриці парних порівнянь для альтернатив</div>
 
       <div class="help-card">
