@@ -273,34 +273,64 @@ class DraftsManager {
                 if (matrixData[i] && matrixData[i][j] !== undefined && matrixData[i][j] !== '') {
                     let input = null;
 
-                    if (i < j) {
-                        input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
-                    } else if (i > j) {
-                        input = matrixContainer.querySelector(`#matrix_krit_low_${i}_${j}`);
+                    if (matrixType.startsWith('alternatives_')) {
+                        // Для матриц альтернатив используем новые имена полей
+                        const criteriaNum = matrixType.replace('alternatives_', '');
+                        input = matrixContainer.querySelector(`[name="matrix_alt_${criteriaNum}_${i}_${j}"]`);
+                    } else if (matrixType === 'criteria') {
+                        // Для матрицы критериев используем скрытые поля с name="matrix_krit"
+                        // Создаем матрицу из скрытых полей
+                        const inputs = matrixContainer.querySelectorAll('input[name="matrix_krit"]');
+                        if (inputs.length === size * size) {
+                            // Сортируем поля по порядку (i, j)
+                            const sortedInputs = [];
+                            for (let row = 0; row < size; row++) {
+                                for (let col = 0; col < size; col++) {
+                                    const inputIndex = row * size + col;
+                                    if (inputs[inputIndex]) {
+                                        sortedInputs.push(inputs[inputIndex]);
+                                    }
+                                }
+                            }
+                            const inputIndex = i * size + j;
+                            if (sortedInputs[inputIndex]) {
+                                input = sortedInputs[inputIndex];
+                            }
+                        }
                     } else {
-                        input = matrixContainer.querySelector(`#matrix_krit_diag_${i}_${j}`);
+                        // Для матрицы критериев используем старые имена (fallback)
+                        if (i < j) {
+                            input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
+                        } else if (i > j) {
+                            input = matrixContainer.querySelector(`#matrix_krit_low_${i}_${j}`);
+                        } else {
+                            input = matrixContainer.querySelector(`#matrix_krit_diag_${i}_${j}`);
+                        }
                     }
 
                     if (input) {
-                        input.value = matrixData[i][j];
+                        // Просто устанавливаем значение
+                        input.value = matrixData[i][j] || '';
 
-                        // Если это верхний треугольник, обновляем симметричный элемент
-                        if (i < j && input.id.includes('matrix_krit_up_')) {
-                            const symmetricInput = matrixContainer.querySelector(`#matrix_krit_low_${j}_${i}`);
-                            if (symmetricInput) {
-                                let value = matrixData[i][j];
-                                if (value && !isNaN(parseFloat(value))) {
-                                    if (value.includes('/')) {
-                                        const fraction = value.split('/');
-                                        if (fraction.length === 2 && fraction[0] === '1') {
-                                            symmetricInput.value = fraction[1];
-                                        }
-                                    } else {
-                                        const num = parseFloat(value);
-                                        if (num !== 1) {
-                                            symmetricInput.value = `1/${num}`;
+                        // Для матриц альтернатив обновляем симметричные элементы
+                        if (matrixType.startsWith('alternatives_')) {
+                            if (i < j) {
+                                const symmetricInput = matrixContainer.querySelector(`[name="matrix_alt_${criteriaNum}_${j}_${i}"]`);
+                                if (symmetricInput) {
+                                    let value = matrixData[i][j];
+                                    if (value && value.trim() !== '') {
+                                        if (value.includes('/')) {
+                                            const fraction = value.split('/');
+                                            if (fraction.length === 2 && fraction[0] === '1') {
+                                                symmetricInput.value = fraction[1];
+                                            }
                                         } else {
-                                            symmetricInput.value = '1';
+                                            const num = parseFloat(value);
+                                            if (num !== 1) {
+                                                symmetricInput.value = `1/${num}`;
+                                            } else {
+                                                symmetricInput.value = '1';
+                                            }
                                         }
                                     }
                                 }
@@ -594,27 +624,53 @@ class DraftsManager {
         const matrixContainer = document.querySelector(`[data-matrix="${matrixType}"]`);
         if (!matrixContainer) return null;
 
-        const inputs = matrixContainer.querySelectorAll('input[type="text"]');
-        if (inputs.length === 0) return null;
+        let inputs = null;
+        let size = 0;
 
-        // Определяем размер матрицы по количеству строк
-        const rows = matrixContainer.querySelectorAll('tbody tr');
-        const size = rows.length;
-
-        if (size === 0) return null;
+        if (matrixType === 'criteria') {
+            // Для матрицы критериев используем скрытые поля
+            inputs = matrixContainer.querySelectorAll('input[name="matrix_krit"]');
+            if (inputs.length === 0) return null;
+            // Размер матрицы = квадратный корень из количества полей
+            size = Math.sqrt(inputs.length);
+            if (size !== Math.floor(size)) return null; // Проверяем, что это квадрат
+        } else {
+            // Для других матриц используем текстовые поля
+            inputs = matrixContainer.querySelectorAll('input[type="text"]');
+            if (inputs.length === 0) return null;
+            // Определяем размер матрицы по количеству строк
+            const rows = matrixContainer.querySelectorAll('tbody tr');
+            size = rows.length;
+            if (size === 0) return null;
+        }
 
         const matrix = [];
         for (let i = 0; i < size; i++) {
             matrix[i] = [];
             for (let j = 0; j < size; j++) {
-                // Ищем соответствующий input
+                // Ищем соответствующий input по имени поля
                 let input = null;
-                if (i < j) {
-                    input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
-                } else if (i > j) {
-                    input = matrixContainer.querySelector(`#matrix_krit_low_${i}_${j}`);
+
+                if (matrixType.startsWith('alternatives_')) {
+                    // Для матриц альтернатив используем новые имена полей
+                    const criteriaNum = matrixType.replace('alternatives_', '');
+                    input = matrixContainer.querySelector(`[name="matrix_alt_${criteriaNum}_${i}_${j}"]`);
+                } else if (matrixType === 'criteria') {
+                    // Для матрицы критериев используем скрытые поля с name="matrix_krit"
+                    // Поля уже отсортированы в правильном порядке (i, j)
+                    const inputIndex = i * size + j;
+                    if (inputs[inputIndex]) {
+                        input = inputs[inputIndex];
+                    }
                 } else {
-                    input = matrixContainer.querySelector(`#matrix_krit_diag_${i}_${j}`);
+                    // Для матрицы критериев используем старые имена (fallback)
+                    if (i < j) {
+                        input = matrixContainer.querySelector(`#matrix_krit_up_${i}_${j}`);
+                    } else if (i > j) {
+                        input = matrixContainer.querySelector(`#matrix_krit_low_${i}_${j}`);
+                    } else {
+                        input = matrixContainer.querySelector(`#matrix_krit_diag_${i}_${j}`);
+                    }
                 }
 
                 if (input) {
@@ -653,10 +709,10 @@ class DraftsManager {
     */
     gatherOtherData() {
         const otherData = {};
-        const otherInputs = document.querySelectorAll('input:not([name="task"]):not([name="num_alternatives"]):not([name="num_criteria"]):not([name="name_alternatives"]):not([name="name_criteria"]):not([name="matrix_krit"]), textarea:not([name="task"]), select');
+        const otherInputs = document.querySelectorAll('input:not([name="task"]):not([name="num_alternatives"]):not([name="num_criteria"]):not([name="name_alternatives"]):not([name="name_criteria"]):not([name="matrix_krit"]):not([name^="matrix_alt_"]), textarea:not([name="task"]), select');
 
         otherInputs.forEach(input => {
-            if (input.name && input.name !== 'name_alternatives' && input.name !== 'name_criteria' && input.name !== 'matrix_krit') {
+            if (input.name && input.name !== 'name_alternatives' && input.name !== 'name_criteria' && input.name !== 'matrix_krit' && !input.name.startsWith('matrix_alt_')) {
                 if (input.type === 'checkbox') {
                     otherData[input.name] = input.checked;
                 } else if (input.type === 'radio') {

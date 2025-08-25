@@ -187,6 +187,89 @@ def matrix_krit():
 
 @hierarchy_bp.route("/matrix-alt", methods=["GET", "POST"])
 def matrix_alt():
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+
+    if draft_id and not session.get("new_record_id"):
+        # Если загружается черновик, но нет new_record_id, создаем новую запись
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                # Создаем новую запись в базе данных
+                new_record_id = add_object_to_db(
+                    db, HierarchyCriteria, names=draft.form_data.get("criteria", [])
+                )
+                add_object_to_db(
+                    db,
+                    HierarchyAlternatives,
+                    id=new_record_id,
+                    names=draft.form_data.get("alternatives", []),
+                )
+
+                if draft.form_data.get("task"):
+                    add_object_to_db(
+                        db,
+                        HierarchyTask,
+                        id=new_record_id,
+                        task=draft.form_data["task"],
+                    )
+
+                # Устанавливаем данные в сессию
+                session["new_record_id"] = new_record_id
+                session["num_alternatives"] = len(
+                    draft.form_data.get("alternatives", [])
+                )
+                session["num_criteria"] = len(draft.form_data.get("criteria", []))
+                session["name_alternatives"] = draft.form_data.get("alternatives", [])
+                session["name_criteria"] = draft.form_data.get("criteria", [])
+                session["hierarchy_task"] = draft.form_data.get("task")
+
+                # Сохраняем матрицу альтернатив из черновика в базу данных
+                if draft.form_data.get("matrices", {}).get("alternatives"):
+                    alternatives_data = draft.form_data["matrices"]["alternatives"]
+                    # Преобразуем данные в формат, который ожидает база данных
+                    matr_alt = []
+                    for criteria_key in alternatives_data:
+                        criteria_matrix = alternatives_data[criteria_key]
+                        for i in range(len(criteria_matrix)):
+                            for j in range(len(criteria_matrix[i])):
+                                matr_alt.append(criteria_matrix[i][j] or "")
+
+                    # Создаем запись в HierarchyAlternativesMatrix с базовыми значениями
+                    add_object_to_db(
+                        db,
+                        HierarchyAlternativesMatrix,
+                        id=new_record_id,
+                        criteria_id=new_record_id,
+                        hierarchy_alternatives_id=new_record_id,
+                        matr_alt=matr_alt,
+                        comparison_matrix=alternatives_data,
+                        # Заполняем базовые поля, чтобы избежать ошибок
+                        components_eigenvector_alt=[],
+                        normalized_eigenvector_alt=[],
+                        sum_col_alt=[],
+                        prod_col_alt=[],
+                        l_max_alt=[],
+                        index_consistency_alt=[],
+                        relation_consistency_alt=[],
+                        lst_normalized_eigenvector_alt=[],
+                        ranj_alt=[],
+                        global_prior=[],
+                        lst_normalized_eigenvector_global=[],
+                        ranj_global=[],
+                        global_priorities_plot_id=new_record_id,
+                        task_id=new_record_id if draft.form_data.get("task") else None,
+                    )
+        except Exception as e:
+            current_app.logger.error(f"Error creating record from draft: {str(e)}")
+            flash("Помилка створення запису з чернетки", "error")
+            return redirect(url_for("hierarchy.index"))
+
     new_record_id = int(session.get("new_record_id"))
     num_alternatives = int(session.get("num_alternatives"))
     num_criteria = int(session.get("num_criteria"))
@@ -195,8 +278,21 @@ def matrix_alt():
     name_criteria = HierarchyCriteria.query.get(new_record_id).names
     matr_krit = request.form.getlist("matrix_krit")
 
-    # Створення списку з матриць по рівнях
-    matrix_krit = do_matrix(krit=1, matrix=matr_krit, criteria=num_criteria)
+    # Если матрица критериев пустая, создаем базовую матрицу
+    if not matr_krit:
+        # Создаем базовую матрицу критериев с единицами на диагонали
+        matrix_krit = []
+        for i in range(num_criteria):
+            row = []
+            for j in range(num_criteria):
+                if i == j:
+                    row.append("1")
+                else:
+                    row.append("1")  # Базовое значение для недиагональных элементов
+            matrix_krit.append(row)
+    else:
+        # Створення списку з матриць по рівнях
+        matrix_krit = do_matrix(krit=1, matrix=matr_krit, criteria=num_criteria)
 
     # Оцінки компонент власного вектора
     components_eigenvector = do_comp_vector(
@@ -240,23 +336,39 @@ def matrix_alt():
         krit=1, lst_norm_vector=lst_normalized_eigenvector, criteria=num_criteria
     )
 
-    # Збереження даних у БД
-    add_object_to_db(
-        db,
-        HierarchyCriteriaMatrix,
-        id=new_record_id,
-        hierarchy_criteria_id=new_record_id,
-        comparison_matrix=matrix_krit,
-        components_eigenvector=components_eigenvector,
-        normalized_eigenvector=normalized_eigenvector,
-        sum_col=sum_col,
-        prod_col=prod_col,
-        l_max=l_max,
-        index_consistency=index_consistency,
-        relation_consistency=relation_consistency,
-        lst_normalized_eigenvector=lst_normalized_eigenvector,
-        ranj=ranj,
-    )
+    # Проверяем, есть ли уже запись в HierarchyCriteriaMatrix с таким ID
+    existing_matrix = HierarchyCriteriaMatrix.query.get(new_record_id)
+    if existing_matrix:
+        # Если запись уже существует, обновляем её
+        existing_matrix.comparison_matrix = matrix_krit
+        existing_matrix.components_eigenvector = components_eigenvector
+        existing_matrix.normalized_eigenvector = normalized_eigenvector
+        existing_matrix.sum_col = sum_col
+        existing_matrix.prod_col = prod_col
+        existing_matrix.l_max = l_max
+        existing_matrix.index_consistency = index_consistency
+        existing_matrix.relation_consistency = relation_consistency
+        existing_matrix.lst_normalized_eigenvector = lst_normalized_eigenvector
+        existing_matrix.ranj = ranj
+        db.session.commit()
+    else:
+        # Если записи нет, создаём новую
+        add_object_to_db(
+            db,
+            HierarchyCriteriaMatrix,
+            id=new_record_id,
+            hierarchy_criteria_id=new_record_id,
+            comparison_matrix=matrix_krit,
+            components_eigenvector=components_eigenvector,
+            normalized_eigenvector=normalized_eigenvector,
+            sum_col=sum_col,
+            prod_col=prod_col,
+            l_max=l_max,
+            index_consistency=index_consistency,
+            relation_consistency=relation_consistency,
+            lst_normalized_eigenvector=lst_normalized_eigenvector,
+            ranj=ranj,
+        )
 
     session["matr_alt"] = 0
 
@@ -277,6 +389,7 @@ def matrix_alt():
         "relation_consistency": relation_consistency,
         "lst_normalized_eigenvector": lst_normalized_eigenvector,
         "ranj": ranj,
+        "task": session.get("hierarchy_task"),
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
 
@@ -344,118 +457,168 @@ def result(method_id=None):
         # Дані є в БД
         matr_alt = existing_alternatives_matrix.matr_alt
         print(f"[DEBUG] Загружена матрица альтернатив из БД: {len(matr_alt)} элементов")
+
+        # Проверяем, есть ли уже вычисленные результаты
+        if (
+            existing_alternatives_matrix.components_eigenvector_alt
+            and existing_alternatives_matrix.normalized_eigenvector_alt
+            and existing_alternatives_matrix.global_prior
+        ):
+            # Результаты уже вычислены, используем их
+            print("[DEBUG] Используем уже вычисленные результаты из БД")
+            matrix_alt = existing_alternatives_matrix.comparison_matrix
+            components_eigenvector_alt = (
+                existing_alternatives_matrix.components_eigenvector_alt
+            )
+            normalized_eigenvector_alt = (
+                existing_alternatives_matrix.normalized_eigenvector_alt
+            )
+            sum_col_alt = existing_alternatives_matrix.sum_col_alt
+            prod_col_alt = existing_alternatives_matrix.prod_col_alt
+            l_max_alt = existing_alternatives_matrix.l_max_alt
+            index_consistency_alt = existing_alternatives_matrix.index_consistency_alt
+            relation_consistency_alt = (
+                existing_alternatives_matrix.relation_consistency_alt
+            )
+            lst_normalized_eigenvector_alt = (
+                existing_alternatives_matrix.lst_normalized_eigenvector_alt
+            )
+            ranj_alt = existing_alternatives_matrix.ranj_alt
+            global_prior = existing_alternatives_matrix.global_prior
+            lst_normalized_eigenvector_global = (
+                existing_alternatives_matrix.lst_normalized_eigenvector_global
+            )
+            ranj_global = existing_alternatives_matrix.ranj_global
+
+            # Пропускаем вычисления и переходим к формированию контекста
+            skip_calculations = True
+        else:
+            skip_calculations = False
     else:
-        # Даних немає в БД - це пряме посилання на результат
-        if method_id and not request.form.getlist("matrix_alt"):
+        # Даних немає в БД - проверяем форму
+        if request.form.getlist("matrix_alt"):
+            # Данные есть в форме - используем их для вычислений
+            matr_alt = request.form.getlist("matrix_alt")
+            print(f"[DEBUG] Матрица альтернатив из формы: {len(matr_alt)} элементов")
+            skip_calculations = False
+        else:
+            # Нет данных ни в БД, ни в форме - это ошибка
+            print("[ERROR] Нет данных матрицы альтернатив ни в БД, ни в форме")
             flash(
                 "Неполные данные для отображения результата. Матрица альтернатив не найдена.",
                 "error",
             )
             return redirect(url_for("hierarchy.index"))
-        else:
-            matr_alt = request.form.getlist("matrix_alt")
-            print(f"[DEBUG] Матрица альтернатив из формы: {len(matr_alt)} элементов")
 
-    # Перевіряємо розміри даних перед створенням матриці
-    expected_matrix_size = num_criteria * num_alternatives * num_alternatives
-    if len(matr_alt) != expected_matrix_size:
-        print(f"[ERROR] Неправильный размер матрицы альтернатив!")
-        print(f"[ERROR] Ожидается: {expected_matrix_size}, получено: {len(matr_alt)}")
-        print(
-            f"[ERROR] num_criteria: {num_criteria}, num_alternatives: {num_alternatives}"
+    # Выполняем вычисления только если они не были выполнены ранее
+    if not skip_calculations:
+        # Перевіряємо розміри даних перед створенням матриці
+        expected_matrix_size = num_criteria * num_alternatives * num_alternatives
+        if len(matr_alt) != expected_matrix_size:
+            print(f"[ERROR] Неправильный размер матрицы альтернатив!")
+            print(
+                f"[ERROR] Ожидается: {expected_matrix_size}, получено: {len(matr_alt)}"
+            )
+            print(
+                f"[ERROR] num_criteria: {num_criteria}, num_alternatives: {num_alternatives}"
+            )
+            flash(
+                f"Ошибка в данных матрицы альтернатив. Неправильный размер данных.",
+                "error",
+            )
+            return redirect(url_for("hierarchy.index"))
+
+        # Створення списку з матриць по рівнях
+        try:
+            matrix_alt = do_matrix(
+                num_alt=num_alternatives, matrix=matr_alt, criteria=num_criteria
+            )
+            print(
+                f"[DEBUG] Матрица альтернатив создана успешно: {len(matrix_alt)} критериев"
+            )
+        except (IndexError, ValueError) as e:
+            print(f"[!] Error creating matrix_alt: {e}")
+            print(f"[DEBUG] matr_alt: {matr_alt}")
+            print(f"[DEBUG] num_alt: {num_alternatives}, criteria: {num_criteria}")
+            flash("Ошибка в данных матрицы альтернатив", "error")
+            return redirect(url_for("hierarchy.index"))
+
+        # Оцінки компонент власного вектора
+        components_eigenvector_alt = do_comp_vector(
+            num_alt=num_alternatives, criteria=num_criteria, matr=matrix_alt
         )
-        flash(
-            f"Ошибка в данных матрицы альтернатив. Неправильный размер данных.", "error"
+
+        # Нормалізовані оцінки вектора пріоритету
+        normalized_eigenvector_alt = do_norm_vector(
+            num_alt=num_alternatives,
+            comp_vector=components_eigenvector_alt,
+            criteria=num_criteria,
         )
-        return redirect(url_for("hierarchy.index"))
+        # Сума по стовпцям
+        try:
+            sum_col_alt = do_sum_col(
+                num_alt=num_alternatives, matr=matrix_alt, criteria=num_criteria
+            )
+            print(f"[DEBUG] Сумма по столбцам вычислена успешно")
+        except (IndexError, ValueError) as e:
+            print(f"[!] Error computing sum_col_alt: {e}")
+            print(f"[DEBUG] matrix_alt structure: {len(matrix_alt)} criteria")
+            for i, crit in enumerate(matrix_alt):
+                print(f"[DEBUG] Criteria {i}: {len(crit)} alternatives")
+            flash(
+                "Ошибка при вычислении суммы по столбцам матрицы альтернатив", "error"
+            )
+            return redirect(url_for("hierarchy.index"))
 
-    # Створення списку з матриць по рівнях
-    try:
-        matrix_alt = do_matrix(
-            num_alt=num_alternatives, matrix=matr_alt, criteria=num_criteria
+        # Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету
+        prod_col_alt = do_prod_col(
+            num_alt=num_alternatives,
+            criteria=num_criteria,
+            sum_col=sum_col_alt,
+            norm_vector=normalized_eigenvector_alt,
         )
-        print(
-            f"[DEBUG] Матрица альтернатив создана успешно: {len(matrix_alt)} критериев"
+
+        # Разом (Lmax)
+        l_max_alt = do_l_max(prod_col=prod_col_alt, criteria=num_criteria)
+
+        # Індекс узгодженості i Відношення узгодженості
+        index_consistency_alt, relation_consistency_alt = do_consistency(
+            num_alt=num_alternatives, l_max=l_max_alt, criteria=num_criteria
         )
-    except (IndexError, ValueError) as e:
-        print(f"[!] Error creating matrix_alt: {e}")
-        print(f"[DEBUG] matr_alt: {matr_alt}")
-        print(f"[DEBUG] num_alt: {num_alternatives}, criteria: {num_criteria}")
-        flash("Ошибка в данных матрицы альтернатив", "error")
-        return redirect(url_for("hierarchy.index"))
 
-    # Оцінки компонент власного вектора
-    components_eigenvector_alt = do_comp_vector(
-        num_alt=num_alternatives, criteria=num_criteria, matr=matrix_alt
-    )
-
-    # Нормалізовані оцінки вектора пріоритету
-    normalized_eigenvector_alt = do_norm_vector(
-        num_alt=num_alternatives,
-        comp_vector=components_eigenvector_alt,
-        criteria=num_criteria,
-    )
-    # Сума по стовпцям
-    try:
-        sum_col_alt = do_sum_col(
-            num_alt=num_alternatives, matr=matrix_alt, criteria=num_criteria
+        # список для Нормалізованих оцінок вектора пріоритету (для висновку)
+        lst_normalized_eigenvector_alt = do_lst_norm_vector(
+            num_alt=num_alternatives,
+            name=name_alternatives,
+            criteria=num_criteria,
+            norm_vector=normalized_eigenvector_alt,
         )
-        print(f"[DEBUG] Сумма по столбцам вычислена успешно")
-    except (IndexError, ValueError) as e:
-        print(f"[!] Error computing sum_col_alt: {e}")
-        print(f"[DEBUG] matrix_alt structure: {len(matrix_alt)} criteria")
-        for i, crit in enumerate(matrix_alt):
-            print(f"[DEBUG] Criteria {i}: {len(crit)} alternatives")
-        flash("Ошибка при вычислении суммы по столбцам матрицы альтернатив", "error")
-        return redirect(url_for("hierarchy.index"))
 
-    # Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету
-    prod_col_alt = do_prod_col(
-        num_alt=num_alternatives,
-        criteria=num_criteria,
-        sum_col=sum_col_alt,
-        norm_vector=normalized_eigenvector_alt,
-    )
+        # Ранжування
+        ranj_alt = do_ranj(
+            lst_norm_vector=lst_normalized_eigenvector_alt, criteria=num_criteria
+        )
 
-    # Разом (Lmax)
-    l_max_alt = do_l_max(prod_col=prod_col_alt, criteria=num_criteria)
+        # Глобальні пріоритети
+        global_prior = do_global_prior(
+            norm_vector=normalized_eigenvector,
+            norm_vector_alt=normalized_eigenvector_alt,
+            num_alt=num_alternatives,
+        )
 
-    # Індекс узгодженості i Відношення узгодженості
-    index_consistency_alt, relation_consistency_alt = do_consistency(
-        num_alt=num_alternatives, l_max=l_max_alt, criteria=num_criteria
-    )
-
-    # список для Нормалізованих оцінок вектора пріоритету (для висновку)
-    lst_normalized_eigenvector_alt = do_lst_norm_vector(
-        num_alt=num_alternatives,
-        name=name_alternatives,
-        criteria=num_criteria,
-        norm_vector=normalized_eigenvector_alt,
-    )
-
-    # Ранжування
-    ranj_alt = do_ranj(
-        lst_norm_vector=lst_normalized_eigenvector_alt, criteria=num_criteria
-    )
-
-    # Глобальні пріоритети
-    global_prior = do_global_prior(
-        norm_vector=normalized_eigenvector,
-        norm_vector_alt=normalized_eigenvector_alt,
-        num_alt=num_alternatives,
-    )
-
-    # Ранжування глобальних пріоритетів
-    lst_normalized_eigenvector_global = do_lst_norm_vector(
-        num_alt=num_alternatives,
-        name=name_alternatives,
-        criteria=num_criteria,
-        norm_vector=global_prior,
-        g=1,
-    )
-    ranj_global = do_ranj(
-        lst_norm_vector=lst_normalized_eigenvector_global, criteria=num_criteria, g=1
-    )
+        # Ранжування глобальних пріоритетів
+        lst_normalized_eigenvector_global = do_lst_norm_vector(
+            num_alt=num_alternatives,
+            name=name_alternatives,
+            criteria=num_criteria,
+            norm_vector=global_prior,
+            g=1,
+        )
+        ranj_global = do_ranj(
+            lst_norm_vector=lst_normalized_eigenvector_global,
+            criteria=num_criteria,
+            g=1,
+        )
 
     # gpt_response = generate_gpt_response_mai(hierarchy_task, name_alternatives, name_criteria,
     #                                          ranj_global) if hierarchy_task else None
@@ -463,11 +626,13 @@ def result(method_id=None):
     existing_record = HierarchyAlternativesMatrix.query.get(new_record_id)
     if existing_record is None:
         # Збереження даних у БД
+        plot_data = generate_plot(global_prior, name_alternatives)
+
         add_object_to_db(
             db,
             GlobalPrioritiesPlot,
             id=new_record_id,
-            plot_data=generate_plot(global_prior, name_alternatives),
+            plot_data=plot_data,
         )
 
         add_object_to_db(

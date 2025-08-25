@@ -414,6 +414,18 @@ def generate_plot(
 
 # Функція для додавання об'єкту в базу даних та повернення його ID
 def add_object_to_db(db, object_class, **kwargs):
+    # Проверяем, есть ли уже запись с таким ID
+    if "id" in kwargs:
+        existing_record = db.session.get(object_class, kwargs["id"])
+        if existing_record:
+            # Обновляем существующую запись
+            for key, value in kwargs.items():
+                if hasattr(existing_record, key):
+                    setattr(existing_record, key, value)
+            db.session.commit()
+            return existing_record.id
+
+    # Создаем новую запись
     object_instance = object_class(**kwargs)
     db.session.add(object_instance)
     db.session.commit()

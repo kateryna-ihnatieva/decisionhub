@@ -83,6 +83,15 @@ def documentation():
     return render_template("documentation.html", **context)
 
 
+@app.route("/test-fix")
+def test_fix():
+    context = {
+        "title": "Тест исправления",
+        "name": current_user.get_name() if current_user.is_authenticated else None,
+    }
+    return render_template("test-fix.html", **context)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     context = {

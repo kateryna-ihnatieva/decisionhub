@@ -712,7 +712,37 @@
   <div class="alternatives-container">
     <form action="{{ url_for('hierarchy.result', method_id=id) }}" method="POST">
 
-      <div class="page-title">Матриці парних порівнянь для альтернатив</div>
+      <!-- Скрытые поля для сохранения данных черновика -->
+      <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
+      <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+      <input type="hidden" name="hierarchy_task" value="{{ task if task else '' }}">
+
+      <!-- Сохраняем имена альтернатив -->
+      {% for i in range(name_alternatives | length) %}
+      <input type="hidden" name="name_alternatives" value="{{ name_alternatives[i] }}" data-index="{{ i }}">
+      {% endfor %}
+
+             <!-- Сохраняем имена критериев -->
+       {% for i in range(name_criteria | length) %}
+       <input type="hidden" name="name_criteria" value="{{ name_criteria[i] }}" data-index="{{ i }}">
+       {% endfor %}
+
+       <!-- Скрытые поля для сохранения данных матрицы критериев -->
+       <div data-matrix="criteria" style="display: none;">
+         {% for i in range(num_criteria) %}
+           {% for j in range(num_criteria) %}
+             {% if i < j %}
+               <input type="hidden" name="matrix_krit" value="{{ matrix_krit[i][j] if matrix_krit and i < matrix_krit|length and j < matrix_krit[i]|length else '1' }}">
+             {% elif i > j %}
+               <input type="hidden" name="matrix_krit" value="{{ matrix_krit[i][j] if matrix_krit and i < matrix_krit|length and j < matrix_krit[i]|length else '1' }}">
+             {% elif i == j %}
+               <input type="hidden" name="matrix_krit" value="1">
+             {% endif %}
+           {% endfor %}
+         {% endfor %}
+       </div>
+
+       <div class="page-title">Матриці парних порівнянь для альтернатив</div>
 
       <div class="help-card">
         <div class="help-title">Довідка по оцінюванню</div>
@@ -736,7 +766,7 @@
           <div class="criteria-name">Критерій "{{ name_criteria[num] }}"</div>
         </div>
 
-        <div class="matrix-table-wrapper">
+        <div class="matrix-table-wrapper" data-matrix="alternatives_{{ num }}">
           <table class="matrix-table">
             <thead>
               <tr>
@@ -753,24 +783,33 @@
                 {% for j in range(name_alternatives | length) %}
                 <td {% if i == j %}class="diagonal-cell"{% endif %}>
                   {% if i < j %}
-                  <input class="matrix-input" type="text" name="matrix_alt"
+                  <input class="matrix-input" type="text" name="matrix_alt_{{ num }}_{{ i }}_{{ j }}"
                     id="matrix_alt_up_{{ num }}_{{ i }}_{{ j }}"
                     required
                     pattern="^[1-9]$|^(1\/[2-9])$"
                     title="Введіть число від 1 до 9 або дріб типу 1/2, 1/3, etc."
-                    placeholder="?">
+                    placeholder="?"
+                    data-matrix="alternatives_{{ num }}"
+                    data-row="{{ i }}"
+                    data-col="{{ j }}">
                   {% elif i > j %}
-                  <input class="matrix-input" type="text" name="matrix_alt"
+                  <input class="matrix-input" type="text" name="matrix_alt_{{ num }}_{{ i }}_{{ j }}"
                     id="matrix_alt_low_{{ num }}_{{ i }}_{{ j }}"
                     value=""
                     readonly
-                    title="Автоматично розраховується">
+                    title="Автоматично розраховується"
+                    data-matrix="alternatives_{{ num }}"
+                    data-row="{{ i }}"
+                    data-col="{{ j }}">
                   {% elif i == j %}
-                  <input class="matrix-input" type="text" name="matrix_alt"
+                  <input class="matrix-input" type="text" name="matrix_alt_{{ num }}_{{ i }}_{{ j }}"
                     id="matrix_alt_diag_{{ num }}_{{ i }}_{{ j }}"
                     value="1"
                     readonly
-                    title="Діагональний елемент завжди дорівнює 1">
+                    title="Діагональний елемент завжди дорівнює 1"
+                    data-matrix="alternatives_{{ num }}"
+                    data-row="{{ i }}"
+                    data-col="{{ j }}">
                   {% endif %}
                 </td>
                 {% endfor %}
@@ -822,6 +861,22 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
       });
+    }
+  });
+
+  // 🔄 Обновляем имена полей для правильного сбора данных черновика
+  inputs.forEach(input => {
+    if (input.name && input.name.startsWith('matrix_alt_')) {
+      // Убеждаемся, что имя поля соответствует структуре матрицы
+      const parts = input.name.split('_');
+      if (parts.length >= 5) {
+        const criteriaNum = parts[2];
+        const row = parts[3];
+        const col = parts[4];
+        input.setAttribute('data-matrix', `alternatives_${criteriaNum}`);
+        input.setAttribute('data-row', row);
+        input.setAttribute('data-col', col);
+      }
     }
   });
 
