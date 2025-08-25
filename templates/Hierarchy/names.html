@@ -471,6 +471,10 @@
   <div class="names-form">
     <form action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных черновика -->
+      <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
+      <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+
       {% if error %}
       <div class="alert-danger" role="alert">
         <i>{{ error }}</i>

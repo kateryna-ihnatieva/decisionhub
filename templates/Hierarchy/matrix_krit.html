@@ -570,6 +570,21 @@
   <div class="matrix-container">
     <form action="{{ url_for('hierarchy.matrix_alt') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных черновика -->
+      <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
+      <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+      <input type="hidden" name="hierarchy_task" value="{{ task if task else '' }}">
+
+      <!-- Сохраняем имена альтернатив -->
+      {% for i in range(name_alternatives | length) %}
+      <input type="hidden" name="name_alternatives" value="{{ name_alternatives[i] }}" data-index="{{ i }}">
+      {% endfor %}
+
+      <!-- Сохраняем имена критериев -->
+      {% for i in range(name_criteria | length) %}
+      <input type="hidden" name="name_criteria" value="{{ name_criteria[i] }}" data-index="{{ i }}">
+      {% endfor %}
+
       <div class="matrix-title">Матриця парних порівнянь для критеріїв</div>
 
       <div class="help-card">
@@ -640,6 +655,21 @@
         </table>
       </div>
 
+      <!-- Скрытые поля для сохранения матрицы критериев в черновике -->
+      <div data-matrix="criteria" style="display: none;">
+        {% for i in range(num_criteria) %}
+          {% for j in range(num_criteria) %}
+            {% if i < j %}
+              <input type="hidden" name="matrix_krit" value="{{ matrix_krit[i][j] if matrix_krit and i < matrix_krit|length and j < matrix_krit[i]|length else '1' }}">
+            {% elif i > j %}
+              <input type="hidden" name="matrix_krit" value="{{ matrix_krit[i][j] if matrix_krit and i < matrix_krit|length and j < matrix_krit[i]|length else '1' }}">
+            {% elif i == j %}
+              <input type="hidden" name="matrix_krit" value="1">
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      </div>
+
       <button type="submit" class="submit-button">Далі</button>
     </form>
   </div>
@@ -671,50 +701,57 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               // Если это целое число, то обратное будет 1/число
               const num = parseFloat(value);
-              if (num !== 1) {
-                symmetricInput.value = `1/${num}`;
-              } else {
-                symmetricInput.value = '1';
-              }
+              symmetricInput.value = num !== 1 ? `1/${num}` : '1';
             }
           } else {
             symmetricInput.value = '';
           }
         }
+
+        // Обновляем скрытые поля для сохранения в черновике
+        updateHiddenMatrixFields();
       });
     }
   });
 
-  // Подсветка связанных ячеек при фокусе
-  inputs.forEach(input => {
-    input.addEventListener('focus', function() {
-      if (this.id.includes('matrix_krit_up_')) {
-        const parts = this.id.split('_');
-        const i = parts[3];
-        const j = parts[4];
-        const symmetricInput = document.getElementById(`matrix_krit_low_${j}_${i}`);
+  // Функция для обновления скрытых полей матрицы критериев
+  function updateHiddenMatrixFields() {
+    const numCriteria = {{ num_criteria }};
+    const hiddenFieldsContainer = document.querySelector('[data-matrix="criteria"]');
 
-        if (symmetricInput) {
-          symmetricInput.style.background = 'rgba(102, 252, 241, 0.1)';
-          symmetricInput.style.borderColor = 'rgba(102, 252, 241, 0.4)';
+    if (!hiddenFieldsContainer) return;
+
+    // Очищаем старые скрытые поля
+    const oldHiddenFields = hiddenFieldsContainer.querySelectorAll('input[name="matrix_krit"]');
+    oldHiddenFields.forEach(field => field.remove());
+
+    // Создаем новые скрытые поля с актуальными значениями
+    for (let i = 0; i < numCriteria; i++) {
+      for (let j = 0; j < numCriteria; j++) {
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'matrix_krit';
+
+        if (i === j) {
+          // Диагональные элементы всегда 1
+          hiddenField.value = '1';
+        } else if (i < j) {
+          // Верхняя часть матрицы
+          const input = document.getElementById(`matrix_krit_up_${i}_${j}`);
+          hiddenField.value = input ? input.value : '1';
+        } else {
+          // Нижняя часть матрицы
+          const input = document.getElementById(`matrix_krit_low_${i}_${j}`);
+          hiddenField.value = input ? input.value : '1';
         }
-      }
-    });
 
-    input.addEventListener('blur', function() {
-      if (this.id.includes('matrix_krit_up_')) {
-        const parts = this.id.split('_');
-        const i = parts[3];
-        const j = parts[4];
-        const symmetricInput = document.getElementById(`matrix_krit_low_${j}_${i}`);
-
-        if (symmetricInput) {
-          symmetricInput.style.background = '';
-          symmetricInput.style.borderColor = '';
-        }
+        hiddenFieldsContainer.appendChild(hiddenField);
       }
-    });
-  });
+    }
+  }
+
+  // Инициализируем скрытые поля при загрузке страницы
+  updateHiddenMatrixFields();
 });
 </script>
 
