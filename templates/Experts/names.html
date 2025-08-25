@@ -360,7 +360,7 @@
           type="text"
           name="name_research"
           id="name_research_{{ i }}"
-          value="{% if names %}{{ names[i] }}{% endif %}"
+          value="{% if names and names[i] is defined %}{{ names[i] }}{% endif %}"
           placeholder="Напрямок дослідження {{ i+1 }}"
           data-index="{{ i }}"
           required

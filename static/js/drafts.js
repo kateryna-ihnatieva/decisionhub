@@ -98,6 +98,8 @@ class DraftsManager {
     restoreFormData(formData) {
         if (!formData) return;
 
+        console.log('Restoring form data:', formData);
+
         // Восстанавливаем задачу (проверяем все возможные имена полей)
         if (formData.task) {
             const taskInput = document.querySelector('input[name="task"]') ||
@@ -138,60 +140,75 @@ class DraftsManager {
 
         // Восстанавливаем имена альтернатив
         if (formData.alternatives && Array.isArray(formData.alternatives)) {
+            console.log('Restoring alternatives:', formData.alternatives);
             formData.alternatives.forEach((alt, index) => {
-                if (alt && alt.trim() !== '') {
-                    const altInput = document.querySelector(`input[name="name_alternatives"][data-index="${index}"]`);
-                    if (altInput) {
-                        altInput.value = alt;
-                    }
+                // Восстанавливаем все значения, включая пустые строки
+                const altInput = document.querySelector(`input[name="name_alternatives"][data-index="${index}"]`);
+                if (altInput) {
+                    altInput.value = alt || '';
+                    console.log(`Restored alternative[${index}]: "${alt}" -> "${altInput.value}"`);
+                } else {
+                    console.warn(`Alternative input not found for index ${index}`);
                 }
             });
         }
 
         // Восстанавливаем имена критериев
         if (formData.criteria && Array.isArray(formData.criteria)) {
+            console.log('Restoring criteria:', formData.criteria);
             formData.criteria.forEach((crit, index) => {
-                if (crit && crit.trim() !== '') {
-                    const critInput = document.querySelector(`input[name="name_criteria"][data-index="${index}"]`);
-                    if (critInput) {
-                        critInput.value = crit;
-                    }
+                // Восстанавливаем все значения, включая пустые строки
+                const critInput = document.querySelector(`input[name="name_criteria"][data-index="${index}"]`);
+                if (critInput) {
+                    critInput.value = crit || '';
+                    console.log(`Restored criteria[${index}]: "${crit}" -> "${critInput.value}"`);
+                } else {
+                    console.warn(`Criteria input not found for index ${index}`);
                 }
             });
         }
 
         // Восстанавливаем имена условий (для Savage)
         if (formData.conditions && Array.isArray(formData.conditions)) {
+            console.log('Restoring conditions:', formData.conditions);
             formData.conditions.forEach((cond, index) => {
-                if (cond && cond.trim() !== '') {
-                    const condInput = document.querySelector(`input[name="name_conditions"][data-index="${index}"]`);
-                    if (condInput) {
-                        condInput.value = cond;
-                    }
+                // Восстанавливаем все значения, включая пустые строки
+                const condInput = document.querySelector(`input[name="name_conditions"][data-index="${index}"]`);
+                if (condInput) {
+                    condInput.value = cond || '';
+                    console.log(`Restored condition[${index}]: "${cond}" -> "${condInput.value}"`);
+                } else {
+                    console.warn(`Condition input not found for index ${index}`);
                 }
             });
         }
 
         // Восстанавливаем имена объектов (для Binary Relations)
         if (formData.objects && Array.isArray(formData.objects)) {
+            console.log('Restoring objects:', formData.objects);
             formData.objects.forEach((obj, index) => {
-                if (obj && obj.trim() !== '') {
-                    const objInput = document.querySelector(`input[name="names"][data-index="${index}"]`);
-                    if (objInput) {
-                        objInput.value = obj;
-                    }
+                // Восстанавливаем все значения, включая пустые строки
+                const objInput = document.querySelector(`input[name="names"][data-index="${index}"]`);
+                if (objInput) {
+                    objInput.value = obj || '';
+                    console.log(`Restored object[${index}]: "${obj}" -> "${objInput.value}"`);
+                } else {
+                    console.warn(`Object input not found for index ${index}`);
                 }
             });
         }
 
         // Восстанавливаем имена исследований (для Experts)
         if (formData.research && Array.isArray(formData.research)) {
+            console.log('Restoring research:', formData.research);
             formData.research.forEach((res, index) => {
-                if (res && res.trim() !== '') {
-                    const resInput = document.querySelector(`input[name="name_research"][data-index="${index}"]`);
-                    if (resInput) {
-                        resInput.value = res;
-                    }
+                // Восстанавливаем все значения, включая пустые строки
+                const resInput = document.querySelector(`input[name="name_research"][data-index="${index}"]`);
+                if (resInput) {
+                    resInput.value = res || '';
+                    console.log(`Restored research[${index}]: "${res}" -> "${resInput.value}"`);
+                } else {
+                    console.warn(`Research input not found for index ${index}`);
                 }
             });
         }
@@ -201,7 +218,7 @@ class DraftsManager {
             this.restoreMatrices(formData.matrices);
         }
 
-        // Восстанавливаем другие данные
+        // Восстанавливаем другие данные (только если основные данные не были восстановлены)
         if (formData.otherData) {
             this.restoreOtherData(formData.otherData);
         }
@@ -295,19 +312,32 @@ class DraftsManager {
      * Восстанавливает другие данные
      */
     restoreOtherData(otherData) {
+        console.log('Restoring other data:', otherData);
+
         Object.keys(otherData).forEach(key => {
+            // Проверяем, не является ли это полем, которое уже было восстановлено из основного черновика
+            if (key === 'name_alternatives' || key === 'name_criteria' || key === 'name_conditions' || key === 'names' || key === 'name_research') {
+                console.log(`Skipping ${key} as it's already restored from main draft data`);
+                return; // Пропускаем эти поля, так как они уже восстановлены
+            }
+
             const element = document.querySelector(`[name="${key}"], [data-field="${key}"]`);
             if (element) {
                 if (element.type === 'checkbox') {
                     element.checked = otherData[key];
+                    console.log(`Restored checkbox ${key}: ${otherData[key]}`);
                 } else if (element.type === 'radio') {
                     const radio = document.querySelector(`input[name="${key}"][value="${otherData[key]}"]`);
                     if (radio) {
                         radio.checked = true;
+                        console.log(`Restored radio ${key}: ${otherData[key]}`);
                     }
                 } else {
                     element.value = otherData[key] || '';
+                    console.log(`Restored input ${key}: "${otherData[key]}" -> "${element.value}"`);
                 }
+            } else {
+                console.warn(`Element not found for ${key}`);
             }
         });
     }
@@ -390,22 +420,8 @@ class DraftsManager {
             }
         }
 
-        // Фильтруем пустые значения
-        if (formData.alternatives) {
-            formData.alternatives = formData.alternatives.filter(alt => alt && alt.trim() !== '');
-        }
-        if (formData.criteria) {
-            formData.criteria = formData.criteria.filter(crit => crit && crit.trim() !== '');
-        }
-        if (formData.conditions) {
-            formData.conditions = formData.conditions.filter(cond => cond && cond.trim() !== '');
-        }
-        if (formData.objects) {
-            formData.objects = formData.objects.filter(obj => obj && obj.trim() !== '');
-        }
-        if (formData.research) {
-            formData.research = formData.research.filter(res => res && res.trim() !== '');
-        }
+        // НЕ фильтруем пустые значения - сохраняем все как есть, включая пустые строки
+        // Это позволяет сохранить точную структуру введенных данных
 
         // Отладочная информация для проверки собранных данных
         console.log('Gathered form data:', formData);

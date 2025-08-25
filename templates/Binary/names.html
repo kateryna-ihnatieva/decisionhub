@@ -293,15 +293,15 @@
 
     <div class="names-grid">
       {% for i in range(num) %}
-      <div class="name-item">
-        <div class="object-number">{{ i+1 }}</div>
+      <div class="input-group">
+        <span class="input-counter">{{ i+1 }}</span>
         <input
-          class="name-input with-number"
+          class="input-field"
           type="text"
           name="names"
-          id="name_{{ i }}"
-          placeholder="Назва об'єкта {{ i+1 }}"
-          value="{% if names %}{{ names[i] }}{% endif %}"
+          id="object{{ i+1 }}"
+          placeholder="Об'єкт {{ i+1 }}"
+          value="{% if names and names[i] is defined %}{{ names[i] }}{% endif %}"
           data-index="{{ i }}"
           required
         >

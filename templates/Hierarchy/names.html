@@ -468,17 +468,17 @@
       <div class="input-section">
         <div class="section-title criteria">Назви критеріїв</div>
         <div class="input-grid">
-          {% for i in range(num_criteria | int) %}
+          {% for i in range(num_criteria) %}
           <div class="input-group">
-            <div class="input-number">{{ i+1 }}</div>
+            <span class="input-counter">{{ i+1 }}</span>
             <input
               class="input-field"
               type="text"
               name="name_criteria"
-              id="criter{{ i+1 }}"
-              data-index="{{ i }}"
+              id="criteria{{ i+1 }}"
               placeholder="Критерій {{ i+1 }}"
-              value="{% if name_criteria %}{{ name_criteria[i] }}{% endif %}"
+              value="{% if name_criteria and name_criteria[i] is defined %}{{ name_criteria[i] }}{% endif %}"
+              data-index="{{ i }}"
               required
             >
           </div>
@@ -487,24 +487,22 @@
       </div>
 
       <div class="input-section">
-        <div class="section-title alternatives">Назви альтернатив</div>
-        <div class="input-grid">
-          {% for n in range(num_alternatives) %}
-          <div class="input-group">
-            <div class="input-number">{{ n+1 }}</div>
-            <input
-              class="input-field"
-              type="text"
-              name="name_alternatives"
-              id="alternative{{ n+1 }}"
-              placeholder="Альтернатива {{ n+1 }}"
-              value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
-              data-index="{{ n }}"
-              required
-            >
-          </div>
-          {% endfor %}
+        <div class="section-title alternatives">Введіть імена альтернатив</div>
+        {% for n in range(num_alt) %}
+        <div class="input-group">
+          <span class="input-counter">{{ n+1 }}</span>
+          <input
+            class="input-field"
+            type="text"
+            name="name_alternatives"
+            id="alternative{{ n+1 }}"
+            placeholder="Альтернатива {{ n+1 }}"
+            value="{% if name_alternatives and name_alternatives[n] is defined %}{{ name_alternatives[n] }}{% endif %}"
+            data-index="{{ n }}"
+            required
+          >
         </div>
+        {% endfor %}
       </div>
 
       <button type="submit" class="submit-button">Далі</button>
