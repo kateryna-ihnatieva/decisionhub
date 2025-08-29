@@ -12,9 +12,7 @@ from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 
-kriteriy_laplasa_bp = Blueprint(
-    "kriteriy_laplasa", __name__, url_prefix="/kriteriy-laplasa"
-)
+kriteriy_laplasa_bp = Blueprint("kriteriy_laplasa", __name__, url_prefix="/laplasa")
 
 
 @kriteriy_laplasa_bp.route("/")

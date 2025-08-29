@@ -36,6 +36,13 @@ class DraftsManager {
             }
         }
 
+        // Дополнительная отладочная информация
+        console.log('DraftsManager init completed');
+        console.log('Current path:', window.location.pathname);
+        console.log('Method type:', this.getCurrentMethodType());
+        console.log('Is result page:', this.isResultPage());
+        console.log('Save button found:', !!document.getElementById('draft-save-button'));
+
         // Дополнительная проверка после полной загрузки DOM
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -991,9 +998,9 @@ class DraftsManager {
 
         // Проверяем точные совпадения для основных страниц методов
         if (path === '/hierarchy' || path.startsWith('/hierarchy/')) return 'hierarchy';
-        if (path === '/binary' || path.startsWith('/binary/')) return 'binary';
+        if (path === '/binary' || path.startsWith('/binary/') || path === '/binary_relations' || path.startsWith('/binary_relations/')) return 'binary';
         if (path === '/experts' || path.startsWith('/experts/')) return 'experts';
-        if (path === '/laplasa' || path.startsWith('/laplasa/')) return 'laplasa';
+        if (path === '/laplasa' || path.startsWith('/laplasa/') || path === '/kriteriy_laplasa' || path.startsWith('/kriteriy_laplasa/')) return 'laplasa';
         if (path === '/maximin' || path.startsWith('/maximin/')) return 'maximin';
         if (path === '/savage' || path.startsWith('/savage/')) return 'savage';
         if (path === '/hurwitz' || path.startsWith('/hurwitz/')) return 'hurwitz';
@@ -1213,12 +1220,17 @@ class DraftsManager {
      */
     isResultPage() {
         const currentPath = window.location.pathname;
-        return currentPath.includes('/result') ||
+        console.log('isResultPage check for path:', currentPath);
+
+        const isResult = currentPath.includes('/result') ||
             currentPath.includes('/experts_result') ||
             currentPath.endsWith('/result') ||
             currentPath.endsWith('/experts_result') ||
             currentPath.includes('/result/') ||
             currentPath.includes('/experts_result/');
+
+        console.log('isResultPage result:', isResult);
+        return isResult;
     }
 
     /**
@@ -1243,15 +1255,19 @@ class DraftsManager {
         console.log('Method type:', methodType);
         console.log('Is method page:', isMethodPage);
         console.log('Is result page:', isResultPage);
+        console.log('Save button element:', saveButton);
+        console.log('Save button current display:', saveButton.style.display);
 
         // Показываем кнопку только на страницах методов, но НЕ на страницах с результатами
         // Это предотвращает сохранение черновиков на страницах, где уже показаны результаты
         if (isMethodPage && !isResultPage) {
             saveButton.style.display = 'block';
             console.log('Save button shown - method page without results');
+            console.log('Method details:', { methodType, isMethodPage, isResultPage, currentPath });
         } else {
             saveButton.style.display = 'none';
             console.log('Save button hidden - either not a method page or result page');
+            console.log('Hidden details:', { methodType, isMethodPage, isResultPage, currentPath });
         }
     }
 

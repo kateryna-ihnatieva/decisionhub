@@ -648,6 +648,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Forcing showSaveButton call...');
         window.draftsManager.showSaveButton();
         window.draftsManager.markAllPageLinks();
+
+        // Дополнительная отладочная информация
+        console.log('DraftsManager status in base template:');
+        console.log('- Current path:', window.location.pathname);
+        console.log('- Method type:', window.draftsManager.getCurrentMethodType());
+        console.log('- Is result page:', window.draftsManager.isResultPage());
+        console.log('- Save button found:', !!document.getElementById('draft-save-button'));
     } else {
         console.error('DraftsManager not available, creating manually...');
         // Создаем DraftsManager вручную, если он не был создан

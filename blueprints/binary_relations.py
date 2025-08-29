@@ -8,9 +8,7 @@ from mymodules.gpt_response import *
 
 import operator
 
-binary_relations_bp = Blueprint(
-    "binary_relations", __name__, url_prefix="/binary-relations"
-)
+binary_relations_bp = Blueprint("binary_relations", __name__, url_prefix="/binary")
 
 
 @binary_relations_bp.route("/")
