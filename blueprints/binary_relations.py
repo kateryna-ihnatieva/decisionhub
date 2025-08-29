@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, redirect, url_for
 from mymodules.binary import *
 from models import *
 from mymodules.mai import *
@@ -27,6 +27,7 @@ def names():
     draft_data = None
     num = 0
     binary_task = None
+    names = None
 
     if draft_id:
         try:
@@ -41,23 +42,28 @@ def names():
                 # Восстанавливаем данные из черновика
                 num = int(draft_data.get("numObjects") or 0)
                 binary_task = draft_data.get("task")
+                names = draft_data.get("objects", [])
             else:
                 # Если черновик не найден, используем значения по умолчанию
                 num = 0
                 binary_task = None
+                names = None
         except Exception as e:
             print(f"Error loading draft: {str(e)}")
             # В случае ошибки используем значения по умолчанию
             num = 0
             binary_task = None
+            names = None
     else:
         # Если черновик не загружается, получаем данные из URL параметров
         try:
             num = int(request.args.get("num") or 0)
             binary_task = request.args.get("binary_task")
+            names = None
         except (ValueError, TypeError):
             num = 0
             binary_task = None
+            names = None
 
     # Збереження змінної у сесії
     session["num"] = num
@@ -67,7 +73,7 @@ def names():
         "title": "Імена",
         "num": num,
         "binary_task": binary_task,
-        "names": draft_data.get("objects") if draft_data else None,
+        "names": names,
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
     return render_template("Binary/names.html", **context)
@@ -75,9 +81,57 @@ def names():
 
 @binary_relations_bp.route("/matrix/", methods=["GET", "POST"])
 def matrix():
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num = int(draft_data.get("numObjects") or 0)
+                binary_task = draft_data.get("task")
+                names = draft_data.get("objects", [])
+
+                # Обновляем сессию
+                session["num"] = num
+                session["binary_task"] = binary_task
+                session["names"] = names
+
+                # Создаем новый ID записи для черновика
+                new_record_id = add_object_to_db(db, BinaryNames, names=names)
+                if binary_task:
+                    add_object_to_db(db, BinaryTask, id=new_record_id, task=binary_task)
+
+                session["new_record_id"] = new_record_id
+                session["matr"] = 0
+
+                context = {
+                    "id": new_record_id,
+                    "title": "Матриця попарних порівнянь",
+                    "num": num,
+                    "names": names,
+                    "name": (
+                        current_user.get_name()
+                        if current_user.is_authenticated
+                        else None
+                    ),
+                }
+                return render_template("Binary/matrix.html", **context)
+
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+
+    # Обычная обработка POST запроса
     num = int(session.get("num"))
     binary_task = session.get("binary_task")
-
     names = request.form.getlist("names")
 
     # Перевірка на унікальність введених імен об'єктів
@@ -103,7 +157,7 @@ def matrix():
 
     context = {
         "id": new_record_id,
-        "title": "Імена",
+        "title": "Матриця попарних порівнянь",
         "num": num,
         "names": names,
         "name": current_user.get_name() if current_user.is_authenticated else None,
@@ -134,7 +188,7 @@ def result(method_id=None):
         session["matr"] = 0
     print(session["matr"])
     if session["matr"] == 0:
-        matrix = process_matrix(request.form.getlist("matrix"), num)
+        matrix = process_matrix(request.form.getlist("matrix_binary"), num)
         add_object_to_db(
             db,
             BinaryMatrix,

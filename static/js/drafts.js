@@ -261,6 +261,11 @@ class DraftsManager {
             this.restoreCriteriaMatrixOnAlternativesPage(formData.matrices.criteria);
         }
 
+        // Восстанавливаем матрицу бинарных отношений
+        if (formData.matrices && formData.matrices.binary) {
+            this.restoreBinaryMatrix(formData.matrices.binary);
+        }
+
         // Восстанавливаем другие данные (только если основные данные не были восстановлены)
         if (formData.otherData) {
             this.restoreOtherData(formData.otherData);
@@ -295,6 +300,11 @@ class DraftsManager {
             Object.keys(matrices.alternatives).forEach(criteriaKey => {
                 this.restoreMatrix(`alternatives_${criteriaKey}`, matrices.alternatives[criteriaKey]);
             });
+        }
+
+        // Восстанавливаем матрицу бинарных отношений
+        if (matrices.binary) {
+            this.restoreBinaryMatrix(matrices.binary);
         }
     }
 
@@ -399,6 +409,71 @@ class DraftsManager {
         }
 
         console.log(`Matrix ${matrixType} restored successfully`);
+    }
+
+    /**
+     * Восстанавливает матрицу бинарных отношений
+     */
+    restoreBinaryMatrix(matrixData) {
+        const matrixContainer = document.querySelector('[data-matrix="binary"]');
+        if (!matrixContainer) {
+            console.warn('Binary matrix container not found for restoration.');
+            return;
+        }
+
+        const size = matrixData.length;
+        if (size === 0) {
+            console.warn('Matrix data for binary relations is empty.');
+            return;
+        }
+
+        console.log('Restoring binary matrix with size:', size);
+        console.log('Matrix data:', matrixData);
+
+        // Восстанавливаем матрицу бинарных отношений
+        const inputs = matrixContainer.querySelectorAll('input[name="matrix_binary"]');
+        console.log('Found matrix inputs:', inputs.length);
+
+        if (inputs.length === size * size) {
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (matrixData[i] && matrixData[i][j] !== undefined && matrixData[i][j] !== '') {
+                        const inputIndex = i * size + j;
+                        if (inputs[inputIndex]) {
+                            inputs[inputIndex].value = matrixData[i][j] || '';
+                            console.log(`Set binary relation value for ${i}_${j}: ${matrixData[i][j]}`);
+                        } else {
+                            console.warn(`Binary relation input not found for ${i}_${j}.`);
+                        }
+                    }
+                }
+            }
+        } else {
+            console.warn(`Expected ${size * size} inputs, but found ${inputs.length}`);
+
+            // Fallback: попробуем восстановить по ID полей
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (matrixData[i] && matrixData[i][j] !== undefined && matrixData[i][j] !== '') {
+                        let input = null;
+                        if (i < j) {
+                            input = matrixContainer.querySelector(`#matrix\\[${i}\\]\\[${j}\\]`);
+                        } else if (i > j) {
+                            input = matrixContainer.querySelector(`#matrix\\[${j}\\]\\[${i}\\]`);
+                        } else {
+                            input = matrixContainer.querySelector(`#matrix\\[${i}\\]\\[${j}\\]`);
+                        }
+
+                        if (input) {
+                            input.value = matrixData[i][j] || '';
+                            console.log(`Set binary relation value for ${i}_${j} via ID: ${matrixData[i][j]}`);
+                        } else {
+                            console.warn(`Binary relation input not found for ${i}_${j} via ID.`);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -600,7 +675,14 @@ class DraftsManager {
      * Получает значение поля формы
      */
     getFieldValue(fieldName) {
-        const element = document.querySelector(`[name="${fieldName}"]`);
+        // Сначала ищем обычные поля
+        let element = document.querySelector(`[name="${fieldName}"]`);
+
+        // Если не найдено, ищем скрытые поля
+        if (!element) {
+            element = document.querySelector(`input[name="${fieldName}"][type="hidden"]`);
+        }
+
         if (!element) return null;
 
         if (element.type === 'checkbox') {
@@ -677,7 +759,19 @@ class DraftsManager {
      * Собирает имена объектов (для Binary Relations)
      */
     getObjectsNames() {
-        const inputs = document.querySelectorAll('input[name="names"]');
+        // Сначала пробуем получить имена из скрытых полей
+        const hiddenInputs = document.querySelectorAll('input[name="names"][type="hidden"]');
+        if (hiddenInputs.length > 0) {
+            const names = [];
+            hiddenInputs.forEach((input, index) => {
+                names[index] = input.value || '';
+            });
+            console.log('Objects names from hidden fields:', names);
+            return names;
+        }
+
+        // Если скрытых полей нет, пробуем получить из обычных полей
+        const inputs = document.querySelectorAll('input[name="names"]:not([type="hidden"])');
         const names = new Array(inputs.length);
 
         inputs.forEach(input => {
@@ -690,6 +784,7 @@ class DraftsManager {
             }
         });
 
+        console.log('Objects names from regular fields:', names);
         return names;
     }
 
@@ -742,6 +837,12 @@ class DraftsManager {
         console.log('Alternatives matrices gathered:', alternativesMatrices);
         if (Object.keys(alternativesMatrices).length > 0) {
             matrices.alternatives = alternativesMatrices;
+        }
+
+        // Собираем матрицу бинарных отношений
+        const binaryMatrix = this.gatherBinaryMatrix();
+        if (binaryMatrix) {
+            matrices.binary = binaryMatrix;
         }
 
         console.log('Final matrices object:', matrices);
@@ -911,6 +1012,44 @@ class DraftsManager {
             }
         }
         console.log('Hidden criteria matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
+    * Собирает данные матрицы бинарных отношений
+    */
+    gatherBinaryMatrix() {
+        const matrixContainer = document.querySelector('[data-matrix="binary"]');
+        if (!matrixContainer) {
+            console.log('Binary matrix container not found for gathering.');
+            return null;
+        }
+
+        const inputs = matrixContainer.querySelectorAll('input[name="matrix_binary"]');
+        if (inputs.length === 0) {
+            console.log('No binary relation inputs found.');
+            return null;
+        }
+
+        const size = Math.sqrt(inputs.length);
+        if (size * size !== inputs.length) {
+            console.warn('Number of binary relation inputs does not form a square matrix.');
+            return null;
+        }
+
+        const matrix = [];
+        for (let i = 0; i < size; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < size; j++) {
+                const inputIndex = i * size + j;
+                if (inputs[inputIndex]) {
+                    matrix[i][j] = inputs[inputIndex].value || '';
+                } else {
+                    matrix[i][j] = '';
+                }
+            }
+        }
+        console.log('Binary relation matrix gathered:', matrix);
         return matrix;
     }
 

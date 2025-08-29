@@ -366,8 +366,15 @@
     </div>
   </div>
 
-  <div class="matrix-container">
+  <div class="matrix-container" data-matrix="binary">
     <form action="{{ url_for('binary_relations.result', method_id=id) }}" method="POST">
+
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="binary_task" value="{{ session.get('binary_task', '') }}">
+      <input type="hidden" name="num" value="{{ num }}">
+      {% for name in names %}
+      <input type="hidden" name="names" value="{{ name }}">
+      {% endfor %}
 
       <table class="matrix-table">
         <tr>
@@ -386,7 +393,7 @@
             <input
               class="matrix-input"
               type="text"
-              name="matrix"
+              name="matrix_binary"
               id="matrix[{{i}}][{{j}}]"
               pattern="^-?([0-1]{1}|1)$"
               title="Введіть -1, 0 або 1"
@@ -396,7 +403,7 @@
             <input
               class="matrix-input"
               type="text"
-              name="matrix"
+              name="matrix_binary"
               id="matrix[{{j}}][{{i}}]"
               value=""
               readonly
@@ -405,7 +412,7 @@
             <input
               class="matrix-input diagonal"
               type="text"
-              name="matrix"
+              name="matrix_binary"
               id="matrix[{{i}}{{j}}]"
               value="0"
               readonly

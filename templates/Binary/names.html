@@ -283,6 +283,10 @@
 <div class="form-container">
   <form action="{{ url_for('binary_relations.matrix') }}" method="POST">
 
+    <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+    <input type="hidden" name="binary_task" value="{{ binary_task or '' }}">
+    <input type="hidden" name="num" value="{{ num }}">
+
     {% if error %}
     <div class="alert" role="alert">
       {{ error }}
