@@ -444,6 +444,11 @@
   <div class="setup-form">
     <form action="{{ url_for('kriteriy_laplasa.cost_matrix') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных в черновик -->
+      <input type="hidden" name="laplasa_task" value="{{ laplasa_task or '' }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+
       {% if error %}
       <div class="alert alert-danger alert-style" role="alert">
         <i>{{ error }}</i>

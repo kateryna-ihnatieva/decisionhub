@@ -521,9 +521,31 @@
   <div class="matrix-form">
     <form action="{{ url_for('kriteriy_laplasa.result', method_id=id) }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="laplasa_task" value="{{ session.get('laplasa_task', '') }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+      {% for name in name_alternatives %}
+      <input type="hidden" name="name_alternatives" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+      {% for name in name_conditions %}
+      <input type="hidden" name="name_conditions" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+
+      <!-- Скрытые поля для восстановления матрицы из черновика -->
+      {% if cost_matrix %}
+        {% for i in range(num_alt) %}
+          {% for j in range(num_conditions) %}
+            {% if cost_matrix[i][j] is defined and cost_matrix[i][j] != '' %}
+            <input type="hidden" name="cost_matrix" value="{{ cost_matrix[i][j] }}">
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+
       <div class="matrix-title">Матриця Вартостей</div>
 
-      <div class="matrix-container">
+      <div class="matrix-container" data-matrix="laplasa">
         <table class="cost-matrix">
           <thead class="matrix-header">
             <tr>
@@ -544,10 +566,11 @@
                   type="text"
                   name="cost_matrix"
                   id="cost_matrix_{{ i }}_{{ j }}_"
+                  value="{% if cost_matrix and cost_matrix[i] and cost_matrix[i][j] is defined and cost_matrix[i][j] != '' %}{{ cost_matrix[i][j] }}{% endif %}"
                   placeholder="0.0"
-                  required
                   pattern="^-?\d+(\.\d+)?$"
                   title="Введіть число (наприклад: 5, -3.2, 10.5)"
+                  required
                 >
               </td>
               {% endfor %}

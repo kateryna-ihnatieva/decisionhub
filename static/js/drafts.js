@@ -273,11 +273,20 @@ class DraftsManager {
 
         // Восстанавливаем матрицу экспертных данных
         if (formData.matrices && formData.matrices.expertsData) {
+            console.log('Restoring experts data matrix:', formData.matrices.expertsData);
             this.restoreExpertsDataMatrix(formData.matrices.expertsData);
+        }
+
+        // Восстанавливаем матрицу Лапласа
+        if (formData.matrices && formData.matrices.cost) {
+            console.log('Restoring Laplasa matrix:', formData.matrices.cost);
+            this.restoreLaplasaMatrix(formData.matrices.cost);
         }
 
         // Восстанавливаем другие данные (только если основные данные не были восстановлены)
         if (formData.otherData) {
+            console.log('=== RESTORING OTHER DATA ===');
+            console.log('Other data:', formData.otherData);
             this.restoreOtherData(formData.otherData);
         }
 
@@ -963,6 +972,13 @@ class DraftsManager {
         console.log('Experts data matrix gathered:', expertsDataMatrix);
         if (expertsDataMatrix) {
             matrices.expertsData = expertsDataMatrix;
+        }
+
+        // Собираем матрицу Лапласа
+        const laplasaMatrix = this.gatherLaplasaMatrix();
+        console.log('Laplasa matrix gathered:', laplasaMatrix);
+        if (laplasaMatrix) {
+            matrices.cost = laplasaMatrix;
         }
 
         console.log('Final matrices object:', matrices);
@@ -1736,6 +1752,148 @@ class DraftsManager {
         const url = new URL(window.location);
         url.searchParams.delete('draft');
         window.history.replaceState({}, '', url);
+    }
+
+    /**
+    * Собирает данные матрицы Лапласа
+    */
+    gatherLaplasaMatrix() {
+        const matrixContainer = document.querySelector('[data-matrix="laplasa"]');
+        if (!matrixContainer) {
+            console.log('Laplasa matrix container not found, trying to gather from hidden fields...');
+
+            // Если контейнер не найден, пробуем собрать из скрытых полей cost_matrix
+            const hiddenInputs = document.querySelectorAll('input[name="cost_matrix"]');
+            if (hiddenInputs.length > 0) {
+                console.log(`Found ${hiddenInputs.length} hidden cost_matrix inputs`);
+
+                // Определяем размер матрицы по количеству альтернатив и условий
+                const numAlt = parseInt(document.querySelector('input[name="num_alt"]')?.value || '2');
+                const numConditions = parseInt(document.querySelector('input[name="num_conditions"]')?.value || '2');
+
+                console.log(`Matrix size from hidden fields: ${numAlt} alternatives x ${numConditions} conditions`);
+
+                // Создаем матрицу и заполняем её данными из скрытых полей
+                const matrix = [];
+                for (let i = 0; i < numAlt; i++) {
+                    matrix[i] = [];
+                    for (let j = 0; j < numConditions; j++) {
+                        // Ищем соответствующий input по ID
+                        const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                        if (input) {
+                            const value = input.value.trim();
+                            // Сохраняем пустую строку для пустых полей, а не '0'
+                            matrix[i][j] = value === '' ? '' : value;
+                        } else {
+                            matrix[i][j] = '';
+                        }
+                    }
+                }
+
+                console.log('Laplasa matrix gathered from hidden fields:', matrix);
+                return matrix;
+            }
+
+            console.log('No Laplasa matrix inputs found.');
+            return null;
+        }
+
+        // Ищем все поля с именем cost_matrix
+        const inputs = matrixContainer.querySelectorAll('input[name="cost_matrix"]');
+        console.log(`Found ${inputs.length} cost_matrix inputs`);
+
+        if (inputs.length === 0) {
+            console.log('No cost matrix inputs found.');
+            return null;
+        }
+
+        // Определяем размер матрицы по количеству строк и столбцов
+        const rows = matrixContainer.querySelectorAll('tbody tr');
+        const numAlt = rows.length;
+        const numConditions = matrixContainer.querySelectorAll('thead th').length - 1; // -1 для пустой ячейки
+
+        console.log(`Matrix size: ${numAlt} alternatives x ${numConditions} conditions`);
+
+        if (numAlt === 0 || numConditions === 0) {
+            console.warn('Cannot determine matrix size from DOM');
+            return null;
+        }
+
+        // Создаем матрицу и заполняем её данными
+        const matrix = [];
+        for (let i = 0; i < numAlt; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < numConditions; j++) {
+                // Ищем соответствующий input по ID
+                const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                if (input) {
+                    const value = input.value.trim();
+                    // Сохраняем пустую строку для пустых полей, а не '0'
+                    matrix[i][j] = value === '' ? '' : value;
+                } else {
+                    matrix[i][j] = '';
+                }
+            }
+        }
+
+        console.log('Laplasa matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
+    * Восстанавливает матрицу Лапласа
+    */
+    restoreLaplasaMatrix(matrixData) {
+        console.log('=== RESTORING LAPLASA MATRIX ===');
+        console.log('Input matrixData:', matrixData);
+        console.log('Type of matrixData:', typeof matrixData);
+        console.log('Is array:', Array.isArray(matrixData));
+
+        const matrixContainer = document.querySelector('[data-matrix="laplasa"]');
+        if (!matrixContainer) {
+            console.warn('Laplasa matrix container not found for restoration.');
+            return;
+        }
+
+        const numAlt = matrixData.length;
+        if (numAlt === 0) {
+            console.warn('Matrix data for Laplasa is empty.');
+            return;
+        }
+
+        const numConditions = matrixData[0] ? matrixData[0].length : 0;
+        console.log('Matrix size:', numAlt, 'x', numConditions);
+        console.log('Matrix data:', matrixData);
+        console.log('Matrix container found:', !!matrixContainer);
+
+        // Восстанавливаем матрицу по ID полей
+        for (let i = 0; i < numAlt; i++) {
+            for (let j = 0; j < numConditions; j++) {
+                const currentValue = matrixData[i] ? matrixData[i][j] : undefined;
+                console.log(`Processing [${i}][${j}]: value="${currentValue}", type=${typeof currentValue}`);
+
+                // Проверяем, есть ли значение в матрице
+                if (currentValue !== undefined && currentValue !== '' && currentValue !== null) {
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = currentValue;
+                        console.log(`✓ Set Laplasa value for alternative ${i}, condition ${j}: "${currentValue}"`);
+                    } else {
+                        console.warn(`✗ Laplasa input not found for alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                } else {
+                    // Если значение пустое, очищаем поле
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = '';
+                        console.log(`- Cleared Laplasa value for alternative ${i}, condition ${j}`);
+                    } else {
+                        console.warn(`✗ Input not found for clearing alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                }
+            }
+        }
+        console.log('=== LAPLASA MATRIX RESTORATION COMPLETED ===');
     }
 }
 
