@@ -24,14 +24,32 @@ class DraftsManager {
         // Добавляем обработчик перед уходом со страницы
         window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
 
-        // Показываем кнопку сохранения на страницах методов
+        // Показываем кнопку сохранения на страницах методов (но не на страницах с результатами)
         this.showSaveButton();
+
+        // Дополнительная проверка: если это страница с результатами, сразу скрываем кнопку
+        if (this.isResultPage()) {
+            const saveButton = document.getElementById('draft-save-button');
+            if (saveButton) {
+                saveButton.style.display = 'none';
+                console.log('Save button immediately hidden - result page detected');
+            }
+        }
 
         // Дополнительная проверка после полной загрузки DOM
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.showSaveButton();
                 this.markAllPageLinks();
+
+                // Дополнительная проверка для страниц с результатами после загрузки DOM
+                if (this.isResultPage()) {
+                    const saveButton = document.getElementById('draft-save-button');
+                    if (saveButton) {
+                        saveButton.style.display = 'none';
+                        console.log('Save button hidden after DOM load - result page detected');
+                    }
+                }
             });
         }
 
@@ -53,6 +71,15 @@ class DraftsManager {
         // Периодическая проверка кнопки (каждые 2 секунды)
         setInterval(() => {
             this.showSaveButton();
+
+            // Дополнительная проверка для страниц с результатами
+            if (this.isResultPage()) {
+                const saveButton = document.getElementById('draft-save-button');
+                if (saveButton) {
+                    saveButton.style.display = 'none';
+                    console.log('Save button hidden in periodic check - result page detected');
+                }
+            }
         }, 2000);
 
         // Дополнительная проверка для всех ссылок на странице
@@ -1180,6 +1207,21 @@ class DraftsManager {
     }
 
     /**
+     * Проверяет, является ли текущая страница страницей с результатами
+     * Учитывает различные варианты названий страниц с результатами
+     * @returns {boolean} true если это страница с результатами, false в противном случае
+     */
+    isResultPage() {
+        const currentPath = window.location.pathname;
+        return currentPath.includes('/result') ||
+            currentPath.includes('/experts_result') ||
+            currentPath.endsWith('/result') ||
+            currentPath.endsWith('/experts_result') ||
+            currentPath.includes('/result/') ||
+            currentPath.includes('/experts_result/');
+    }
+
+    /**
      * Показывает кнопку сохранения на страницах методов
      */
     showSaveButton() {
@@ -1192,18 +1234,24 @@ class DraftsManager {
         // Показываем кнопку только на страницах методов
         const methodType = this.getCurrentMethodType();
         const isMethodPage = methodType !== 'unknown';
+        const currentPath = window.location.pathname;
 
-        console.log('Current path:', window.location.pathname);
+        // Проверяем, является ли это страницей с результатом
+        const isResultPage = this.isResultPage();
+
+        console.log('Current path:', currentPath);
         console.log('Method type:', methodType);
         console.log('Is method page:', isMethodPage);
+        console.log('Is result page:', isResultPage);
 
-        // Показываем кнопку на всех страницах методов
-        if (isMethodPage) {
+        // Показываем кнопку только на страницах методов, но НЕ на страницах с результатами
+        // Это предотвращает сохранение черновиков на страницах, где уже показаны результаты
+        if (isMethodPage && !isResultPage) {
             saveButton.style.display = 'block';
-            console.log('Save button shown');
+            console.log('Save button shown - method page without results');
         } else {
             saveButton.style.display = 'none';
-            console.log('Save button hidden');
+            console.log('Save button hidden - either not a method page or result page');
         }
     }
 
