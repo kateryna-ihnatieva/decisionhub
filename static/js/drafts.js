@@ -266,6 +266,16 @@ class DraftsManager {
             this.restoreBinaryMatrix(formData.matrices.binary);
         }
 
+        // Восстанавливаем матрицу компетенции экспертов
+        if (formData.matrices && formData.matrices.competence) {
+            this.restoreCompetenceMatrix(formData.matrices.competence);
+        }
+
+        // Восстанавливаем матрицу экспертных данных
+        if (formData.matrices && formData.matrices.expertsData) {
+            this.restoreExpertsDataMatrix(formData.matrices.expertsData);
+        }
+
         // Восстанавливаем другие данные (только если основные данные не были восстановлены)
         if (formData.otherData) {
             this.restoreOtherData(formData.otherData);
@@ -305,6 +315,16 @@ class DraftsManager {
         // Восстанавливаем матрицу бинарных отношений
         if (matrices.binary) {
             this.restoreBinaryMatrix(matrices.binary);
+        }
+
+        // Восстанавливаем матрицу компетенции экспертов
+        if (matrices.competence) {
+            this.restoreCompetenceMatrix(matrices.competence);
+        }
+
+        // Восстанавливаем матрицу экспертных данных
+        if (matrices.expertsData) {
+            this.restoreExpertsDataMatrix(matrices.expertsData);
         }
     }
 
@@ -470,6 +490,94 @@ class DraftsManager {
                         } else {
                             console.warn(`Binary relation input not found for ${i}_${j} via ID.`);
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Восстанавливает матрицу компетенции экспертов
+     */
+    restoreCompetenceMatrix(matrixData) {
+        const matrixContainer = document.querySelector('[data-matrix="competence"]');
+        if (!matrixContainer) {
+            console.warn('Competence matrix container not found for restoration.');
+            return;
+        }
+
+        const numExperts = matrixData.length;
+        if (numExperts === 0) {
+            console.warn('Matrix data for competence is empty.');
+            return;
+        }
+
+        const numArguments = matrixData[0] ? matrixData[0].length : 0;
+        console.log('Restoring competence matrix with size:', numExperts, 'x', numArguments);
+        console.log('Matrix data:', matrixData);
+
+        // Восстанавливаем матрицу компетенции по ID полей
+        for (let i = 0; i < numExperts; i++) {
+            for (let j = 0; j < numArguments; j++) {
+                // Проверяем, есть ли значение в матрице
+                if (matrixData[i] && matrixData[i][j] !== undefined && matrixData[i][j] !== '' && matrixData[i][j] !== null) {
+                    const input = matrixContainer.querySelector(`#table_competence_${j}_${i}`);
+                    if (input) {
+                        input.value = matrixData[i][j];
+                        console.log(`Set competence value for expert ${i}, argument ${j}: ${matrixData[i][j]}`);
+                    } else {
+                        console.warn(`Competence input not found for expert ${i}, argument ${j}`);
+                    }
+                } else {
+                    // Если значение пустое, очищаем поле
+                    const input = matrixContainer.querySelector(`#table_competence_${j}_${i}`);
+                    if (input) {
+                        input.value = '';
+                        console.log(`Cleared competence value for expert ${i}, argument ${j}`);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Восстанавливает матрицу экспертных данных
+     */
+    restoreExpertsDataMatrix(matrixData) {
+        const matrixContainer = document.querySelector('[data-matrix="experts_data"]');
+        if (!matrixContainer) {
+            console.warn('Experts data matrix container not found for restoration.');
+            return;
+        }
+
+        const numExperts = matrixData.length;
+        if (numExperts === 0) {
+            console.warn('Matrix data for experts data is empty.');
+            return;
+        }
+
+        const numResearch = matrixData[0] ? matrixData[0].length : 0;
+        console.log('Restoring experts data matrix with size:', numExperts, 'x', numResearch);
+        console.log('Matrix data:', matrixData);
+
+        // Восстанавливаем матрицу экспертных данных по ID полей
+        for (let i = 0; i < numExperts; i++) {
+            for (let j = 0; j < numResearch; j++) {
+                // Проверяем, есть ли значение в матрице
+                if (matrixData[i] && matrixData[i][j] !== undefined && matrixData[i][j] !== '' && matrixData[i][j] !== null) {
+                    const input = matrixContainer.querySelector(`#experts_data_table_${j}_${i}`);
+                    if (input) {
+                        input.value = matrixData[i][j];
+                        console.log(`Set experts data value for expert ${i}, research ${j}: ${matrixData[i][j]}`);
+                    } else {
+                        console.warn(`Experts data input not found for expert ${i}, research ${j}`);
+                    }
+                } else {
+                    // Если значение пустое, очищаем поле
+                    const input = matrixContainer.querySelector(`#experts_data_table_${j}_${i}`);
+                    if (input) {
+                        input.value = '';
+                        console.log(`Cleared experts data value for expert ${i}, research ${j}`);
                     }
                 }
             }
@@ -647,26 +755,17 @@ class DraftsManager {
         console.log('Form inputs found:');
         console.log('- name_alternatives:', document.querySelectorAll('input[name="name_alternatives"]').length);
         console.log('- name_criteria:', document.querySelectorAll('input[name="name_criteria"]').length);
+        console.log('- name_research:', document.querySelectorAll('input[name="name_research"]').length);
         console.log('- num_alternatives:', document.querySelectorAll('input[name="num_alternatives"]').length);
         console.log('- num_criteria:', document.querySelectorAll('input[name="num_criteria"]').length);
+        console.log('- num_experts:', document.querySelectorAll('input[name="num_experts"]').length);
+        console.log('- matrix_competence:', document.querySelectorAll('input[name="matrix_competence"]').length);
         console.log('- hierarchy_task:', document.querySelector('textarea[name="hierarchy_task"]') ? 'found' : 'not found');
         console.log('- matrix_krit:', document.querySelectorAll('input[name="matrix_krit"]').length);
 
-        // Проверяем значения полей
-        const numAltInput = document.querySelector('input[name="num_alternatives"]');
-        const numCritInput = document.querySelector('input[name="num_criteria"]');
-        const taskInput = document.querySelector('textarea[name="hierarchy_task"]');
-
-        if (numAltInput) console.log('num_alternatives value:', numAltInput.value);
-        if (numCritInput) console.log('num_criteria value:', numCritInput.value);
-        if (taskInput) console.log('hierarchy_task value:', taskInput.value);
-
-        // Проверяем имена альтернатив и критериев
-        const altInputs = document.querySelectorAll('input[name="name_alternatives"]');
-        const critInputs = document.querySelectorAll('input[name="name_criteria"]');
-
-        console.log('Alternative inputs:', Array.from(altInputs).map(input => ({ index: input.getAttribute('data-index'), value: input.value })));
-        console.log('Criteria inputs:', Array.from(critInputs).map(input => ({ index: input.getAttribute('data-index'), value: input.value })));
+        // Отладочная информация для research и competence
+        console.log('Research names:', formData.research);
+        console.log('Competence matrix:', formData.matrices.competence);
 
         return formData;
     }
@@ -795,12 +894,18 @@ class DraftsManager {
         const inputs = document.querySelectorAll('input[name="name_research"]');
         const names = new Array(inputs.length);
 
-        inputs.forEach(input => {
-            const index = input.getAttribute('data-index');
-            if (index !== null) {
-                const idx = parseInt(index);
+        inputs.forEach((input, index) => {
+            // Сначала пробуем получить индекс из data-index
+            const dataIndex = input.getAttribute('data-index');
+            if (dataIndex !== null) {
+                const idx = parseInt(dataIndex);
                 if (!isNaN(idx) && idx >= 0 && idx < names.length) {
                     names[idx] = input.value || '';
+                }
+            } else {
+                // Если data-index нет, используем порядковый номер в коллекции
+                if (index >= 0 && index < names.length) {
+                    names[index] = input.value || '';
                 }
             }
         });
@@ -841,8 +946,23 @@ class DraftsManager {
 
         // Собираем матрицу бинарных отношений
         const binaryMatrix = this.gatherBinaryMatrix();
+        console.log('Binary matrix gathered:', binaryMatrix);
         if (binaryMatrix) {
             matrices.binary = binaryMatrix;
+        }
+
+        // Собираем матрицу компетенции экспертов
+        const competenceMatrix = this.gatherCompetenceMatrix();
+        console.log('Competence matrix gathered:', competenceMatrix);
+        if (competenceMatrix) {
+            matrices.competence = competenceMatrix;
+        }
+
+        // Собираем матрицу экспертных данных
+        const expertsDataMatrix = this.gatherExpertsDataMatrix();
+        console.log('Experts data matrix gathered:', expertsDataMatrix);
+        if (expertsDataMatrix) {
+            matrices.expertsData = expertsDataMatrix;
         }
 
         console.log('Final matrices object:', matrices);
@@ -1054,6 +1174,142 @@ class DraftsManager {
     }
 
     /**
+     * Собирает данные матрицы компетенции экспертов
+     */
+    gatherCompetenceMatrix() {
+        // Сначала пробуем найти контейнер с data-matrix="competence"
+        let matrixContainer = document.querySelector('[data-matrix="competence"]');
+
+        if (!matrixContainer) {
+            console.log('Competence matrix container not found, trying to gather from hidden fields...');
+
+            // Если контейнер не найден, пробуем собрать из скрытых полей matrix_competence
+            const hiddenInputs = document.querySelectorAll('input[name="matrix_competence"]');
+            if (hiddenInputs.length > 0) {
+                console.log(`Found ${hiddenInputs.length} hidden matrix_competence inputs`);
+
+                // Определяем размер матрицы по количеству экспертов и аргументов
+                const numExperts = parseInt(document.querySelector('input[name="num_experts"]')?.value || '2');
+                const numArguments = 5; // Стандартное количество аргументов компетенции
+
+                console.log(`Matrix size from hidden fields: ${numExperts} experts x ${numArguments} arguments`);
+
+                // Создаем матрицу и заполняем её данными из скрытых полей
+                const matrix = [];
+                for (let i = 0; i < numExperts; i++) {
+                    matrix[i] = [];
+                    for (let j = 0; j < numArguments; j++) {
+                        const inputIndex = i * numArguments + j;
+                        if (hiddenInputs[inputIndex]) {
+                            matrix[i][j] = hiddenInputs[inputIndex].value || '0.0';
+                        } else {
+                            matrix[i][j] = '0.0';
+                        }
+                    }
+                }
+
+                console.log('Competence matrix gathered from hidden fields:', matrix);
+                return matrix;
+            }
+
+            console.log('No competence matrix inputs found.');
+            return null;
+        }
+
+        // Ищем все поля с именем matrix_competence
+        const inputs = matrixContainer.querySelectorAll('input[name="matrix_competence"]');
+        console.log(`Found ${inputs.length} matrix_competence inputs`);
+
+        if (inputs.length === 0) {
+            console.log('No competence matrix inputs found.');
+            return null;
+        }
+
+        // Определяем размер матрицы по количеству строк и столбцов
+        const rows = matrixContainer.querySelectorAll('tbody tr');
+        const numExperts = rows.length;
+        const numArguments = matrixContainer.querySelectorAll('thead th').length - 1; // -1 для пустой ячейки
+
+        console.log(`Matrix size: ${numExperts} experts x ${numArguments} arguments`);
+
+        if (numExperts === 0 || numArguments === 0) {
+            console.warn('Cannot determine matrix size from DOM');
+            return null;
+        }
+
+        // Создаем матрицу и заполняем её данными
+        const matrix = [];
+        for (let i = 0; i < numExperts; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < numArguments; j++) {
+                // Ищем соответствующий input по ID
+                const input = matrixContainer.querySelector(`#table_competence_${j}_${i}`);
+                if (input) {
+                    matrix[i][j] = input.value || '';
+                } else {
+                    matrix[i][j] = '';
+                }
+            }
+        }
+
+        console.log('Competence matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
+    * Собирает данные матрицы экспертных данных
+    */
+    gatherExpertsDataMatrix() {
+        const matrixContainer = document.querySelector('[data-matrix="experts_data"]');
+        if (!matrixContainer) {
+            console.log('Experts data matrix container not found for gathering.');
+            return null;
+        }
+
+        // Ищем все поля с именем matrix_experts_data
+        const inputs = matrixContainer.querySelectorAll('input[name="matrix_experts_data"]');
+        console.log(`Found ${inputs.length} matrix_experts_data inputs`);
+
+        if (inputs.length === 0) {
+            console.log('No experts data matrix inputs found.');
+            return null;
+        }
+
+        // Определяем размер матрицы по количеству строк и столбцов
+        const rows = matrixContainer.querySelectorAll('tbody tr');
+        const numExperts = rows.length;
+        const numResearch = matrixContainer.querySelectorAll('thead th').length - 1; // -1 для ячейки "Експерти"
+
+        console.log(`Matrix size: ${numExperts} experts x ${numResearch} research areas`);
+
+        if (numExperts === 0 || numResearch === 0) {
+            console.warn('Cannot determine matrix size from DOM');
+            return null;
+        }
+
+        // Создаем матрицу и заполняем её данными
+        const matrix = [];
+        for (let i = 0; i < numExperts; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < numResearch; j++) {
+                // Ищем соответствующий input по ID
+                const input = matrixContainer.querySelector(`#experts_data_table_${j}_${i}`);
+                if (input) {
+                    const value = input.value || '';
+                    matrix[i][j] = value;
+                    console.log(`Expert ${i}, Research ${j}: ID=#experts_data_table_${j}_${i}, Value="${value}"`);
+                } else {
+                    matrix[i][j] = '';
+                    console.warn(`Input not found for Expert ${i}, Research ${j}: ID=#experts_data_table_${j}_${i}`);
+                }
+            }
+        }
+
+        console.log('Experts data matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
     * Собирает другие данные форм
     */
     gatherOtherData() {
@@ -1061,7 +1317,7 @@ class DraftsManager {
         const otherInputs = document.querySelectorAll('input:not([name="task"]):not([name="num_alternatives"]):not([name="num_criteria"]):not([name="name_alternatives"]):not([name="name_criteria"]):not([name="matrix_krit"]):not([name^="matrix_alt_"]), textarea:not([name="task"]), select');
 
         otherInputs.forEach(input => {
-            if (input.name && input.name !== 'name_alternatives' && input.name !== 'name_criteria' && input.name !== 'matrix_krit' && !input.name.startsWith('matrix_alt_')) {
+            if (input.name && input.name !== 'name_alternatives' && input.name !== 'name_criteria' && input.name !== 'matrix_krit' && !input.name.startsWith('matrix_alt_') && input.name !== 'matrix_binary' && input.name !== 'matrix_competence' && input.name !== 'matrix_experts_data') {
                 if (input.type === 'checkbox') {
                     otherData[input.name] = input.checked;
                 } else if (input.type === 'radio') {

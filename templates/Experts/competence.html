@@ -398,7 +398,16 @@
     </div>
 
     <form action="{{ url_for('experts.experts_data') }}" method="POST">
-      <div class="table-container">
+
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="experts_task" value="{{ session.get('experts_task', '') }}">
+      <input type="hidden" name="num_experts" value="{{ num_experts }}">
+      <input type="hidden" name="num_research" value="{{ session.get('num_research', '') }}">
+      {% for name in session.get('names', []) %}
+      <input type="hidden" name="name_research" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+
+      <div class="table-container" data-matrix="competence">
         <table class="competence-table">
           <thead>
             <tr>
@@ -417,7 +426,7 @@
                 <input
                   class="input-settings"
                   type="text"
-                  name="table_competence"
+                  name="matrix_competence"
                   id="table_competence_{{ i }}_{{ n_e }}"
                   value="{% if table_competence %}{{ table_competence[n_e][i] }}{% endif %}"
                   required

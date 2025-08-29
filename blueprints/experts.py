@@ -100,10 +100,77 @@ def names():
 
 @experts_bp.route("/experts_competence", methods=["GET", "POST"])
 def experts_competence():
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_experts = int(draft_data.get("numExperts") or 0)
+                num_research = int(draft_data.get("numResearch") or 0)
+                experts_task = draft_data.get("task")
+                names = draft_data.get("research", [])
+
+                # Проверяем, что names не None и не содержит None значений
+                if names is None:
+                    print(f"Warning: names is None in draft {draft_id}")
+                    names = ["Research 1", "Research 2"]  # Значения по умолчанию
+                else:
+                    # Фильтруем None значения и заменяем их на пустые строки
+                    names = [name if name and name != "None" else "" for name in names]
+                    # Если все имена пустые, используем значения по умолчанию
+                    if all(not name for name in names):
+                        names = ["Research 1", "Research 2"]
+
+                # Обновляем сессию
+                session["num_experts"] = num_experts
+                session["num_research"] = num_research
+                session["experts_task"] = experts_task
+                session["names"] = names
+
+                # Создаем новый ID записи для черновика
+                new_record_id = add_object_to_db(db, ExpertsNameResearch, names=names)
+                if experts_task:
+                    add_object_to_db(
+                        db, ExpertsTask, id=new_record_id, task=experts_task
+                    )
+
+                session["new_record_id"] = new_record_id
+
+                context = {
+                    "id": new_record_id,
+                    "title": "Компетенція",
+                    "num_experts": num_experts,
+                    "name_arguments": name_arguments,
+                    "name": (
+                        current_user.get_name()
+                        if current_user.is_authenticated
+                        else None
+                    ),
+                }
+                return render_template("Experts/competence.html", **context)
+
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+
+    # Обычная обработка POST запроса
     num_experts = int(session.get("num_experts"))
     experts_task = session.get("experts_task")
 
     name_research = request.form.getlist("name_research")
+
+    # Сохраняем имена в сессии
+    session["names"] = name_research
+
     if len(name_research) != len(set(name_research)):
         num_research = int(session.get("num_research"))
         context = {
@@ -134,10 +201,116 @@ def experts_competence():
 
 @experts_bp.route("/experts_data", methods=["GET", "POST"])
 def experts_data():
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_experts = int(draft_data.get("numExperts") or 0)
+                names = draft_data.get("research", [])
+
+                # Проверяем, что names не None и не содержит None значений
+                if names is None:
+                    print(f"Warning: names is None in draft {draft_id}")
+                    names = ["Research 1", "Research 2"]  # Значения по умолчанию
+                else:
+                    # Фильтруем None значения и заменяем их на пустые строки
+                    names = [name if name and name != "None" else "" for name in names]
+                    # Если все имена пустые, используем значения по умолчанию
+                    if all(not name for name in names):
+                        names = ["Research 1", "Research 2"]
+
+                # Обновляем сессию
+                session["num_experts"] = num_experts
+                session["names"] = names
+
+                # Создаем новый ID записи для черновика
+                new_record_id = add_object_to_db(db, ExpertsNameResearch, names=names)
+                session["new_record_id"] = new_record_id
+
+                # Создаем пустую запись компетенции для черновика
+                # Это нужно для корректной работы при переходе на результат
+                if draft_data.get("matrices", {}).get("competence"):
+                    competence_matrix = draft_data["matrices"]["competence"]
+                    # Сохраняем матрицу компетенции в сессии для восстановления в шаблоне
+                    session["competence_matrix"] = competence_matrix
+
+                    # Вычисляем коэффициенты для матрицы компетенции
+                    k_a = []
+                    k_k = []
+                    for i in competence_matrix:
+                        temp_lst = [float(j) if j and j != "" else 0.0 for j in i]
+                        k_a.append(sum(temp_lst[1:]))
+
+                    for i in range(len(competence_matrix)):
+                        k_k.append(
+                            (
+                                k_a[i]
+                                + float(
+                                    competence_matrix[i][0]
+                                    if competence_matrix[i][0]
+                                    else 0.0
+                                )
+                            )
+                            / 2
+                        )
+
+                    add_object_to_db(
+                        db,
+                        ExpertsCompetency,
+                        id=new_record_id,
+                        table_competency=competence_matrix,
+                        k_a=k_a,
+                        k_k=k_k,
+                    )
+                else:
+                    # Создаем пустую запись компетенции
+                    empty_matrix = [
+                        ["0.0"] * 5 for _ in range(num_experts)
+                    ]  # 5 аргументов компетенции
+                    # Сохраняем пустую матрицу в сессии
+                    session["competence_matrix"] = empty_matrix
+
+                    add_object_to_db(
+                        db,
+                        ExpertsCompetency,
+                        id=new_record_id,
+                        table_competency=empty_matrix,
+                        k_a=[0.0] * num_experts,
+                        k_k=[0.0] * num_experts,
+                    )
+
+                context = {
+                    "id": new_record_id,
+                    "title": "Вихідні Дані",
+                    "name": (
+                        current_user.get_name()
+                        if current_user.is_authenticated
+                        else None
+                    ),
+                    "num_experts": num_experts,
+                    "name_research": names,
+                }
+                return render_template("Experts/experts_data.html", **context)
+
+        except Exception as e:
+            print(f"Error loading draft: {str(e)}")
+
+    # Обычная обработка
     new_record_id = int(session.get("new_record_id"))
     num_experts = int(session.get("num_experts"))
     name_research = ExpertsNameResearch.query.get(new_record_id).names
-    table_competence_temp = request.form.getlist("table_competence")
+    table_competence_temp = request.form.getlist("matrix_competence")
 
     # створення списку з таблиць по експертах
     table_competence = make_table(
@@ -186,6 +359,9 @@ def experts_data():
         k_k=k_k,
     )
 
+    # Сохраняем матрицу компетенции в сессии для восстановления в шаблоне
+    session["competence_matrix"] = table_competence
+
     session["flag"] = 0
 
     context = {
@@ -206,7 +382,17 @@ def experts_result(method_id=None):
         num_experts = int(session.get("num_experts"))
     else:
         new_record_id = method_id
-        num_experts = len(ExpertsCompetency.query.get(new_record_id).table_competency)
+        # Безопасно получаем количество экспертов
+        try:
+            competency_record = ExpertsCompetency.query.get(new_record_id)
+            if competency_record and competency_record.table_competency:
+                num_experts = len(competency_record.table_competency)
+            else:
+                # Если записи компетенции нет, используем значение по умолчанию
+                num_experts = 2
+        except Exception as e:
+            print(f"Error getting num_experts: {str(e)}")
+            num_experts = 2
 
     try:
         experts_task_record = ExpertsTask.query.get(new_record_id)
@@ -215,8 +401,14 @@ def experts_result(method_id=None):
         print("[!] Error:", e)
 
     name_research = ExpertsNameResearch.query.get(new_record_id).names
+
+    # Проверяем, что name_research не None
+    if name_research is None:
+        print(f"Warning: name_research is None for record {new_record_id}")
+        name_research = ["Research 1", "Research 2"]  # Значения по умолчанию
+
     if request.method == "POST":
-        experts_data_table_temp = request.form.getlist("experts_data_table")
+        experts_data_table_temp = request.form.getlist("matrix_experts_data")
         if not experts_data_table_temp:
             return "Помилка: форма не передала жодних даних.", 400
         experts_data_table = make_table(
@@ -229,10 +421,24 @@ def experts_result(method_id=None):
         else:
             return "Помилка: дані відсутні для цього запису.", 404
 
-    name_research = ExpertsNameResearch.query.get(new_record_id).names
-    k_k = ExpertsCompetency.query.get(new_record_id).k_k
-    k_a = ExpertsCompetency.query.get(new_record_id).k_a
-    table_competency = ExpertsCompetency.query.get(new_record_id).table_competency
+    # Безопасно получаем данные компетенции
+    try:
+        competency_record = ExpertsCompetency.query.get(new_record_id)
+        if competency_record:
+            k_k = competency_record.k_k
+            k_a = competency_record.k_a
+            table_competency = competency_record.table_competency
+        else:
+            # Если записи компетенции нет, создаем пустые значения
+            k_k = [0.0] * num_experts
+            k_a = [0.0] * num_experts
+            table_competency = [["0.0"] * 5 for _ in range(num_experts)]
+    except Exception as e:
+        print(f"Error getting competency data: {str(e)}")
+        # Создаем пустые значения в случае ошибки
+        k_k = [0.0] * num_experts
+        k_a = [0.0] * num_experts
+        table_competency = [["0.0"] * 5 for _ in range(num_experts)]
 
     m_i = make_m_i(k_k, experts_data_table, num_experts, len(name_research))
     r_i = make_r_i(m_i)
@@ -262,6 +468,14 @@ def experts_result(method_id=None):
             )
 
     # gpt_response = generate_gpt_response_experts(experts_task, name_research, rank_str) if experts_task else None
+
+    # Безопасно генерируем график
+    try:
+        experts_plot = generate_plot(m_i, name_research, False)
+    except Exception as e:
+        print(f"Error generating plot: {str(e)}")
+        experts_plot = None
+
     context = {
         "title": "Результат",
         "name": current_user.get_name() if current_user.is_authenticated else None,
@@ -279,7 +493,7 @@ def experts_result(method_id=None):
         "method_id": method_id,
         "rank_str": rank_str,
         "experts_task": experts_task,
-        "experts_plot": generate_plot(m_i, name_research, False),
+        "experts_plot": experts_plot,
         # 'gpt_response': gpt_response,
     }
 
