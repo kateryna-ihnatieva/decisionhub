@@ -2,6 +2,7 @@
 {% block title %}
 {{ title }}
 {% endblock %}
+{% block drafts %} active {% endblock %}
 
 {% block content %}
 <style>
@@ -220,6 +221,25 @@
     box-shadow: 0 4px 15px rgba(102, 252, 241, 0.1);
   }
 
+  /* Стили для автоматически сохраненных черновиков - только значок */
+
+  .auto-save-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.2),
+      rgba(255, 193, 7, 0.15));
+    color: #FF8C00;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+  }
+
+
+
   .draft-info {
     margin-bottom: 25px;
   }
@@ -389,6 +409,13 @@
     .btn-continue,
     .btn-delete {
       width: 100%;
+    }
+
+    .auto-save-badge {
+      margin-left: 0;
+      margin-top: 8px;
+      align-self: flex-start;
+    }
     }
   }
 
@@ -680,18 +707,24 @@ function displayDrafts(drafts) {
     return;
   }
 
-  const draftsHTML = drafts.map(draft => `
+    const draftsHTML = drafts.map(draft => {
+    // Проверяем, является ли черновик автоматически сохраненным
+    const isAutoSave = draft.title && draft.title.startsWith('🔄');
+
+    return `
     <div class="draft-card" data-draft-id="${draft.id}">
       <div class="draft-header">
         <h3 class="draft-title">${escapeHtml(draft.title)}</h3>
-        <span class="draft-method">${getMethodDisplayName(draft.method_type)}</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+          <span class="draft-method">${getMethodDisplayName(draft.method_type)}</span>
+          ${isAutoSave ? '<span class="auto-save-badge">🔄 Автозбереження</span>' : ''}
+        </div>
       </div>
 
       <div class="draft-info">
         <div class="draft-route">${escapeHtml(draft.current_route)}</div>
         <div class="draft-dates">
           <span>Створено: ${formatDate(draft.created_at)}</span>
-          <span>Оновлено: ${formatDate(draft.updated_at)}</span>
         </div>
       </div>
 
@@ -704,7 +737,8 @@ function displayDrafts(drafts) {
         </button>
       </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
   container.innerHTML = `
     <div class="drafts-grid">
@@ -881,13 +915,22 @@ function getMethodDisplayName(methodType) {
 }
 
 function formatDate(dateString) {
-  const date = new Date(dateString);
+  // Если дата уже содержит информацию о часовом поясе, используем её как есть
+  let date;
+  if (dateString.includes('+') || dateString.includes('Z')) {
+    date = new Date(dateString);
+  } else {
+    // Если дата без часового пояса, считаем её UTC и конвертируем в Киев
+    date = new Date(dateString + 'Z');
+  }
+
   return date.toLocaleDateString('uk-UA', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Europe/Kiev'
   });
 }
 

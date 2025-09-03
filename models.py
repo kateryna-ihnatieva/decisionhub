@@ -1,5 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects.postgresql import JSON
+from datetime import datetime
+import pytz
 
 db = SQLAlchemy()
 
@@ -322,8 +324,12 @@ class Draft(db.Model):
     current_route = db.Column("page", db.String(100), nullable=False)
     form_data = db.Column("data", JSON, nullable=False)  # Все данные форм
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(pytz.timezone("Europe/Kiev"))
+    )
+    updated_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(pytz.timezone("Europe/Kiev"))
+    )
 
     # Связь с пользователем
     user = db.relationship("User", backref="drafts")

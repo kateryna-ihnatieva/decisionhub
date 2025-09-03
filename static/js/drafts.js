@@ -8,6 +8,7 @@ class DraftsManager {
         this.currentDraftId = null;
         this.autoSaveInterval = null;
         this.lastSavedData = null;
+        this.isAutoSaving = false;
         this.init();
     }
 
@@ -18,8 +19,15 @@ class DraftsManager {
         // Проверяем, загружается ли страница из черновика
         this.checkForDraft();
 
-        // Запускаем автосохранение
-        this.startAutoSave();
+        // Запускаем автосохранение только на страницах методов (не на страницах с результатами)
+        console.log('🚀 Initializing DraftsManager...');
+        console.log('Is result page:', this.isResultPage());
+        if (!this.isResultPage()) {
+            console.log('✅ Starting auto-save (not a result page)');
+            this.startAutoSave();
+        } else {
+            console.log('❌ Skipping auto-save (result page)');
+        }
 
         // Добавляем обработчик перед уходом со страницы
         window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
@@ -1443,11 +1451,19 @@ class DraftsManager {
     /**
      * Сохраняет черновик
      */
-    async saveDraft(title = null) {
+    async saveDraft(title = null, isAutoSave = false) {
         try {
+            console.log('💾 saveDraft called with:', { title, isAutoSave, isAutoSaving: this.isAutoSaving });
+
             // Проверяем, что пользователь авторизован
             if (!this.isUserAuthenticated()) {
                 this.showNotification('Потрібно увійти в систему для збереження чернетки', 'error');
+                return;
+            }
+
+            // Предотвращаем одновременные сохранения только для ручных сохранений
+            if (this.isAutoSaving && !isAutoSave) {
+                console.log('❌ Auto-save in progress, skipping manual save');
                 return;
             }
 
@@ -1459,14 +1475,40 @@ class DraftsManager {
                 return;
             }
 
+            // Если это автосохранение и не указан заголовок, создаем автоматический
+            let draftTitle = title;
+            if (isAutoSave && !title) {
+                const methodType = this.getCurrentMethodType();
+                const methodNames = {
+                    'hierarchy': 'Ієрархічний аналіз',
+                    'binary': 'Бінарні відношення',
+                    'experts': 'Експертна оцінка',
+                    'laplasa': 'Критерій Лапласа',
+                    'maximin': 'Максимінний критерій',
+                    'savage': 'Критерій Севіджа',
+                    'hurwitz': 'Критерій Гурвіца'
+                };
+                const methodName = methodNames[methodType] || methodType;
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('uk-UA', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Europe/Kiev'
+                });
+                draftTitle = `${methodName} (автозбереження ${timeString})`;
+            }
+
             const draftData = {
                 method_type: this.getCurrentMethodType(),
                 current_route: window.location.pathname,
                 form_data: formData,
-                title: title
+                title: draftTitle,
+                is_auto_save: isAutoSave
             };
+            console.log('📤 Sending draft data:', draftData);
 
-            console.log('Sending draft data:', draftData);
+
+
 
             const response = await fetch('/drafts/api', {
                 method: 'POST',
@@ -1476,26 +1518,32 @@ class DraftsManager {
                 body: JSON.stringify(draftData)
             });
 
+            console.log('📥 Server response status:', response.status);
+            const responseData = await response.json();
+            console.log('📥 Server response data:', responseData);
+
             if (!response.ok) {
-                // Получаем текст ответа для диагностики
-                const responseText = await response.text();
-                console.error('Server response:', responseText);
+                console.error('Server error response:', responseData);
                 throw new Error(`Failed to save draft: ${response.status} ${response.statusText}`);
             }
 
             // Проверяем, что ответ является JSON
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                const responseText = await response.text();
-                console.error('Non-JSON response:', responseText);
+                console.error('Non-JSON response:', responseData);
                 throw new Error('Server returned non-JSON response');
             }
 
-            const result = await response.json();
+            const result = responseData;
             this.currentDraftId = result.draft_id;
             this.lastSavedData = formData;
 
-            this.showNotification('Чернетку збережено', 'success');
+            // Показываем разное уведомление для автосохранения
+            if (isAutoSave) {
+                this.showNotification('🔄 Чернетку автоматично збережено', 'info');
+            } else {
+                this.showNotification('Чернетку збережено', 'success');
+            }
 
             // Обновляем URL если это новый черновик
             if (!window.location.search.includes('draft=')) {
@@ -1533,10 +1581,20 @@ class DraftsManager {
      * Запускает автосохранение
      */
     startAutoSave() {
-        // Автосохранение каждые 2 минуты
+        console.log('🔄 Starting auto-save interval...');
+        // Автосохранение каждые 2 минуты только на страницах методов
         this.autoSaveInterval = setInterval(() => {
-            if (this.hasFormData()) {
-                this.saveDraft();
+            console.log('🔄 Auto-save check triggered, isAutoSaving:', this.isAutoSaving);
+            // Дополнительная проверка: не сохраняем на страницах с результатами
+            if (!this.isResultPage() && this.hasFormData() && !this.isAutoSaving) {
+                console.log('🔄 Starting auto-save...');
+                this.isAutoSaving = true;
+                this.saveDraft(null, true).finally(() => {
+                    console.log('🔄 Auto-save completed');
+                    this.isAutoSaving = false;
+                }); // true = isAutoSave
+            } else {
+                console.log('🔄 Auto-save skipped - conditions not met');
             }
         }, 120000); // 2 минуты
     }
@@ -1546,7 +1604,9 @@ class DraftsManager {
  */
     hasFormData() {
         const formData = this.gatherFormData();
-        return formData.task ||
+        console.log('📊 Checking form data for auto-save:', formData);
+
+        const hasData = formData.task ||
             (formData.numAlternatives && formData.numAlternatives > 0) ||
             (formData.numCriteria && formData.numCriteria > 0) ||
             (formData.numConditions && formData.numConditions > 0) ||
@@ -1560,6 +1620,9 @@ class DraftsManager {
             (formData.research && formData.research.some(res => res && res.trim() !== '')) ||
             (formData.matrices && Object.keys(formData.matrices).length > 0) ||
             (formData.matrixType && formData.matrixType.trim() !== '');
+
+        console.log('📊 Has form data result:', hasData);
+        return hasData;
     }
 
     /**

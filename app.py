@@ -43,6 +43,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["TIMEZONE"] = "Europe/Kiev"
 
 db.init_app(app)
 

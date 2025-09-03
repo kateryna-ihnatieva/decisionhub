@@ -4,12 +4,11 @@ from flask import (
     request,
     jsonify,
     current_app,
-    session,
 )
 from models import db, Draft
 from flask_login import login_required, current_user
 from datetime import datetime
-import json
+import pytz
 
 drafts_bp = Blueprint("drafts", __name__, url_prefix="/drafts")
 
@@ -63,6 +62,16 @@ def save_draft():
 
         # Генерация названия черновика
         title = data.get("title") or generate_draft_title(data["method_type"])
+
+        # Проверяем, является ли это автосохранением
+        is_auto_save = data.get("is_auto_save", False)
+
+        # Если это автосохранение, добавляем пометку к названию
+        if is_auto_save:
+            if not data.get("title"):
+                title = f"🔄 {title}"
+            elif not title.startswith("🔄"):
+                title = f"🔄 {title}"
 
         # Создание нового черновика
         draft = Draft(
@@ -203,7 +212,8 @@ def update_draft(draft_id):
         if "form_data" in data:
             draft.form_data = data["form_data"]
 
-        draft.updated_at = datetime.utcnow()
+        kiev_tz = pytz.timezone("Europe/Kiev")
+        draft.updated_at = datetime.now(kiev_tz)
         db.session.commit()
 
         return jsonify({"success": True, "message": "Чернетку оновлено"}), 200
@@ -248,6 +258,7 @@ def generate_draft_title(method_type):
     }
 
     method_name = method_names.get(method_type, method_type.title())
-    current_time = datetime.now().strftime("%d.%m.%Y %H:%M")
+    kiev_tz = pytz.timezone("Europe/Kiev")
+    current_time = datetime.now(kiev_tz).strftime("%d.%m.%Y %H:%M")
 
     return f"{method_name} - {current_time}"
