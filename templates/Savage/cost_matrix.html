@@ -521,9 +521,20 @@
   <div class="matrix-form">
     <form action="{{ url_for('savage.result', method_id=id) }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="savage_task" value="{{ savage_task if savage_task else '' }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+      {% for name in name_alternatives %}
+      <input type="hidden" name="name_alternatives" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+      {% for name in name_conditions %}
+      <input type="hidden" name="name_conditions" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+
       <div class="matrix-title">Матриця Вартостей</div>
 
-      <div class="matrix-container">
+      <div class="matrix-container" data-matrix="savage">
         <table class="cost-matrix">
           <thead class="matrix-header">
             <tr>

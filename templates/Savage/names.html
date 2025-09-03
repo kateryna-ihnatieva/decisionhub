@@ -444,6 +444,11 @@
   <div class="setup-form">
     <form action="{{ url_for('savage.cost_matrix') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="savage_task" value="{{ savage_task if savage_task else '' }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+
       {% if error %}
       <div class="alert alert-danger alert-style" role="alert">
         <i>{{ error }}</i>

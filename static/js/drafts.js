@@ -155,9 +155,7 @@ class DraftsManager {
                 document.querySelector('input[name="hurwitz_task"]') ||
                 document.querySelector('textarea[name="hurwitz_task"]') ||
                 document.querySelector('input[name="savage_task"]') ||
-                document.querySelector('textarea[name="savage_task"]') ||
-                document.querySelector('input[name="maximin_task"]') ||
-                document.querySelector('textarea[name="maximin_task"]');
+                document.querySelector('textarea[name="savage_task"]');
             if (taskInput) {
                 taskInput.value = formData.task;
             }
@@ -298,6 +296,13 @@ class DraftsManager {
         if (maximinContainer && formData.matrices && formData.matrices.maximin) {
             console.log('Restoring Maximin matrix:', formData.matrices.maximin);
             this.restoreMaximinMatrix(formData.matrices.maximin);
+        }
+
+        // Восстанавливаем матрицу Севіджа (только если есть соответствующий контейнер)
+        const savageContainer = document.querySelector('[data-matrix="savage"]');
+        if (savageContainer && formData.matrices && formData.matrices.savage) {
+            console.log('Restoring Savage matrix:', formData.matrices.savage);
+            this.restoreSavageMatrix(formData.matrices.savage);
         }
 
         // Восстанавливаем тип матрицы
@@ -697,8 +702,11 @@ class DraftsManager {
      */
     gatherFormData() {
         // Собираем данные со всех возможных источников
+        const savageTaskValue = this.getFieldValue('savage_task');
+        console.log('Savage task value:', savageTaskValue);
+
         const formData = {
-            task: this.getFieldValue('task') || this.getFieldValue('hierarchy_task') || this.getFieldValue('binary_task') || this.getFieldValue('experts_task') || this.getFieldValue('laplasa_task') || this.getFieldValue('maximin_task') || this.getFieldValue('hurwitz_task') || this.getFieldValue('savage_task'),
+            task: this.getFieldValue('task') || this.getFieldValue('hierarchy_task') || this.getFieldValue('binary_task') || this.getFieldValue('experts_task') || this.getFieldValue('laplasa_task') || this.getFieldValue('maximin_task') || this.getFieldValue('hurwitz_task') || savageTaskValue,
             numAlternatives: this.getFieldValue('num_alternatives') || this.getFieldValue('num_alt') || this.getUrlParam('num_alternatives') || this.getUrlParam('num_alt') || 0,
             numCriteria: this.getFieldValue('num_criteria') || this.getUrlParam('num_criteria') || 0,
             numConditions: this.getFieldValue('num_conditions') || this.getUrlParam('num_conditions') || 0,
@@ -815,6 +823,13 @@ class DraftsManager {
         // Если не найдено, ищем скрытые поля
         if (!element) {
             element = document.querySelector(`input[name="${fieldName}"][type="hidden"]`);
+        }
+
+        if (fieldName === 'savage_task') {
+            console.log(`Looking for savage_task field:`, element);
+            if (element) {
+                console.log(`savage_task value:`, element.value);
+            }
         }
 
         if (!element) return null;
@@ -1017,6 +1032,16 @@ class DraftsManager {
             console.log('Maximin matrix gathered:', maximinMatrix);
             if (maximinMatrix) {
                 matrices.maximin = maximinMatrix;
+            }
+        }
+
+        // Собираем матрицу Севіджа (только если есть соответствующий контейнер)
+        const savageContainer = document.querySelector('[data-matrix="savage"]');
+        if (savageContainer) {
+            const savageMatrix = this.gatherSavageMatrix();
+            console.log('Savage matrix gathered:', savageMatrix);
+            if (savageMatrix) {
+                matrices.savage = savageMatrix;
             }
         }
 
@@ -1875,6 +1900,52 @@ class DraftsManager {
     }
 
     /**
+    * Собирает данные матрицы Севіджа
+    */
+    gatherSavageMatrix() {
+        const matrixContainer = document.querySelector('[data-matrix="savage"]');
+        if (!matrixContainer) {
+            console.log('Savage matrix container not found');
+            return null;
+        }
+
+        // Ищем все поля с именем cost_matrix
+        const inputs = matrixContainer.querySelectorAll('input[name="cost_matrix"]');
+        console.log(`Found ${inputs.length} cost_matrix inputs`);
+
+        if (inputs.length === 0) {
+            console.log('No Savage matrix inputs found.');
+            return null;
+        }
+
+        // Определяем размер матрицы по количеству альтернатив и условий
+        const numAlt = parseInt(document.querySelector('input[name="num_alt"]')?.value || '2');
+        const numConditions = parseInt(document.querySelector('input[name="num_conditions"]')?.value || '2');
+
+        console.log(`Savage matrix size: ${numAlt} alternatives x ${numConditions} conditions`);
+
+        // Создаем матрицу и заполняем её данными
+        const matrix = [];
+        for (let i = 0; i < numAlt; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < numConditions; j++) {
+                // Ищем соответствующий input по ID
+                const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                if (input) {
+                    const value = input.value.trim();
+                    // Сохраняем пустую строку для пустых полей, а не '0'
+                    matrix[i][j] = value === '' ? '' : value;
+                } else {
+                    matrix[i][j] = '';
+                }
+            }
+        }
+
+        console.log('Savage matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
     * Собирает данные матрицы Лапласа
     */
     gatherLaplasaMatrix() {
@@ -1980,6 +2051,61 @@ class DraftsManager {
             }
         }
         console.log('=== MAXIMIN MATRIX RESTORATION COMPLETED ===');
+    }
+
+    /**
+    * Восстанавливает матрицу Севіджа
+    */
+    restoreSavageMatrix(matrixData) {
+        console.log('=== RESTORING SAVAGE MATRIX ===');
+        console.log('Input matrixData:', matrixData);
+        console.log('Type of matrixData:', typeof matrixData);
+        console.log('Is array:', Array.isArray(matrixData));
+
+        const matrixContainer = document.querySelector('[data-matrix="savage"]');
+        if (!matrixContainer) {
+            console.warn('Savage matrix container not found for restoration.');
+            return;
+        }
+
+        if (!matrixData || !Array.isArray(matrixData)) {
+            console.warn('Invalid Savage matrix data for restoration.');
+            return;
+        }
+
+        // Определяем размер матрицы
+        const numAlt = parseInt(document.querySelector('input[name="num_alt"]')?.value || '2');
+        const numConditions = parseInt(document.querySelector('input[name="num_conditions"]')?.value || '2');
+
+        console.log(`Savage matrix size: ${numAlt} alternatives x ${numConditions} conditions`);
+
+        for (let i = 0; i < numAlt; i++) {
+            for (let j = 0; j < numConditions; j++) {
+                const currentValue = matrixData[i] ? matrixData[i][j] : undefined;
+                console.log(`Processing [${i}][${j}]: value="${currentValue}", type=${typeof currentValue}`);
+
+                // Проверяем, есть ли значение в матрице
+                if (currentValue !== undefined && currentValue !== '' && currentValue !== null) {
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = currentValue;
+                        console.log(`✓ Set Savage value for alternative ${i}, condition ${j}: "${currentValue}"`);
+                    } else {
+                        console.warn(`✗ Savage input not found for alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                } else {
+                    // Если значение пустое, очищаем поле
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = '';
+                        console.log(`- Cleared Savage value for alternative ${i}, condition ${j}`);
+                    } else {
+                        console.warn(`✗ Input not found for clearing alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                }
+            }
+        }
+        console.log('=== SAVAGE MATRIX RESTORATION COMPLETED ===');
     }
 
     /**

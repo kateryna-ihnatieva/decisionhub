@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, session
-from mymodules.mai import *
+
+# from mymodules.mai import *  # Unused import removed
 from models import (
     SavageConditions,
     SavageAlternatives,
@@ -19,7 +20,7 @@ savage_bp = Blueprint("savage", __name__, url_prefix="/savage")
 def index():
     context = {
         "title": "Критерій Севіджа",
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
     return render_template("Savage/index.html", **context)
 
@@ -78,9 +79,10 @@ def names():
         "title": "Імена",
         "num_alt": num_alt,
         "num_conditions": num_conditions,
-        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
-        "name_conditions": draft_data.get("conditions") if draft_data else None,
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "savage_task": savage_task,
+        "name_alternatives": (draft_data.get("alternatives") if draft_data else None),
+        "name_conditions": (draft_data.get("conditions") if draft_data else None),
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
 
     return render_template("Savage/names.html", **context)
@@ -88,12 +90,41 @@ def names():
 
 @savage_bp.route("/cost-matrix", methods=["GET", "POST"])
 def cost_matrix():
-    num_alt = int(session.get("num_alt"))
-    num_conditions = int(session.get("num_conditions"))
-    savage_task = session.get("savage_task")
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
 
-    name_alternatives = request.form.getlist("name_alternatives")
-    name_conditions = request.form.getlist("name_conditions")
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+        except Exception:
+            pass  # Игнорируем ошибки загрузки черновика
+
+    if draft_data:
+        # Загружаем данные из черновика
+        num_alt = int(draft_data.get("numAlternatives") or 0)
+        num_conditions = int(draft_data.get("numConditions") or 0)
+        savage_task = draft_data.get("task")
+        name_alternatives = draft_data.get("alternatives", [])
+        name_conditions = draft_data.get("conditions", [])
+    else:
+        # Загружаем данные из сессии и формы
+        num_alt = int(session.get("num_alt"))
+        num_conditions = int(session.get("num_conditions"))
+        # Получаем savage_task из формы или сессии
+        savage_task = request.form.get("savage_task") or session.get("savage_task")
+        name_alternatives = request.form.getlist("name_alternatives")
+        name_conditions = request.form.getlist("name_conditions")
+
+        # Обновляем сессию с актуальным значением savage_task
+        if savage_task:
+            session["savage_task"] = savage_task
 
     if len(name_alternatives) != len(set(name_alternatives)) or len(
         name_conditions
@@ -105,7 +136,9 @@ def cost_matrix():
             "name_alternatives": name_alternatives,
             "name_conditions": name_conditions,
             "error": "Імена повинні бути унікальними!",
-            "name": current_user.get_name() if current_user.is_authenticated else None,
+            "name": (
+                current_user.get_name() if current_user.is_authenticated else None
+            ),
         }
 
         return render_template("Savage/names.html", **context)
@@ -127,7 +160,8 @@ def cost_matrix():
         "num_conditions": num_conditions,
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "savage_task": savage_task,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
         "id": new_record_id,
     }
 
@@ -136,6 +170,20 @@ def cost_matrix():
 
 @savage_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None):
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+            if draft and draft.form_data:
+                pass  # Черновик загружен, но не используется напрямую в этой функции
+        except Exception:
+            pass  # Игнорируем ошибки загрузки черновика
+
     if not method_id:
         new_record_id = int(session.get("new_record_id"))
         num_alt = int(session.get("num_alt"))
@@ -200,13 +248,14 @@ def result(method_id=None):
             )
 
     optimal_message = (
-        f"Оптимальна альтернатива за критерієм Севіджа: {optimal_alternative} "
-        f"(мінімальні максимальні втрати = {min(max_losses)})"
+        f"Оптимальна альтернатива за критерієм Севіджа: "
+        f"{optimal_alternative} (мінімальні максимальні втрати = "
+        f"{min(max_losses)})"
     )
 
     context = {
         "title": "Результат",
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "cost_matrix": cost_matrix,
