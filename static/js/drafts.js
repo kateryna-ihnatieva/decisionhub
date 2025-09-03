@@ -155,7 +155,9 @@ class DraftsManager {
                 document.querySelector('input[name="hurwitz_task"]') ||
                 document.querySelector('textarea[name="hurwitz_task"]') ||
                 document.querySelector('input[name="savage_task"]') ||
-                document.querySelector('textarea[name="savage_task"]');
+                document.querySelector('textarea[name="savage_task"]') ||
+                document.querySelector('input[name="maximin_task"]') ||
+                document.querySelector('textarea[name="maximin_task"]');
             if (taskInput) {
                 taskInput.value = formData.task;
             }
@@ -163,7 +165,7 @@ class DraftsManager {
 
         // Восстанавливаем количество альтернатив и критериев
         if (formData.numAlternatives) {
-            const altInput = document.querySelector('input[name="num_alternatives"]');
+            const altInput = document.querySelector('input[name="num_alternatives"]') || document.querySelector('input[name="num_alt"]');
             if (altInput) {
                 altInput.value = formData.numAlternatives;
             }
@@ -173,6 +175,13 @@ class DraftsManager {
             const critInput = document.querySelector('input[name="num_criteria"]');
             if (critInput) {
                 critInput.value = formData.numCriteria;
+            }
+        }
+
+        if (formData.numConditions) {
+            const condInput = document.querySelector('input[name="num_conditions"]');
+            if (condInput) {
+                condInput.value = formData.numConditions;
             }
         }
 
@@ -277,10 +286,27 @@ class DraftsManager {
             this.restoreExpertsDataMatrix(formData.matrices.expertsData);
         }
 
-        // Восстанавливаем матрицу Лапласа
-        if (formData.matrices && formData.matrices.cost) {
+        // Восстанавливаем матрицу Лапласа (только если есть соответствующий контейнер)
+        const laplasaContainer = document.querySelector('[data-matrix="laplasa"]');
+        if (laplasaContainer && formData.matrices && formData.matrices.cost) {
             console.log('Restoring Laplasa matrix:', formData.matrices.cost);
             this.restoreLaplasaMatrix(formData.matrices.cost);
+        }
+
+        // Восстанавливаем матрицу максимина (только если есть соответствующий контейнер)
+        const maximinContainer = document.querySelector('[data-matrix="maximin"]');
+        if (maximinContainer && formData.matrices && formData.matrices.maximin) {
+            console.log('Restoring Maximin matrix:', formData.matrices.maximin);
+            this.restoreMaximinMatrix(formData.matrices.maximin);
+        }
+
+        // Восстанавливаем тип матрицы
+        if (formData.matrixType) {
+            const matrixTypeInput = document.querySelector('input[name="matrix_type"][value="' + formData.matrixType + '"]');
+            if (matrixTypeInput) {
+                matrixTypeInput.checked = true;
+                console.log('Restored matrix type:', formData.matrixType);
+            }
         }
 
         // Восстанавливаем другие данные (только если основные данные не были восстановлены)
@@ -640,7 +666,7 @@ class DraftsManager {
 
         Object.keys(otherData).forEach(key => {
             // Проверяем, не является ли это полем, которое уже было восстановлено из основного черновика
-            if (key === 'name_alternatives' || key === 'name_criteria' || key === 'name_conditions' || key === 'names' || key === 'name_research') {
+            if (key === 'name_alternatives' || key === 'name_criteria' || key === 'name_conditions' || key === 'names' || key === 'name_research' || key === 'cost_matrix') {
                 console.log(`Skipping ${key} as it's already restored from main draft data`);
                 return; // Пропускаем эти поля, так как они уже восстановлены
             }
@@ -672,7 +698,7 @@ class DraftsManager {
     gatherFormData() {
         // Собираем данные со всех возможных источников
         const formData = {
-            task: this.getFieldValue('task') || this.getFieldValue('hierarchy_task') || this.getFieldValue('binary_task') || this.getFieldValue('experts_task') || this.getFieldValue('laplasa_task') || this.getFieldValue('maximin_task') || this.getFieldValue('hurwitz_task') || this.getFieldValue('savage_task') || this.getFieldValue('savage_task'),
+            task: this.getFieldValue('task') || this.getFieldValue('hierarchy_task') || this.getFieldValue('binary_task') || this.getFieldValue('experts_task') || this.getFieldValue('laplasa_task') || this.getFieldValue('maximin_task') || this.getFieldValue('hurwitz_task') || this.getFieldValue('savage_task'),
             numAlternatives: this.getFieldValue('num_alternatives') || this.getFieldValue('num_alt') || this.getUrlParam('num_alternatives') || this.getUrlParam('num_alt') || 0,
             numCriteria: this.getFieldValue('num_criteria') || this.getUrlParam('num_criteria') || 0,
             numConditions: this.getFieldValue('num_conditions') || this.getUrlParam('num_conditions') || 0,
@@ -974,11 +1000,24 @@ class DraftsManager {
             matrices.expertsData = expertsDataMatrix;
         }
 
-        // Собираем матрицу Лапласа
-        const laplasaMatrix = this.gatherLaplasaMatrix();
-        console.log('Laplasa matrix gathered:', laplasaMatrix);
-        if (laplasaMatrix) {
-            matrices.cost = laplasaMatrix;
+        // Собираем матрицу Лапласа (только если есть соответствующий контейнер)
+        const laplasaContainer = document.querySelector('[data-matrix="laplasa"]');
+        if (laplasaContainer) {
+            const laplasaMatrix = this.gatherLaplasaMatrix();
+            console.log('Laplasa matrix gathered:', laplasaMatrix);
+            if (laplasaMatrix) {
+                matrices.cost = laplasaMatrix;
+            }
+        }
+
+        // Собираем матрицу максимина (только если есть соответствующий контейнер)
+        const maximinContainer = document.querySelector('[data-matrix="maximin"]');
+        if (maximinContainer) {
+            const maximinMatrix = this.gatherMaximinMatrix();
+            console.log('Maximin matrix gathered:', maximinMatrix);
+            if (maximinMatrix) {
+                matrices.maximin = maximinMatrix;
+            }
         }
 
         console.log('Final matrices object:', matrices);
@@ -1330,10 +1369,10 @@ class DraftsManager {
     */
     gatherOtherData() {
         const otherData = {};
-        const otherInputs = document.querySelectorAll('input:not([name="task"]):not([name="num_alternatives"]):not([name="num_criteria"]):not([name="name_alternatives"]):not([name="name_criteria"]):not([name="matrix_krit"]):not([name^="matrix_alt_"]), textarea:not([name="task"]), select');
+        const otherInputs = document.querySelectorAll('input:not([name="task"]):not([name="num_alternatives"]):not([name="num_criteria"]):not([name="name_alternatives"]):not([name="name_criteria"]):not([name="matrix_krit"]):not([name^="matrix_alt_"]):not([name="cost_matrix"]), textarea:not([name="task"]), select');
 
         otherInputs.forEach(input => {
-            if (input.name && input.name !== 'name_alternatives' && input.name !== 'name_criteria' && input.name !== 'matrix_krit' && !input.name.startsWith('matrix_alt_') && input.name !== 'matrix_binary' && input.name !== 'matrix_competence' && input.name !== 'matrix_experts_data') {
+            if (input.name && input.name !== 'name_alternatives' && input.name !== 'name_criteria' && input.name !== 'matrix_krit' && !input.name.startsWith('matrix_alt_') && input.name !== 'matrix_binary' && input.name !== 'matrix_competence' && input.name !== 'matrix_experts_data' && input.name !== 'cost_matrix') {
                 if (input.type === 'checkbox') {
                     otherData[input.name] = input.checked;
                 } else if (input.type === 'radio') {
@@ -1351,10 +1390,25 @@ class DraftsManager {
     }
 
     /**
+     * Проверяет, авторизован ли пользователь
+     */
+    isUserAuthenticated() {
+        // Проверяем наличие элементов, которые показывают авторизованного пользователя
+        const userElements = document.querySelectorAll('[data-user], .user-info, .profile-link');
+        return userElements.length > 0;
+    }
+
+    /**
      * Сохраняет черновик
      */
     async saveDraft(title = null) {
         try {
+            // Проверяем, что пользователь авторизован
+            if (!this.isUserAuthenticated()) {
+                this.showNotification('Потрібно увійти в систему для збереження чернетки', 'error');
+                return;
+            }
+
             const formData = this.gatherFormData();
 
             // Проверяем, есть ли изменения
@@ -1370,6 +1424,8 @@ class DraftsManager {
                 title: title
             };
 
+            console.log('Sending draft data:', draftData);
+
             const response = await fetch('/drafts/api', {
                 method: 'POST',
                 headers: {
@@ -1379,7 +1435,18 @@ class DraftsManager {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save draft');
+                // Получаем текст ответа для диагностики
+                const responseText = await response.text();
+                console.error('Server response:', responseText);
+                throw new Error(`Failed to save draft: ${response.status} ${response.statusText}`);
+            }
+
+            // Проверяем, что ответ является JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const responseText = await response.text();
+                console.error('Non-JSON response:', responseText);
+                throw new Error('Server returned non-JSON response');
             }
 
             const result = await response.json();
@@ -1449,7 +1516,8 @@ class DraftsManager {
             (formData.conditions && formData.conditions.some(cond => cond && cond.trim() !== '')) ||
             (formData.objects && formData.objects.some(obj => obj && obj.trim() !== '')) ||
             (formData.research && formData.research.some(res => res && res.trim() !== '')) ||
-            (formData.matrices && Object.keys(formData.matrices).length > 0);
+            (formData.matrices && Object.keys(formData.matrices).length > 0) ||
+            (formData.matrixType && formData.matrixType.trim() !== '');
     }
 
     /**
@@ -1755,46 +1823,64 @@ class DraftsManager {
     }
 
     /**
+    * Собирает данные матрицы максимина
+    */
+    gatherMaximinMatrix() {
+        const matrixContainer = document.querySelector('[data-matrix="maximin"]');
+        if (!matrixContainer) {
+            console.log('Maximin matrix container not found');
+            return null;
+        }
+
+        // Ищем все поля с именем cost_matrix
+        const inputs = matrixContainer.querySelectorAll('input[name="cost_matrix"]');
+        console.log(`Found ${inputs.length} cost_matrix inputs`);
+
+        if (inputs.length === 0) {
+            console.log('No cost matrix inputs found.');
+            return null;
+        }
+
+        // Определяем размер матрицы по количеству строк и столбцов
+        const rows = matrixContainer.querySelectorAll('tbody tr');
+        const numAlt = rows.length;
+        const numConditions = matrixContainer.querySelectorAll('thead th').length - 1; // -1 для пустой ячейки
+
+        console.log(`Matrix size: ${numAlt} alternatives x ${numConditions} conditions`);
+
+        if (numAlt === 0 || numConditions === 0) {
+            console.warn('Cannot determine matrix size from DOM');
+            return null;
+        }
+
+        // Создаем матрицу и заполняем её данными
+        const matrix = [];
+        for (let i = 0; i < numAlt; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < numConditions; j++) {
+                // Ищем соответствующий input по ID
+                const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                if (input) {
+                    const value = input.value.trim();
+                    // Сохраняем пустую строку для пустых полей, а не '0'
+                    matrix[i][j] = value === '' ? '' : value;
+                } else {
+                    matrix[i][j] = '';
+                }
+            }
+        }
+
+        console.log('Maximin matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
     * Собирает данные матрицы Лапласа
     */
     gatherLaplasaMatrix() {
         const matrixContainer = document.querySelector('[data-matrix="laplasa"]');
         if (!matrixContainer) {
-            console.log('Laplasa matrix container not found, trying to gather from hidden fields...');
-
-            // Если контейнер не найден, пробуем собрать из скрытых полей cost_matrix
-            const hiddenInputs = document.querySelectorAll('input[name="cost_matrix"]');
-            if (hiddenInputs.length > 0) {
-                console.log(`Found ${hiddenInputs.length} hidden cost_matrix inputs`);
-
-                // Определяем размер матрицы по количеству альтернатив и условий
-                const numAlt = parseInt(document.querySelector('input[name="num_alt"]')?.value || '2');
-                const numConditions = parseInt(document.querySelector('input[name="num_conditions"]')?.value || '2');
-
-                console.log(`Matrix size from hidden fields: ${numAlt} alternatives x ${numConditions} conditions`);
-
-                // Создаем матрицу и заполняем её данными из скрытых полей
-                const matrix = [];
-                for (let i = 0; i < numAlt; i++) {
-                    matrix[i] = [];
-                    for (let j = 0; j < numConditions; j++) {
-                        // Ищем соответствующий input по ID
-                        const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
-                        if (input) {
-                            const value = input.value.trim();
-                            // Сохраняем пустую строку для пустых полей, а не '0'
-                            matrix[i][j] = value === '' ? '' : value;
-                        } else {
-                            matrix[i][j] = '';
-                        }
-                    }
-                }
-
-                console.log('Laplasa matrix gathered from hidden fields:', matrix);
-                return matrix;
-            }
-
-            console.log('No Laplasa matrix inputs found.');
+            console.log('Laplasa matrix container not found');
             return null;
         }
 
@@ -1838,6 +1924,62 @@ class DraftsManager {
 
         console.log('Laplasa matrix gathered:', matrix);
         return matrix;
+    }
+
+    /**
+    * Восстанавливает матрицу максимина
+    */
+    restoreMaximinMatrix(matrixData) {
+        console.log('=== RESTORING MAXIMIN MATRIX ===');
+        console.log('Input matrixData:', matrixData);
+        console.log('Type of matrixData:', typeof matrixData);
+        console.log('Is array:', Array.isArray(matrixData));
+
+        const matrixContainer = document.querySelector('[data-matrix="maximin"]');
+        if (!matrixContainer) {
+            console.warn('Maximin matrix container not found for restoration.');
+            return;
+        }
+
+        const numAlt = matrixData.length;
+        if (numAlt === 0) {
+            console.warn('Matrix data for Maximin is empty.');
+            return;
+        }
+
+        const numConditions = matrixData[0] ? matrixData[0].length : 0;
+        console.log('Matrix size:', numAlt, 'x', numConditions);
+        console.log('Matrix data:', matrixData);
+        console.log('Matrix container found:', !!matrixContainer);
+
+        // Восстанавливаем матрицу по ID полей
+        for (let i = 0; i < numAlt; i++) {
+            for (let j = 0; j < numConditions; j++) {
+                const currentValue = matrixData[i] ? matrixData[i][j] : undefined;
+                console.log(`Processing [${i}][${j}]: value="${currentValue}", type=${typeof currentValue}`);
+
+                // Проверяем, есть ли значение в матрице
+                if (currentValue !== undefined && currentValue !== '' && currentValue !== null) {
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = currentValue;
+                        console.log(`✓ Set Maximin value for alternative ${i}, condition ${j}: "${currentValue}"`);
+                    } else {
+                        console.warn(`✗ Maximin input not found for alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                } else {
+                    // Если значение пустое, очищаем поле
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = '';
+                        console.log(`- Cleared Maximin value for alternative ${i}, condition ${j}`);
+                    } else {
+                        console.warn(`✗ Input not found for clearing alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                }
+            }
+        }
+        console.log('=== MAXIMIN MATRIX RESTORATION COMPLETED ===');
     }
 
     /**

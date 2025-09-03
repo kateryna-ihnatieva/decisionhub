@@ -444,6 +444,12 @@
   <div class="setup-form">
     <form action="{{ url_for('maximin.cost_matrix') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="maximin_task" value="{{ maximin_task if maximin_task else '' }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+      <input type="hidden" name="matrix_type" value="{{ matrix_type if matrix_type else '' }}">
+
       {% if error %}
       <div class="alert alert-danger alert-style" role="alert">
         <i>{{ error }}</i>

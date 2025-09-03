@@ -19,7 +19,7 @@ maximin_bp = Blueprint("maximin", __name__, url_prefix="/maximin")
 def index():
     context = {
         "title": "Максимінний критерій",
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
     return render_template("Maximin/index.html", **context)
 
@@ -55,8 +55,7 @@ def names():
                 num_conditions = 0
                 maximin_task = None
                 matrix_type = None
-        except Exception as e:
-            print(f"Error loading draft: {str(e)}")
+        except Exception:
             # В случае ошибки используем значения по умолчанию
             num_alt = 0
             num_conditions = 0
@@ -87,9 +86,9 @@ def names():
         "num_conditions": num_conditions,
         "maximin_task": maximin_task,
         "matrix_type": matrix_type,
-        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
-        "name_conditions": draft_data.get("conditions") if draft_data else None,
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name_alternatives": (draft_data.get("alternatives") if draft_data else None),
+        "name_conditions": (draft_data.get("conditions") if draft_data else None),
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
 
     return render_template("Maximin/names.html", **context)
@@ -97,12 +96,57 @@ def names():
 
 @maximin_bp.route("/cost-matrix", methods=["GET", "POST"])
 def cost_matrix():
-    num_alt = int(session.get("num_alt"))
-    num_conditions = int(session.get("num_conditions"))
-    maximin_task = session.get("maximin_task")
-    matrix_type = session.get("matrix_type")
-    name_alternatives = request.form.getlist("name_alternatives")
-    name_conditions = request.form.getlist("name_conditions")
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
+    num_alt = 0
+    num_conditions = 0
+    maximin_task = None
+    matrix_type = None
+    name_alternatives = []
+    name_conditions = []
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+                # Восстанавливаем данные из черновика
+                num_alt = int(draft_data.get("numAlternatives") or 0)
+                num_conditions = int(draft_data.get("numConditions") or 0)
+                maximin_task = draft_data.get("task")
+                matrix_type = draft_data.get("matrixType")
+                name_alternatives = draft_data.get("alternatives", [])
+                name_conditions = draft_data.get("conditions", [])
+            else:
+                # Если черновик не найден, используем значения из сессии
+                num_alt = int(session.get("num_alt", 0))
+                num_conditions = int(session.get("num_conditions", 0))
+                maximin_task = session.get("maximin_task")
+                matrix_type = session.get("matrix_type")
+                name_alternatives = request.form.getlist("name_alternatives")
+                name_conditions = request.form.getlist("name_conditions")
+        except Exception:
+            # В случае ошибки используем значения из сессии
+            num_alt = int(session.get("num_alt", 0))
+            num_conditions = int(session.get("num_conditions", 0))
+            maximin_task = session.get("maximin_task")
+            matrix_type = session.get("matrix_type")
+            name_alternatives = request.form.getlist("name_alternatives")
+            name_conditions = request.form.getlist("name_conditions")
+    else:
+        # Если черновик не загружается, получаем данные из сессии или формы
+        num_alt = int(session.get("num_alt", 0))
+        num_conditions = int(session.get("num_conditions", 0))
+        maximin_task = session.get("maximin_task")
+        matrix_type = session.get("matrix_type")
+        name_alternatives = request.form.getlist("name_alternatives")
+        name_conditions = request.form.getlist("name_conditions")
 
     if len(name_alternatives) != len(set(name_alternatives)) or len(
         name_conditions
@@ -114,7 +158,9 @@ def cost_matrix():
             "name_alternatives": name_alternatives,
             "name_conditions": name_conditions,
             "error": "Імена повинні бути унікальними!",
-            "name": current_user.get_name() if current_user.is_authenticated else None,
+            "name": (
+                current_user.get_name() if current_user.is_authenticated else None
+            ),
         }
 
         return render_template("Maximin/names.html", **context)
@@ -137,7 +183,7 @@ def cost_matrix():
         "num_conditions": num_conditions,
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
         "id": new_record_id,
     }
 
@@ -146,6 +192,24 @@ def cost_matrix():
 
 @maximin_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None):
+    # Проверяем, загружается ли черновик (для совместимости)
+    draft_id = request.args.get("draft")
+
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+
+            if draft and draft.form_data:
+                # Черновик загружен, но в данной функции не используется
+                pass
+        except Exception:
+            # Игнорируем ошибки загрузки черновика
+            pass
+
     if not method_id:
         new_record_id = int(session.get("new_record_id"))
         num_alt = int(session.get("num_alt"))
@@ -173,14 +237,22 @@ def result(method_id=None):
         max_value = max(min_values)
         max_index = min_values.index(max_value)
         optimal_alternative = name_alternatives[max_index]
-        optimal_message = f"Оптимальною за критерієм максимуму мінімальних значень є альтернатива {optimal_alternative} (максимальне значення {max_value})."
+        optimal_message = (
+            f"Оптимальною за критерієм максимуму мінімальних "
+            f"значень є альтернатива {optimal_alternative} "
+            f"(максимальне значення {max_value})."
+        )
         optimal_variants = min_values
     else:
         max_values = [max(map(int, sublist)) for sublist in cost_matrix]
         min_value = min(max_values)
         min_index = max_values.index(min_value)
         optimal_alternative = name_alternatives[min_index]
-        optimal_message = f"Оптимальною за критерієм мінімуму максимальних значень є альтернатива {optimal_alternative} (мінімальне значення {min_value})."
+        optimal_message = (
+            f"Оптимальною за критерієм мінімуму максимальних "
+            f"значень є альтернатива {optimal_alternative} "
+            f"(мінімальне значення {min_value})."
+        )
         optimal_variants = max_values
 
     existing_record = MaximinCostMatrix.query.get(new_record_id)
@@ -204,7 +276,7 @@ def result(method_id=None):
 
     context = {
         "title": "Результат",
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "cost_matrix": cost_matrix,
