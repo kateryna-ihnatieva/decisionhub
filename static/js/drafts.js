@@ -305,6 +305,13 @@ class DraftsManager {
             this.restoreSavageMatrix(formData.matrices.savage);
         }
 
+        // Восстанавливаем матрицу Гурвица (только если есть соответствующий контейнер)
+        const hurwitzContainer = document.querySelector('[data-matrix="hurwitz"]');
+        if (hurwitzContainer && formData.matrices && formData.matrices.hurwitz) {
+            console.log('Restoring Hurwitz matrix:', formData.matrices.hurwitz);
+            this.restoreHurwitzMatrix(formData.matrices.hurwitz);
+        }
+
         // Восстанавливаем тип матрицы
         if (formData.matrixType) {
             const matrixTypeInput = document.querySelector('input[name="matrix_type"][value="' + formData.matrixType + '"]');
@@ -1042,6 +1049,16 @@ class DraftsManager {
             console.log('Savage matrix gathered:', savageMatrix);
             if (savageMatrix) {
                 matrices.savage = savageMatrix;
+            }
+        }
+
+        // Собираем матрицу Гурвица (только если есть соответствующий контейнер)
+        const hurwitzContainer = document.querySelector('[data-matrix="hurwitz"]');
+        if (hurwitzContainer) {
+            const hurwitzMatrix = this.gatherHurwitzMatrix();
+            console.log('Hurwitz matrix gathered:', hurwitzMatrix);
+            if (hurwitzMatrix) {
+                matrices.hurwitz = hurwitzMatrix;
             }
         }
 
@@ -1946,6 +1963,52 @@ class DraftsManager {
     }
 
     /**
+    * Собирает данные матрицы Гурвица
+    */
+    gatherHurwitzMatrix() {
+        const matrixContainer = document.querySelector('[data-matrix="hurwitz"]');
+        if (!matrixContainer) {
+            console.log('Hurwitz matrix container not found');
+            return null;
+        }
+
+        // Ищем все поля с именем cost_matrix
+        const inputs = matrixContainer.querySelectorAll('input[name="cost_matrix"]');
+        console.log(`Found ${inputs.length} cost_matrix inputs`);
+
+        if (inputs.length === 0) {
+            console.log('No Hurwitz matrix inputs found.');
+            return null;
+        }
+
+        // Определяем размер матрицы по количеству альтернатив и условий
+        const numAlt = parseInt(document.querySelector('input[name="num_alt"]')?.value || '2');
+        const numConditions = parseInt(document.querySelector('input[name="num_conditions"]')?.value || '2');
+
+        console.log(`Hurwitz matrix size: ${numAlt} alternatives x ${numConditions} conditions`);
+
+        // Создаем матрицу и заполняем её данными
+        const matrix = [];
+        for (let i = 0; i < numAlt; i++) {
+            matrix[i] = [];
+            for (let j = 0; j < numConditions; j++) {
+                // Ищем соответствующий input по ID
+                const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                if (input) {
+                    const value = input.value.trim();
+                    // Сохраняем пустую строку для пустых полей, а не '0'
+                    matrix[i][j] = value === '' ? '' : value;
+                } else {
+                    matrix[i][j] = '';
+                }
+            }
+        }
+
+        console.log('Hurwitz matrix gathered:', matrix);
+        return matrix;
+    }
+
+    /**
     * Собирает данные матрицы Лапласа
     */
     gatherLaplasaMatrix() {
@@ -2106,6 +2169,61 @@ class DraftsManager {
             }
         }
         console.log('=== SAVAGE MATRIX RESTORATION COMPLETED ===');
+    }
+
+    /**
+    * Восстанавливает матрицу Гурвица
+    */
+    restoreHurwitzMatrix(matrixData) {
+        console.log('=== RESTORING HURWITZ MATRIX ===');
+        console.log('Input matrixData:', matrixData);
+        console.log('Type of matrixData:', typeof matrixData);
+        console.log('Is array:', Array.isArray(matrixData));
+
+        const matrixContainer = document.querySelector('[data-matrix="hurwitz"]');
+        if (!matrixContainer) {
+            console.warn('Hurwitz matrix container not found for restoration.');
+            return;
+        }
+
+        if (!matrixData || !Array.isArray(matrixData)) {
+            console.warn('Invalid Hurwitz matrix data for restoration.');
+            return;
+        }
+
+        // Определяем размер матрицы
+        const numAlt = parseInt(document.querySelector('input[name="num_alt"]')?.value || '2');
+        const numConditions = parseInt(document.querySelector('input[name="num_conditions"]')?.value || '2');
+
+        console.log(`Hurwitz matrix size: ${numAlt} alternatives x ${numConditions} conditions`);
+
+        for (let i = 0; i < numAlt; i++) {
+            for (let j = 0; j < numConditions; j++) {
+                const currentValue = matrixData[i] ? matrixData[i][j] : undefined;
+                console.log(`Processing [${i}][${j}]: value="${currentValue}", type=${typeof currentValue}`);
+
+                // Проверяем, есть ли значение в матрице
+                if (currentValue !== undefined && currentValue !== '' && currentValue !== null) {
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = currentValue;
+                        console.log(`✓ Set Hurwitz value for alternative ${i}, condition ${j}: "${currentValue}"`);
+                    } else {
+                        console.warn(`✗ Hurwitz input not found for alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                } else {
+                    // Если значение пустое, очищаем поле
+                    const input = matrixContainer.querySelector(`#cost_matrix_${i}_${j}_`);
+                    if (input) {
+                        input.value = '';
+                        console.log(`- Cleared Hurwitz value for alternative ${i}, condition ${j}`);
+                    } else {
+                        console.warn(`✗ Input not found for clearing alternative ${i}, condition ${j}: ID=#cost_matrix_${i}_${j}_`);
+                    }
+                }
+            }
+        }
+        console.log('=== HURWITZ MATRIX RESTORATION COMPLETED ===');
     }
 
     /**

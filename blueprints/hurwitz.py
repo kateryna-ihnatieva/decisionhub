@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, session
-from mymodules.mai import *
+
+# from mymodules.mai import *  # Unused import removed
 from models import (
     HurwitzConditions,
     HurwitzAlternatives,
@@ -19,7 +20,7 @@ hurwitz_bp = Blueprint("hurwitz", __name__, url_prefix="/hurwitz")
 def index():
     context = {
         "title": "Критерій Гурвиця",
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
     return render_template("Hurwitz/index.html", **context)
 
@@ -87,9 +88,9 @@ def names():
         "num_conditions": num_conditions,
         "hurwitz_task": hurwitz_task,
         "alpha": alpha,
-        "name_alternatives": draft_data.get("alternatives") if draft_data else None,
-        "name_conditions": draft_data.get("conditions") if draft_data else None,
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name_alternatives": (draft_data.get("alternatives") if draft_data else None),
+        "name_conditions": (draft_data.get("conditions") if draft_data else None),
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
 
     return render_template("Hurwitz/names.html", **context)
@@ -97,13 +98,44 @@ def names():
 
 @hurwitz_bp.route("/cost-matrix", methods=["GET", "POST"])
 def cost_matrix():
-    num_alt = int(session.get("num_alt"))
-    num_conditions = int(session.get("num_conditions"))
-    hurwitz_task = session.get("hurwitz_task")
-    alpha = float(session.get("alpha"))
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    draft_data = None
 
-    name_alternatives = request.form.getlist("name_alternatives")
-    name_conditions = request.form.getlist("name_conditions")
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+            if draft and draft.form_data:
+                draft_data = draft.form_data
+        except Exception:
+            pass  # Игнорируем ошибки загрузки черновика
+
+    if draft_data:
+        # Загружаем данные из черновика
+        num_alt = int(draft_data.get("numAlternatives") or 0)
+        num_conditions = int(draft_data.get("numConditions") or 0)
+        hurwitz_task = draft_data.get("task")
+        alpha = float(draft_data.get("alpha") or 0.5)
+        name_alternatives = draft_data.get("alternatives", [])
+        name_conditions = draft_data.get("conditions", [])
+    else:
+        # Загружаем данные из сессии и формы
+        num_alt = int(session.get("num_alt"))
+        num_conditions = int(session.get("num_conditions"))
+        # Получаем hurwitz_task из формы или сессии
+        hurwitz_task = request.form.get("hurwitz_task") or session.get("hurwitz_task")
+        alpha = float(request.form.get("alpha") or session.get("alpha") or 0.5)
+        name_alternatives = request.form.getlist("name_alternatives")
+        name_conditions = request.form.getlist("name_conditions")
+
+        # Обновляем сессию с актуальными значениями
+        if hurwitz_task:
+            session["hurwitz_task"] = hurwitz_task
+        session["alpha"] = alpha
 
     if len(name_alternatives) != len(set(name_alternatives)) or len(
         name_conditions
@@ -115,7 +147,9 @@ def cost_matrix():
             "name_alternatives": name_alternatives,
             "name_conditions": name_conditions,
             "error": "Імена повинні бути унікальними!",
-            "name": current_user.get_name() if current_user.is_authenticated else None,
+            "name": (
+                current_user.get_name() if current_user.is_authenticated else None
+            ),
         }
 
         return render_template("Hurwitz/names.html", **context)
@@ -137,7 +171,9 @@ def cost_matrix():
         "num_conditions": num_conditions,
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "hurwitz_task": hurwitz_task,
+        "alpha": alpha,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
         "id": new_record_id,
     }
 
@@ -146,6 +182,20 @@ def cost_matrix():
 
 @hurwitz_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None):
+    # Проверяем, загружается ли черновик
+    draft_id = request.args.get("draft")
+    if draft_id:
+        try:
+            from models import Draft
+
+            draft = Draft.query.filter_by(
+                id=draft_id, user_id=current_user.get_id()
+            ).first()
+            if draft and draft.form_data:
+                pass  # Черновик загружен, но не используется напрямую в этой функции
+        except Exception:
+            pass  # Игнорируем ошибки загрузки черновика
+
     if not method_id:
         new_record_id = int(session.get("new_record_id"))
         num_alt = int(session.get("num_alt"))
@@ -201,7 +251,11 @@ def result(method_id=None):
     max_index = hurwitz_values.index(max_value)
     optimal_alternative = name_alternatives[max_index]
 
-    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення критерію Гурвіца: {max_value:.2f}."
+    optimal_message = (
+        f"Оптимальна альтернатива {optimal_alternative}, "
+        f"має максимальне значення критерію Гурвіца: "
+        f"{max_value:.2f}."
+    )
 
     existing_record = HurwitzCostMatrix.query.get(new_record_id)
     if existing_record is None:
@@ -225,7 +279,7 @@ def result(method_id=None):
 
     context = {
         "title": "Результат",
-        "name": current_user.get_name() if current_user.is_authenticated else None,
+        "name": (current_user.get_name() if current_user.is_authenticated else None),
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "cost_matrix": cost_matrix,

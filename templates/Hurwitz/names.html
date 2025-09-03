@@ -444,6 +444,12 @@
   <div class="setup-form">
     <form action="{{ url_for('hurwitz.cost_matrix') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="hurwitz_task" value="{{ hurwitz_task if hurwitz_task else '' }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+      <input type="hidden" name="alpha" value="{{ alpha }}">
+
       {% if error %}
       <div class="alert alert-danger alert-style" role="alert">
         <i>{{ error }}</i>

@@ -205,15 +205,31 @@ def result(method_id=None):
         print("[!] Error:", e)
 
     flag = session.get("flag")
-    if flag != 0:
+
+    # Проверяем, есть ли данные из формы (измененные значения из черновика)
+    cost_matrix_raw = request.form.getlist("cost_matrix")
+    has_form_data = cost_matrix_raw and any(value.strip() for value in cost_matrix_raw)
+
+    if flag != 0 and not has_form_data:
+        # Используем данные из базы данных только если нет новых данных из формы
         cost_record = SavageCostMatrix.query.get(new_record_id)
         cost_matrix = cost_record.matrix
         loss_matrix = cost_record.loss_matrix
         max_losses = cost_record.max_losses
         optimal_alternative = cost_record.optimal_variants[0]
     else:
-        cost_matrix_raw = request.form.getlist("cost_matrix")
-        cost_matrix = make_table(num_alt, num_conditions, cost_matrix_raw)
+        # Обрабатываем данные из формы (новые или измененные значения)
+        if not cost_matrix_raw:
+            # Если нет данных из формы, используем данные из базы
+            cost_record = SavageCostMatrix.query.get(new_record_id)
+            if cost_record:
+                cost_matrix = cost_record.matrix
+            else:
+                cost_matrix = [
+                    [0 for _ in range(num_conditions)] for _ in range(num_alt)
+                ]
+        else:
+            cost_matrix = make_table(num_alt, num_conditions, cost_matrix_raw)
 
         loss_matrix = []
         for j in range(num_conditions):
@@ -228,16 +244,27 @@ def result(method_id=None):
         min_index = max_losses.index(min_loss)
         optimal_alternative = name_alternatives[min_index]
 
-        add_object_to_db(
-            db,
-            SavageCostMatrix,
-            id=new_record_id,
-            savage_alternatives_id=new_record_id,
-            matrix=cost_matrix,
-            loss_matrix=loss_matrix,
-            max_losses=max_losses,
-            optimal_variants=[optimal_alternative],
-        )
+        # Всегда обновляем данные в базе, если они изменились
+        existing_record = SavageCostMatrix.query.get(new_record_id)
+        if existing_record:
+            # Обновляем существующую запись
+            existing_record.matrix = cost_matrix
+            existing_record.loss_matrix = loss_matrix
+            existing_record.max_losses = max_losses
+            existing_record.optimal_variants = [optimal_alternative]
+            db.session.commit()
+        else:
+            # Создаем новую запись
+            add_object_to_db(
+                db,
+                SavageCostMatrix,
+                id=new_record_id,
+                savage_alternatives_id=new_record_id,
+                matrix=cost_matrix,
+                loss_matrix=loss_matrix,
+                max_losses=max_losses,
+                optimal_variants=[optimal_alternative],
+            )
         if current_user.is_authenticated:
             add_object_to_db(
                 db,
