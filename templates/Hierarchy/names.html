@@ -217,11 +217,7 @@
     filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
   }
 
-  .section-title.task::before {
-    content: '📝';
-    font-size: 1.4rem;
-    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
-  }
+
 
   .section-title::after {
     content: '';
@@ -480,19 +476,6 @@
         <i>{{ error }}</i>
       </div>
       {% endif %}
-
-      <div class="input-section">
-        <div class="section-title task">Опис завдання</div>
-        <div class="input-group">
-          <textarea
-            class="input-field"
-            name="hierarchy_task"
-            id="hierarchy_task"
-            placeholder="Опишіть завдання для аналізу..."
-            rows="3"
-          >{% if hierarchy_task %}{{ hierarchy_task }}{% endif %}</textarea>
-        </div>
-      </div>
 
       <div class="input-section">
         <div class="section-title criteria">Назви критеріїв</div>
