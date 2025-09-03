@@ -20,6 +20,7 @@ from blueprints import (
     maximin_bp,
     savage_bp,
     hurwitz_bp,
+    drafts_bp,
 )
 from models import *
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -52,6 +53,7 @@ app.register_blueprint(kriteriy_laplasa_bp)
 app.register_blueprint(maximin_bp)
 app.register_blueprint(savage_bp)
 app.register_blueprint(hurwitz_bp)
+app.register_blueprint(drafts_bp)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -79,6 +81,15 @@ def documentation():
         "name": current_user.get_name() if current_user.is_authenticated else None,
     }
     return render_template("documentation.html", **context)
+
+
+@app.route("/test-fix")
+def test_fix():
+    context = {
+        "title": "Тест исправления",
+        "name": current_user.get_name() if current_user.is_authenticated else None,
+    }
+    return render_template("test-fix.html", **context)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -317,7 +328,7 @@ def profile():
 def delete_result(result_id):
     result = db.session.get(Result, result_id)
     if result:
-        # Удаление связанных записей
+        # Видалення пов'язаних записів
         if result.method_name == "Hierarchy":
             HierarchyCriteriaMatrix.query.filter_by(id=result.method_id).delete()
             HierarchyAlternativesMatrix.query.filter_by(id=result.method_id).delete()
@@ -339,7 +350,7 @@ def delete_result(result_id):
             ExpertsCompetency.query.filter_by(id=result.method_id).delete()
             ExpertsNameResearch.query.filter_by(id=result.method_id).delete()
 
-        # Удаление самого результата
+        # Видалення самого результату
         db.session.delete(result)
         db.session.commit()
         return redirect(url_for("profile"))

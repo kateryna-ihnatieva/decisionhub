@@ -311,6 +311,24 @@ class User(db.Model):
     psw = db.Column(db.String(255), nullable=False)
 
 
+# --- DRAFTS ---
+class Draft(db.Model):
+    __tablename__ = "drafts"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    method_type = db.Column(
+        "method", db.String(50), nullable=False
+    )  # ahp, topsis, electre, etc.
+    current_route = db.Column("page", db.String(100), nullable=False)
+    form_data = db.Column("data", JSON, nullable=False)  # Все данные форм
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    # Связь с пользователем
+    user = db.relationship("User", backref="drafts")
+
+
 # --- RESULTS ---
 class Result(db.Model):
     __tablename__ = "results"

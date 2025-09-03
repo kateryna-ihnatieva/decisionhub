@@ -332,6 +332,11 @@
 <div class="form-container">
   <form action="{{ url_for('experts.experts_competence') }}" method="POST">
 
+    <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+    <input type="hidden" name="experts_task" value="{{ experts_task or '' }}">
+    <input type="hidden" name="num_experts" value="{{ num_experts }}">
+    <input type="hidden" name="num_research" value="{{ num_research }}">
+
     {% if error %}
     <div class="alert" role="alert">
       {{ error }}
@@ -360,8 +365,9 @@
           type="text"
           name="name_research"
           id="name_research_{{ i }}"
-          value="{% if names %}{{ names[i] }}{% endif %}"
+          value="{% if names and names[i] is defined %}{{ names[i] }}{% endif %}"
           placeholder="Напрямок дослідження {{ i+1 }}"
+          data-index="{{ i }}"
           required
         >
         <div class="research-icon">🔍</div>

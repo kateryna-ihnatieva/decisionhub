@@ -521,9 +521,21 @@
   <div class="matrix-form">
     <form action="{{ url_for('maximin.result', method_id=id) }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="maximin_task" value="{{ session.get('maximin_task', '') }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+      <input type="hidden" name="matrix_type" value="{{ session.get('matrix_type', '') }}">
+      {% for name in name_alternatives %}
+      <input type="hidden" name="name_alternatives" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+      {% for name in name_conditions %}
+      <input type="hidden" name="name_conditions" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+
       <div class="matrix-title">Матриця Вартостей</div>
 
-      <div class="matrix-container">
+      <div class="matrix-container" data-matrix="maximin">
         <table class="cost-matrix">
           <thead class="matrix-header">
             <tr>

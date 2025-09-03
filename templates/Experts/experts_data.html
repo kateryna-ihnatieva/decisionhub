@@ -617,6 +617,24 @@
     <h2 class="form-title">Вихідні експертні дані</h2>
 
     <form action="{{ url_for('experts.experts_result', method_id=id) }}" method="POST">
+
+      <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
+      <input type="hidden" name="experts_task" value="{{ session.get('experts_task', '') }}">
+      <input type="hidden" name="num_experts" value="{{ num_experts }}">
+      <input type="hidden" name="num_research" value="{{ name_research | length }}">
+      {% for name in name_research %}
+      <input type="hidden" name="name_research" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+
+      <!-- Скрытые поля для матрицы компетенции -->
+      {% if session.get('competence_matrix') %}
+        {% for i in range(num_experts) %}
+          {% for j in range(5) %}
+            <input type="hidden" name="matrix_competence" value="{{ session.get('competence_matrix')[i][j] if session.get('competence_matrix') and session.get('competence_matrix')[i] and session.get('competence_matrix')[i][j] else '0.0' }}">
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+
       {% if error %}
       <div class="alert alert-danger" role="alert">
         {{ error }}
@@ -653,7 +671,7 @@
         </div>
       </div>
 
-      <div class="table-container">
+      <div class="table-container" data-matrix="experts_data">
         <table class="experts-table">
           <thead>
             <tr>
@@ -662,7 +680,7 @@
             </tr>
             <tr>
               {% for i in range(name_research | length) %}
-              <th>{{ name_research[i] }}</th>
+              <th>{{ name_research[i] if name_research[i] and name_research[i] != 'None' else 'Research ' + (i + 1) | string }}</th>
               {% endfor %}
             </tr>
           </thead>
@@ -675,7 +693,7 @@
                 <input
                   class="input-settings"
                   type="number"
-                  name="experts_data_table"
+                  name="matrix_experts_data"
                   id="experts_data_table_{{ i }}_{{ n_e }}"
                   required
                   min="0"

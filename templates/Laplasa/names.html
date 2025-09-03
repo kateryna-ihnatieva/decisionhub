@@ -444,6 +444,11 @@
   <div class="setup-form">
     <form action="{{ url_for('kriteriy_laplasa.cost_matrix') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных в черновик -->
+      <input type="hidden" name="laplasa_task" value="{{ laplasa_task or '' }}">
+      <input type="hidden" name="num_alt" value="{{ num_alt }}">
+      <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
+
       {% if error %}
       <div class="alert alert-danger alert-style" role="alert">
         <i>{{ error }}</i>
@@ -461,7 +466,8 @@
             name="name_alternatives"
             id="alternative{{ n+1 }}"
             placeholder="Альтернатива {{ n+1 }}"
-            value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+            value="{% if name_alternatives and name_alternatives[n] is defined %}{{ name_alternatives[n] }}{% endif %}"
+            data-index="{{ n }}"
             required
           >
         </div>
@@ -479,7 +485,8 @@
             name="name_conditions"
             id="condition{{ m+1 }}"
             placeholder="Умова {{ m+1 }}"
-            value="{% if name_conditions %}{{ name_conditions[m] }}{% endif %}"
+            value="{% if name_conditions and name_conditions[m] is defined %}{{ name_conditions[m] }}{% endif %}"
+            data-index="{{ m }}"
             required
           >
         </div>

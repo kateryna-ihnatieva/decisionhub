@@ -217,6 +217,8 @@
     filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
   }
 
+
+
   .section-title::after {
     content: '';
     flex: 1;
@@ -249,6 +251,12 @@
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     backdrop-filter: blur(5px);
     position: relative;
+  }
+
+  textarea.input-field {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
   }
 
   .input-field::placeholder {
@@ -459,6 +467,10 @@
   <div class="names-form">
     <form action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных черновика -->
+      <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
+      <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+
       {% if error %}
       <div class="alert-danger" role="alert">
         <i>{{ error }}</i>
@@ -476,8 +488,9 @@
               type="text"
               name="name_criteria"
               id="criter{{ i+1 }}"
+              data-index="{{ i }}"
               placeholder="Критерій {{ i+1 }}"
-              value="{% if name_criteria %}{{ name_criteria[i] }}{% endif %}"
+              value="{% if name_criteria and name_criteria[i] is defined %}{{ name_criteria[i] }}{% endif %}"
               required
             >
           </div>
@@ -497,7 +510,8 @@
               name="name_alternatives"
               id="alternative{{ n+1 }}"
               placeholder="Альтернатива {{ n+1 }}"
-              value="{% if name_alternatives %}{{ name_alternatives[n] }}{% endif %}"
+              value="{% if name_alternatives and name_alternatives[n] is defined %}{{ name_alternatives[n] }}{% endif %}"
+              data-index="{{ n }}"
               required
             >
           </div>

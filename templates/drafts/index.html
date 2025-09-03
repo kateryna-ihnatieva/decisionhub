@@ -1,0 +1,911 @@
+{% extends 'base.html' %}
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --color-background: #0B0C10;
+    --color-text: #EDF5E1;
+    --color-accent: #66FCF1;
+    --color-accent-dark: #05386B;
+    --color-link: #8EE4AF;
+    --color-link-hover: #5CDB95;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(102, 252, 241, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(142, 228, 175, 0.03) 0%, transparent 50%),
+      var(--color-background);
+  }
+
+  .drafts-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    position: relative;
+  }
+
+  .drafts-container::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    right: 8%;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, rgba(102, 252, 241, 0.08), rgba(142, 228, 175, 0.08));
+    border-radius: 50%;
+    animation: float-gentle 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(180deg); }
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 60px 20px 80px;
+    background: linear-gradient(135deg,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(5, 56, 107, 0.18) 40%,
+      rgba(142, 228, 175, 0.05) 60%,
+      rgba(11, 12, 16, 0.95) 100%);
+    border-radius: 0 0 40px 40px;
+    margin-bottom: 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(102, 252, 241, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 70% 60%, rgba(142, 228, 175, 0.06) 0%, transparent 40%);
+    pointer-events: none;
+    animation: gentle-pulse 8s ease-in-out infinite;
+  }
+
+  @keyframes gentle-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent,
+      var(--color-accent),
+      var(--color-link),
+      transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(102, 252, 241, 0.4);
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .drafts-title {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+    text-shadow:
+      0 0 30px rgba(102, 252, 241, 0.3),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+    line-height: 1.1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .drafts-title span {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 0 20px rgba(102, 252, 241, 0.4));
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .drafts-title:hover span {
+    transform: scale(1.15) rotate(-5deg);
+    filter: drop-shadow(0 0 25px rgba(102, 252, 241, 0.6));
+  }
+
+  .drafts-subtitle {
+    font-size: 1.1rem;
+    color: var(--color-text);
+    opacity: 0.8;
+  }
+
+  .drafts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+  }
+
+  .draft-card {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 25px;
+    padding: 35px;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(102, 252, 241, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .draft-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(102, 252, 241, 0.5),
+      rgba(142, 228, 175, 0.5),
+      transparent);
+  }
+
+  .draft-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(102, 252, 241, 0.15);
+    border-color: rgba(102, 252, 241, 0.4);
+  }
+
+  .draft-card:hover::before {
+    opacity: 1;
+  }
+
+  .draft-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .draft-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin: 0;
+    line-height: 1.3;
+    flex: 1;
+    margin-right: 15px;
+  }
+
+  .draft-method {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.1),
+      rgba(142, 228, 175, 0.1));
+    color: var(--color-accent);
+    padding: 8px 16px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(102, 252, 241, 0.1);
+  }
+
+  .draft-info {
+    margin-bottom: 25px;
+  }
+
+  .draft-route {
+    color: var(--color-text);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+
+  .draft-dates {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-text);
+    opacity: 0.6;
+  }
+
+  .draft-actions {
+    display: flex;
+    gap: 15px;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .draft-actions button {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .btn-continue {
+    background: var(--color-link);
+    color: var(--color-background);
+    border: 2px solid var(--color-link);
+    padding: 15px 25px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    text-transform: none;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+
+
+
+  .btn-continue span,
+  .btn-delete span {
+    position: relative;
+  }
+
+  .btn-continue:hover {
+    background: var(--color-link-hover);
+    border-color: var(--color-link-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(142, 228, 175, 0.4);
+  }
+
+  .btn-delete {
+    background: rgba(255, 107, 125, 0.1);
+    color: #ffccd5;
+    border: 2px solid rgba(255, 107, 125, 0.3);
+    padding: 15px 25px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    text-transform: none;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .btn-delete:hover {
+    background: rgba(255, 107, 125, 0.2);
+    border-color: rgba(255, 107, 125, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 107, 125, 0.2);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--color-text);
+    opacity: 0.6;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+  }
+
+  .empty-text {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+
+  .empty-subtext {
+    font-size: 0.9rem;
+    opacity: 0.7;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-accent);
+  }
+
+  .spinner {
+    border: 3px solid rgba(102, 252, 241, 0.3);
+    border-top: 3px solid var(--color-accent);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      padding: 40px 20px 50px;
+      border-radius: 0 0 25px 25px;
+    }
+
+    .drafts-title {
+      display: block;
+      text-align: center;
+    }
+
+    .drafts-title span {
+      display: block;
+      margin: 0 auto 15px;
+      font-size: 2rem;
+    }
+
+    .drafts-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .draft-card {
+      padding: 25px 20px;
+    }
+
+    .draft-header {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .draft-actions {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .btn-continue,
+    .btn-delete {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .drafts-container {
+      padding: 20px 15px;
+    }
+
+    .page-header {
+      padding: 30px 15px 40px;
+    }
+
+    .draft-card {
+      padding: 20px 15px;
+    }
+  }
+
+  /* Стили для пагинации */
+  #pagination-controls {
+    margin-top: 40px;
+    padding: 30px;
+    background: rgba(5, 56, 107, 0.1);
+    border-radius: 20px;
+    border: 1px solid rgba(102, 252, 241, 0.1);
+  }
+
+  .pagination-info {
+    text-align: center;
+    margin-bottom: 25px;
+    color: var(--color-text);
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .pagination-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .per-page-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-text);
+    font-size: 14px;
+  }
+
+  .per-page-selector select {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    border-radius: 8px;
+    color: var(--color-text);
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .per-page-selector select:hover {
+    border-color: var(--color-accent);
+    background: rgba(11, 12, 16, 0.9);
+  }
+
+  .per-page-selector select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(102, 252, 241, 0.2);
+  }
+
+  .pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .pagination-btn {
+    background: rgba(5, 56, 107, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    border-radius: 10px;
+    color: var(--color-text);
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: rgba(5, 56, 107, 0.8);
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 252, 241, 0.2);
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(11, 12, 16, 0.3);
+    border-color: rgba(102, 252, 241, 0.1);
+  }
+
+  .page-numbers {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .page-number {
+    background: rgba(11, 12, 16, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 8px;
+    color: var(--color-text);
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .page-number:hover {
+    background: rgba(5, 56, 107, 0.6);
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+  }
+
+  .page-number.active {
+    background: var(--color-accent);
+    color: var(--color-background);
+    border-color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .page-number.ellipsis {
+    cursor: default;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    opacity: 0.6;
+  }
+
+  .page-number.ellipsis:hover {
+    background: transparent;
+    transform: none;
+  }
+
+  /* Адаптивность для пагинации */
+  @media (max-width: 768px) {
+    #pagination-controls {
+      padding: 20px 15px;
+    }
+
+    .pagination-controls {
+      gap: 15px;
+    }
+
+    .pagination-buttons {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .page-numbers {
+      order: -1;
+    }
+
+    .pagination-btn {
+      min-width: 100px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+</style>
+
+<div class="drafts-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="drafts-title">
+        <span style="margin-right: 20px;">📝</span>
+        Мої чернетки
+      </h1>
+      <p class="drafts-subtitle">
+        Збережені прогрес роботи з методами прийняття рішень
+      </p>
+    </div>
+  </div>
+
+  <div id="drafts-content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Завантаження чернеток...</p>
+    </div>
+  </div>
+
+  <!-- Элементы управления пагинацией -->
+  <div id="pagination-controls" style="display: none;">
+    <div class="pagination-info">
+      <span id="pagination-text">Показано 0-0 з 0 чернеток</span>
+    </div>
+
+    <div class="pagination-controls">
+      <div class="per-page-selector">
+        <label for="per-page">На сторінці:</label>
+        <select id="per-page" onchange="changePerPage()">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+
+      <div class="pagination-buttons">
+        <button id="prev-page" class="pagination-btn" onclick="goToPage('prev')" disabled>
+          ← Попередня
+        </button>
+
+        <div class="page-numbers" id="page-numbers">
+          <!-- Номера страниц будут добавлены динамически -->
+        </div>
+
+        <button id="next-page" class="pagination-btn" onclick="goToPage('next')" disabled>
+          Наступна →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Глобальные переменные для пагинации
+let currentPage = 1;
+let currentPerPage = 10;
+let totalPages = 1;
+let totalItems = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Устанавливаем значение per-page из URL параметров или по умолчанию
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageParam = urlParams.get('page');
+  const perPageParam = urlParams.get('per_page');
+
+  if (pageParam) currentPage = parseInt(pageParam);
+  if (perPageParam) currentPerPage = parseInt(perPageParam);
+
+  // Устанавливаем выбранное значение в селект
+  document.getElementById('per-page').value = currentPerPage;
+
+  loadDrafts();
+});
+
+async function loadDrafts() {
+  try {
+    const response = await fetch(`/drafts/api?page=${currentPage}&per_page=${currentPerPage}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch drafts');
+    }
+
+    const data = await response.json();
+    displayDrafts(data.drafts);
+
+    // Обновляем информацию о пагинации
+    if (data.pagination) {
+      updatePaginationInfo(data.pagination);
+      displayPagination(data.pagination);
+    }
+  } catch (error) {
+    console.error('Error loading drafts:', error);
+    showError('Помилка завантаження чернеток');
+  }
+}
+
+function displayDrafts(drafts) {
+  const container = document.getElementById('drafts-content');
+
+  if (!drafts || drafts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <div class="empty-text">У вас поки немає чернеток</div>
+        <div class="empty-subtext">
+          Почніть роботу з будь-яким методом та збережіть прогрес
+        </div>
+      </div>
+    `;
+
+    // Скрываем элементы пагинации если нет черновиков
+    document.getElementById('pagination-controls').style.display = 'none';
+    return;
+  }
+
+  const draftsHTML = drafts.map(draft => `
+    <div class="draft-card" data-draft-id="${draft.id}">
+      <div class="draft-header">
+        <h3 class="draft-title">${escapeHtml(draft.title)}</h3>
+        <span class="draft-method">${getMethodDisplayName(draft.method_type)}</span>
+      </div>
+
+      <div class="draft-info">
+        <div class="draft-route">${escapeHtml(draft.current_route)}</div>
+        <div class="draft-dates">
+          <span>Створено: ${formatDate(draft.created_at)}</span>
+          <span>Оновлено: ${formatDate(draft.updated_at)}</span>
+        </div>
+      </div>
+
+      <div class="draft-actions">
+        <button class="btn-continue" onclick="continueDraft(${draft.id})">
+          <span>Продовжити</span>
+        </button>
+        <button class="btn-delete" onclick="deleteDraft(${draft.id})">
+          <span>Видалити</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="drafts-grid">
+      ${draftsHTML}
+    </div>
+  `;
+
+  // Показываем элементы пагинации
+  document.getElementById('pagination-controls').style.display = 'block';
+}
+
+function updatePaginationInfo(pagination) {
+  currentPage = pagination.page;
+  currentPerPage = pagination.per_page;
+  totalPages = pagination.pages;
+  totalItems = pagination.total;
+
+  // Обновляем текст информации о пагинации
+  const startItem = (currentPage - 1) * currentPerPage + 1;
+  const endItem = Math.min(currentPage * currentPerPage, totalItems);
+
+  document.getElementById('pagination-text').textContent =
+    `Показано ${startItem}-${endItem} з ${totalItems} чернеток`;
+}
+
+function displayPagination(pagination) {
+  const pageNumbersContainer = document.getElementById('page-numbers');
+  const prevButton = document.getElementById('prev-page');
+  const nextButton = document.getElementById('next-page');
+
+  // Обновляем состояние кнопок
+  prevButton.disabled = !pagination.has_prev;
+  nextButton.disabled = !pagination.has_next;
+
+  // Генерируем номера страниц
+  let pageNumbersHTML = '';
+
+  if (totalPages <= 7) {
+    // Если страниц мало, показываем все
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbersHTML += createPageNumber(i, i === currentPage);
+    }
+  } else {
+    // Если страниц много, показываем с многоточием
+    if (currentPage <= 4) {
+      // В начале
+      for (let i = 1; i <= 5; i++) {
+        pageNumbersHTML += createPageNumber(i, i === currentPage);
+      }
+      pageNumbersHTML += createEllipsis();
+      pageNumbersHTML += createPageNumber(totalPages, false);
+    } else if (currentPage >= totalPages - 3) {
+      // В конце
+      pageNumbersHTML += createPageNumber(1, false);
+      pageNumbersHTML += createEllipsis();
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pageNumbersHTML += createPageNumber(i, i === currentPage);
+      }
+    } else {
+      // В середине
+      pageNumbersHTML += createPageNumber(1, false);
+      pageNumbersHTML += createEllipsis();
+      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+        pageNumbersHTML += createPageNumber(i, i === currentPage);
+      }
+      pageNumbersHTML += createEllipsis();
+      pageNumbersHTML += createPageNumber(totalPages, false);
+    }
+  }
+
+  pageNumbersContainer.innerHTML = pageNumbersHTML;
+}
+
+function createPageNumber(pageNum, isActive) {
+  return `<span class="page-number ${isActive ? 'active' : ''}" onclick="goToPage(${pageNum})">${pageNum}</span>`;
+}
+
+function createEllipsis() {
+  return `<span class="page-number ellipsis">...</span>`;
+}
+
+function goToPage(page) {
+  if (page === 'prev') {
+    page = currentPage - 1;
+  } else if (page === 'next') {
+    page = currentPage + 1;
+  }
+
+  if (page >= 1 && page <= totalPages && page !== currentPage) {
+    currentPage = page;
+    updateURL();
+    loadDrafts();
+  }
+}
+
+function changePerPage() {
+  const newPerPage = parseInt(document.getElementById('per-page').value);
+  if (newPerPage !== currentPerPage) {
+    currentPerPage = newPerPage;
+    currentPage = 1; // Сбрасываем на первую страницу
+    updateURL();
+    loadDrafts();
+  }
+}
+
+function updateURL() {
+  const url = new URL(window.location);
+  url.searchParams.set('page', currentPage);
+  url.searchParams.set('per_page', currentPerPage);
+  window.history.pushState({}, '', url);
+}
+
+async function continueDraft(draftId) {
+  try {
+    const response = await fetch(`/drafts/api/${draftId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch draft');
+    }
+
+    const draft = await response.json();
+
+    // Перенаправляем на соответствующую страницу с параметром draft
+    const url = new URL(draft.current_route, window.location.origin);
+    url.searchParams.set('draft', draftId);
+    window.location.href = url.toString();
+
+  } catch (error) {
+    console.error('Error continuing draft:', error);
+    showError('Помилка завантаження чернетки');
+  }
+}
+
+async function deleteDraft(draftId) {
+  if (!confirm('Ви впевнені, що хочете видалити цю чернетку?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/drafts/api/${draftId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete draft');
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Перезагружаем черновики
+      loadDrafts();
+    } else {
+      showError('Помилка видалення чернетки');
+    }
+
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    showError('Помилка видалення чернетки');
+  }
+}
+
+function getMethodDisplayName(methodType) {
+  const methodNames = {
+    'hierarchy': 'Метод Аналізу Ієрархій',
+    'binary': 'Метод Бінарних Відношень',
+    'experts': 'Метод Експертних Оцінок',
+    'laplasa': 'Критерій Лапласа',
+    'maximin': 'Критерій Максиміна',
+    'savage': 'Критерій Севіджа',
+    'hurwitz': 'Критерій Гурвіца'
+  };
+
+  return methodNames[methodType] || methodType;
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('uk-UA', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showError(message) {
+  const container = document.getElementById('drafts-content');
+  container.innerHTML = `
+    <div class="error-state">
+      <div class="error-icon">❌</div>
+      <div class="error-text">${message}</div>
+      <button onclick="loadDrafts()" class="btn-retry">Спробувати знову</button>
+    </div>
+  `;
+}
+</script>
+{% endblock %}

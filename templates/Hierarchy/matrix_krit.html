@@ -570,6 +570,21 @@
   <div class="matrix-container">
     <form action="{{ url_for('hierarchy.matrix_alt') }}" method="POST">
 
+      <!-- Скрытые поля для сохранения данных черновика -->
+      <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
+      <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+      <input type="hidden" name="hierarchy_task" value="{{ task if task else '' }}">
+
+      <!-- Сохраняем имена альтернатив -->
+      {% for i in range(name_alternatives | length) %}
+      <input type="hidden" name="name_alternatives" value="{{ name_alternatives[i] }}" data-index="{{ i }}">
+      {% endfor %}
+
+      <!-- Сохраняем имена критериев -->
+      {% for i in range(name_criteria | length) %}
+      <input type="hidden" name="name_criteria" value="{{ name_criteria[i] }}" data-index="{{ i }}">
+      {% endfor %}
+
       <div class="matrix-title">Матриця парних порівнянь для критеріїв</div>
 
       <div class="help-card">
@@ -587,7 +602,7 @@
         </div>
       </div>
 
-      <div class="matrix-table-wrapper">
+      <div class="matrix-table-wrapper" data-matrix="criteria">
         <table class="matrix-table">
           <thead>
             <tr>

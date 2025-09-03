@@ -495,6 +495,22 @@
   <div class="results-form">
     <form method="POST">
 
+      <!-- Скрытые поля для сохранения данных в черновик -->
+      <input type="hidden" name="laplasa_task" value="{{ laplasa_task or '' }}">
+      <input type="hidden" name="num_alt" value="{{ name_alternatives | length }}">
+      <input type="hidden" name="num_conditions" value="{{ name_conditions | length }}">
+      {% for name in name_alternatives %}
+      <input type="hidden" name="name_alternatives" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+      {% for name in name_conditions %}
+      <input type="hidden" name="name_conditions" value="{{ name if name and name != 'None' else '' }}" data-index="{{ loop.index0 }}">
+      {% endfor %}
+      {% for i in range(name_alternatives | length) %}
+        {% for j in range(name_conditions | length) %}
+        <input type="hidden" name="cost_matrix" value="{{ cost_matrix[i][j] if cost_matrix and cost_matrix[i] and cost_matrix[i][j] is defined else '0' }}">
+        {% endfor %}
+      {% endfor %}
+
       <div class="matrix-title">Платіжна матриця</div>
 
       <div class="matrix-container">

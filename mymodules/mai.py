@@ -283,19 +283,19 @@ def generate_hierarchy_tree(
 ):
     dot = Digraph()
 
-    # Цвета из CSS-переменных
+    # Кольори з CSS-змінних
     color_background = "#0B0C10"
     color_text = "#EDF5E1"
     color_accent = "#66FCF1"
     color_accent_dark = "#05386B"
     color_link = "#8EE4AF"
 
-    # Общие настройки
+    # Загальні налаштування
     dot.attr(bgcolor=color_background)  # фон графа
     dot.attr("node", fontcolor=color_background, fontname="Helvetica", fontsize="12")
     dot.attr("edge", color=color_accent_dark, penwidth="1.2", arrowhead="vee")
 
-    # Критерии
+    # Критерії
     for criteria_name, priority in zip(name_criteria_tree, priority_vector):
         label = f"{criteria_name}\n({priority:.3f})"
         dot.node(
@@ -306,7 +306,7 @@ def generate_hierarchy_tree(
             fillcolor=color_accent,
         )
 
-    # Альтернативы
+    # Альтернативи
     for alternative_name, global_priority in zip(name_alternatives_tree, global_prior):
         label = f"{alternative_name}\n({global_priority:.3f})"
         dot.node(
