@@ -7,12 +7,15 @@ from flask import (
     url_for,
     flash,
     current_app,
+    Response,
 )
 from mymodules.mai import *
 from models import *
-from flask_login import current_user
+from flask_login import current_user, login_required
 from mymodules.methods import *
 from mymodules.gpt_response import *
+from mymodules.excel_export import HierarchyExcelExporter
+from datetime import datetime
 
 hierarchy_bp = Blueprint("hierarchy", __name__, url_prefix="/hierarchy")
 
@@ -688,6 +691,15 @@ def result(method_id=None):
         name_criteria, name_alternatives, normalized_eigenvector, global_prior
     )
 
+    # Find result_id for this analysis
+    result_id = None
+    if current_user.is_authenticated:
+        result = Result.query.filter_by(
+            method_id=method_id, method_name="Hierarchy", user_id=current_user.get_id()
+        ).first()
+        if result:
+            result_id = result.id
+
     context = {
         "title": "Результат",
         "num_alternatives": num_alternatives,
@@ -720,6 +732,7 @@ def result(method_id=None):
         "global_prior_plot": generate_plot(global_prior, name_alternatives),
         "name": current_user.get_name() if current_user.is_authenticated else None,
         "method_id": method_id,
+        "result_id": result_id,
         "task": hierarchy_task if hierarchy_task else None,
         # 'gpt_response': gpt_response
     }
@@ -740,3 +753,161 @@ def result(method_id=None):
     session["matr_alt"] = 1
 
     return render_template("Hierarchy/result.html", **context)
+
+
+@hierarchy_bp.route("/export/excel/<int:result_id>")
+@login_required
+def export_excel(result_id):
+    """Export hierarchy analysis results to Excel file"""
+    try:
+        current_app.logger.info(f"Excel export requested for result_id: {result_id}")
+        current_app.logger.info(
+            f"Current user: {current_user.get_id() if current_user.is_authenticated else 'Not authenticated'}"
+        )
+
+        # Get the result record
+        result = Result.query.get(result_id)
+        current_app.logger.info(f"Found result: {result}")
+        if not result:
+            current_app.logger.error(f"No result found for result_id: {result_id}")
+            return Response(
+                "Analysis result not found", status=404, mimetype="text/plain"
+            )
+
+        # Check if user has access to this result
+        if (
+            result.user_id != current_user.get_id()
+            and current_user.get_name() != "admin"
+        ):
+            return Response("Access denied", status=403, mimetype="text/plain")
+
+        # Get analysis data from database
+        method_id = result.method_id
+
+        # Get basic data
+        criteria_record = HierarchyCriteria.query.get(method_id)
+        alternatives_record = HierarchyAlternatives.query.get(method_id)
+        task_record = HierarchyTask.query.get(method_id)
+        criteria_matrix_record = HierarchyCriteriaMatrix.query.get(method_id)
+        alternatives_matrix_record = HierarchyAlternativesMatrix.query.get(method_id)
+
+        current_app.logger.info(f"Data records found:")
+        current_app.logger.info(f"  criteria_record: {criteria_record is not None}")
+        current_app.logger.info(
+            f"  alternatives_record: {alternatives_record is not None}"
+        )
+        current_app.logger.info(f"  task_record: {task_record is not None}")
+        current_app.logger.info(
+            f"  criteria_matrix_record: {criteria_matrix_record is not None}"
+        )
+        current_app.logger.info(
+            f"  alternatives_matrix_record: {alternatives_matrix_record is not None}"
+        )
+
+        if not all(
+            [
+                criteria_record,
+                alternatives_record,
+                criteria_matrix_record,
+                alternatives_matrix_record,
+            ]
+        ):
+            current_app.logger.error(
+                f"Incomplete analysis data for method_id: {method_id}"
+            )
+            return Response(
+                "Incomplete analysis data", status=400, mimetype="text/plain"
+            )
+
+        # Prepare data for Excel export
+        current_app.logger.info(f"Preparing analysis data:")
+        current_app.logger.info(f"  method_id: {method_id}")
+        current_app.logger.info(
+            f"  task_description: {task_record.task if task_record else None}"
+        )
+        current_app.logger.info(f"  criteria_names: {criteria_record.names}")
+        current_app.logger.info(f"  alternatives_names: {alternatives_record.names}")
+        current_app.logger.info(
+            f"  criteria_weights: {criteria_matrix_record.normalized_eigenvector}"
+        )
+        current_app.logger.info(
+            f"  global_priorities: {alternatives_matrix_record.global_prior}"
+        )
+        current_app.logger.info(
+            f"  criteria_matrix: {criteria_matrix_record.comparison_matrix}"
+        )
+        current_app.logger.info(
+            f"  alternatives_matrices: {alternatives_matrix_record.comparison_matrix}"
+        )
+        current_app.logger.info(
+            f"  criteria_eigenvector: {criteria_matrix_record.components_eigenvector}"
+        )
+        current_app.logger.info(
+            f"  alternatives_eigenvectors: {alternatives_matrix_record.components_eigenvector_alt}"
+        )
+        current_app.logger.info(
+            f"  criteria_consistency: ci={criteria_matrix_record.index_consistency[0]}, cr={criteria_matrix_record.relation_consistency[0]}"
+        )
+        current_app.logger.info(
+            f"  alternatives_consistency: ci={alternatives_matrix_record.index_consistency_alt}, cr={alternatives_matrix_record.relation_consistency_alt}"
+        )
+
+        # Fix alternatives_consistency data format
+        fixed_ci = [
+            item[0] if isinstance(item, list) and len(item) > 0 else item
+            for item in alternatives_matrix_record.index_consistency_alt
+        ]
+        fixed_cr = [
+            item[0] if isinstance(item, list) and len(item) > 0 else item
+            for item in alternatives_matrix_record.relation_consistency_alt
+        ]
+        current_app.logger.info(
+            f"  Fixed alternatives_consistency: ci={fixed_ci}, cr={fixed_cr}"
+        )
+
+        analysis_data = {
+            "method_id": method_id,
+            "task_description": task_record.task if task_record else None,
+            "criteria_names": criteria_record.names,
+            "alternatives_names": alternatives_record.names,
+            "criteria_weights": criteria_matrix_record.normalized_eigenvector,
+            "global_priorities": alternatives_matrix_record.global_prior,
+            "criteria_matrix": criteria_matrix_record.comparison_matrix,
+            "alternatives_matrices": alternatives_matrix_record.comparison_matrix,
+            "criteria_eigenvector": criteria_matrix_record.components_eigenvector,
+            "alternatives_eigenvectors": alternatives_matrix_record.components_eigenvector_alt,
+            "criteria_consistency": {
+                "ci": criteria_matrix_record.index_consistency[0],
+                "cr": criteria_matrix_record.relation_consistency[0],
+            },
+            "alternatives_consistency": {
+                "ci": fixed_ci,
+                "cr": fixed_cr,
+            },
+        }
+
+        # Generate Excel file
+        exporter = HierarchyExcelExporter()
+        workbook = exporter.generate_hierarchy_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Create filename with date and task ID
+        filename = (
+            f"AHP_Analysis_Task{method_id}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+        )
+
+        # Return Excel file as download
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Length": str(len(excel_bytes)),
+            },
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Excel export error: {str(e)}")
+        return Response(
+            f"Error generating Excel file: {str(e)}", status=500, mimetype="text/plain"
+        )
