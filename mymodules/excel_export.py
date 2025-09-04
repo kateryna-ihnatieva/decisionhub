@@ -1,10 +1,13 @@
 import io
 from datetime import datetime
+import os
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.chart import BarChart, Reference
+from openpyxl.drawing.image import Image
+from mymodules.mai import generate_hierarchy_tree
 
 
 class HierarchyExcelExporter:
@@ -26,9 +29,11 @@ class HierarchyExcelExporter:
     def set_header_style(self, cell, text, color="366092"):
         """Set header cell style"""
         cell.value = text
-        cell.font = Font(name="Arial", size=14, bold=True, color="FFFFFF")
+        cell.font = Font(name="Arial", size=16, bold=True, color="FFFFFF")
         cell.fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -39,9 +44,11 @@ class HierarchyExcelExporter:
     def set_subheader_style(self, cell, text, color="4F81BD"):
         """Set subheader cell style"""
         cell.value = text
-        cell.font = Font(name="Arial", size=12, bold=True, color="FFFFFF")
+        cell.font = Font(name="Arial", size=13, bold=True, color="FFFFFF")
         cell.fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -52,8 +59,10 @@ class HierarchyExcelExporter:
     def set_data_style(self, cell, value, bold=False):
         """Set data cell style"""
         cell.value = value
-        cell.font = Font(name="Arial", size=10, bold=bold)
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.font = Font(name="Arial", size=11, bold=bold)
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -76,8 +85,10 @@ class HierarchyExcelExporter:
                 cell.value = 0.0
         else:
             cell.value = value
-        cell.font = Font(name="Arial", size=10, bold=bold)
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.font = Font(name="Arial", size=11, bold=bold)
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -92,8 +103,10 @@ class HierarchyExcelExporter:
         else:
             cell.value = 0.0
         cell.number_format = f"0.{'0' * decimal_places}%"
-        cell.font = Font(name="Arial", size=10, bold=bold)
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.font = Font(name="Arial", size=11, bold=bold)
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -118,17 +131,27 @@ class HierarchyExcelExporter:
                 return 0.0
 
     def auto_adjust_columns(self, worksheet):
-        """Auto-adjust column widths"""
+        """Auto-adjust column widths with better formatting for wrapped text"""
         for column in worksheet.columns:
             max_length = 0
             column_letter = get_column_letter(column[0].column)
             for cell in column:
                 try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
+                    if cell.value:
+                        # Count characters, considering text wrapping
+                        cell_length = len(str(cell.value))
+                        if cell.alignment and cell.alignment.wrap_text:
+                            # For wrapped text, consider line breaks
+                            lines = str(cell.value).count("\n") + 1
+                            cell_length = max(
+                                len(line) for line in str(cell.value).split("\n")
+                            )
+                        if cell_length > max_length:
+                            max_length = cell_length
                 except (ValueError, TypeError):
                     pass
-            adjusted_width = min(max_length + 2, 50)
+            # Better width calculation for wrapped text
+            adjusted_width = min(max(max_length + 2, 15), 60)  # Min 15, max 60
             worksheet.column_dimensions[column_letter].width = adjusted_width
 
     def create_general_info_sheet(self, task_description, method_id, created_date=None):
@@ -180,17 +203,15 @@ class HierarchyExcelExporter:
 
         self.set_subheader_style(ws["A3"], "Критерій", "4F81BD")
         self.set_subheader_style(ws["B3"], "Вага", "4F81BD")
-        self.set_subheader_style(ws["C3"], "Ранг", "4F81BD")
-        self.set_subheader_style(ws["D3"], "Відсоток", "4F81BD")
+        self.set_subheader_style(ws["C3"], "Відсоток", "4F81BD")
 
         # Data
         for i, (name, weight) in enumerate(zip(criteria_names, criteria_weights)):
             row = i + 4
             self.set_data_style(ws.cell(row=row, column=1), name)
             self.set_number_style(ws.cell(row=row, column=2), weight)
-            self.set_data_style(ws.cell(row=row, column=3), i + 1)
-            self.set_number_style(ws.cell(row=row, column=4), weight * 100, 2)
-            ws.cell(row=row, column=4).number_format = "0.00%"
+            self.set_number_style(ws.cell(row=row, column=3), weight * 100, 2)
+            ws.cell(row=row, column=3).number_format = "0.00%"
 
         self.auto_adjust_columns(ws)
 
@@ -204,8 +225,7 @@ class HierarchyExcelExporter:
 
         self.set_subheader_style(ws["A3"], "Альтернатива", "4F81BD")
         self.set_subheader_style(ws["B3"], "Глобальний пріоритет", "4F81BD")
-        self.set_subheader_style(ws["C3"], "Ранг", "4F81BD")
-        self.set_subheader_style(ws["D3"], "Відсоток", "4F81BD")
+        self.set_subheader_style(ws["C3"], "Відсоток", "4F81BD")
 
         # Data
         for i, (name, priority) in enumerate(
@@ -214,9 +234,8 @@ class HierarchyExcelExporter:
             row = i + 4
             self.set_data_style(ws.cell(row=row, column=1), name)
             self.set_number_style(ws.cell(row=row, column=2), priority)
-            self.set_data_style(ws.cell(row=row, column=3), i + 1)
-            self.set_number_style(ws.cell(row=row, column=4), priority * 100, 2)
-            ws.cell(row=row, column=4).number_format = "0.00%"
+            self.set_number_style(ws.cell(row=row, column=3), priority * 100, 2)
+            ws.cell(row=row, column=3).number_format = "0.00%"
 
         self.auto_adjust_columns(ws)
 
@@ -590,9 +609,6 @@ class HierarchyExcelExporter:
             "Глобальний пріоритет",
             "4F81BD",
         )
-        self.set_subheader_style(
-            ws.cell(row=3, column=len(criteria_names) + 3), "Ранг", "4F81BD"
-        )
 
         # Criteria weights row
         self.set_subheader_style(ws.cell(row=4, column=1), "Ваги критеріїв", "4F81BD")
@@ -614,7 +630,6 @@ class HierarchyExcelExporter:
                 global_priorities[i],
                 bold=True,
             )
-            self.set_data_style(ws.cell(row=row, column=len(criteria_names) + 3), i + 1)
 
         # Sum row for global priorities
         sum_row = len(alternatives_names) + 5
@@ -628,7 +643,6 @@ class HierarchyExcelExporter:
         self.set_number_style(
             ws.cell(row=sum_row, column=len(criteria_names) + 2), global_sum, bold=True
         )
-        self.set_data_style(ws.cell(row=sum_row, column=len(criteria_names) + 3), "")
 
         self.auto_adjust_columns(ws)
 
@@ -677,13 +691,19 @@ class HierarchyExcelExporter:
 
         self.auto_adjust_columns(ws)
 
-    def create_chart_sheet(self, alternatives_names, global_priorities):
-        """Create chart sheet with visualization"""
+    def create_chart_sheet(
+        self,
+        alternatives_names,
+        global_priorities,
+        criteria_names=None,
+        criteria_weights=None,
+    ):
+        """Create chart sheet with visualization and hierarchical representation"""
         ws = self.add_worksheet("Графіки")
 
         # Headers
         self.set_header_style(ws["A1"], "Візуалізація результатів", "366092")
-        ws.merge_cells("A1:D1")
+        ws.merge_cells("A1:H1")
 
         # Prepare data for chart
         ws["A3"] = "Альтернатива"
@@ -697,9 +717,9 @@ class HierarchyExcelExporter:
 
         # Create bar chart
         chart = BarChart()
-        chart.title = "Global Priorities Comparison"
-        chart.x_axis.title = "Alternatives"
-        chart.y_axis.title = "Priority"
+        chart.title = "Порівняння глобальних пріоритетів"
+        chart.x_axis.title = "Альтернативи"
+        chart.y_axis.title = "Пріоритет"
 
         data = Reference(ws, min_col=2, min_row=3, max_row=len(alternatives_names) + 3)
         categories = Reference(
@@ -712,7 +732,260 @@ class HierarchyExcelExporter:
         # Position chart
         ws.add_chart(chart, "E3")
 
+        # Add hierarchical representation as image
+        if criteria_names and criteria_weights:
+            self.create_hierarchy_image(
+                ws,
+                criteria_names,
+                alternatives_names,
+                criteria_weights,
+                global_priorities,
+            )
+
         self.auto_adjust_columns(ws)
+
+    def create_hierarchy_image(
+        self,
+        ws,
+        criteria_names,
+        alternatives_names,
+        criteria_weights,
+        global_priorities,
+    ):
+        """Create hierarchical representation using existing generate_hierarchy_tree function"""
+        try:
+            # Generate hierarchy tree using existing function
+            generate_hierarchy_tree(
+                criteria_names, alternatives_names, criteria_weights, global_priorities
+            )
+
+            # The function saves to static/img/hierarchy_tree.png, so we need to read it
+            source_path = "static/img/hierarchy_tree.png"
+            if os.path.exists(source_path):
+                # Read the image file into BytesIO
+                with open(source_path, "rb") as img_file:
+                    img_data = io.BytesIO(img_file.read())
+
+                # Add image to Excel with proper aspect ratio
+                img = Image(img_data)
+
+                # Calculate proper dimensions maintaining aspect ratio
+                # Original image is typically wider, so we set a good width and calculate height
+                target_width = 800  # Wider for better visibility
+                aspect_ratio = img.height / img.width
+                target_height = int(target_width * aspect_ratio)
+
+                # Ensure reasonable bounds
+                if target_height > 600:
+                    target_height = 600
+                    target_width = int(target_height / aspect_ratio)
+
+                img.width = target_width
+                img.height = target_height
+
+                # Position image below the chart with more spacing
+                ws.add_image(img, "A20")
+            else:
+                print(f"Hierarchy tree image not found at {source_path}")
+                # Fallback to text representation
+                self.create_hierarchical_diagram(
+                    ws,
+                    criteria_names,
+                    alternatives_names,
+                    criteria_weights,
+                    global_priorities,
+                )
+
+        except Exception as e:
+            print(f"Error creating hierarchy image: {e}")
+            # Fallback to text representation
+            self.create_hierarchical_diagram(
+                ws,
+                criteria_names,
+                alternatives_names,
+                criteria_weights,
+                global_priorities,
+            )
+
+    def create_hierarchical_diagram(
+        self,
+        ws,
+        criteria_names,
+        alternatives_names,
+        criteria_weights,
+        global_priorities,
+    ):
+        """Create hierarchical representation diagram"""
+        start_row = len(alternatives_names) + 8
+
+        # Title for hierarchical representation
+        self.set_subheader_style(
+            ws.cell(row=start_row, column=1), "Ієрархічне представлення AHP", "4F81BD"
+        )
+        ws.merge_cells(f"A{start_row}:H{start_row}")
+
+        # Level 1: Goal
+        goal_row = start_row + 2
+        ws.cell(row=goal_row, column=1).value = "Рівень 1: Мета"
+        ws.cell(row=goal_row, column=1).font = Font(
+            name="Arial", size=12, bold=True, color="FFFFFF"
+        )
+        ws.cell(row=goal_row, column=1).fill = PatternFill(
+            start_color="366092", end_color="366092", fill_type="solid"
+        )
+        ws.cell(row=goal_row, column=1).alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        ws.merge_cells(f"A{goal_row}:H{goal_row}")
+
+        ws.cell(row=goal_row + 1, column=1).value = "Вибір найкращої альтернативи"
+        ws.cell(row=goal_row + 1, column=1).font = Font(
+            name="Arial", size=12, bold=True
+        )
+        ws.cell(row=goal_row + 1, column=1).alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        ws.merge_cells(f"A{goal_row + 1}:H{goal_row + 1}")
+
+        # Level 2: Criteria
+        criteria_start_row = goal_row + 3
+        ws.cell(row=criteria_start_row, column=1).value = "Рівень 2: Критерії"
+        ws.cell(row=criteria_start_row, column=1).font = Font(
+            name="Arial", size=12, bold=True, color="FFFFFF"
+        )
+        ws.cell(row=criteria_start_row, column=1).fill = PatternFill(
+            start_color="4F81BD", end_color="4F81BD", fill_type="solid"
+        )
+        ws.cell(row=criteria_start_row, column=1).alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        ws.merge_cells(f"A{criteria_start_row}:H{criteria_start_row}")
+
+        # Criteria with weights
+        for i, (criteria, weight) in enumerate(zip(criteria_names, criteria_weights)):
+            row = criteria_start_row + 1 + i
+            ws.cell(row=row, column=1).value = f"• {criteria}"
+            ws.cell(row=row, column=1).font = Font(name="Arial", size=12, bold=True)
+            ws.cell(row=row, column=1).alignment = Alignment(
+                horizontal="left", vertical="center", wrap_text=True
+            )
+            ws.cell(row=row, column=2).value = f"({weight:.1%})"
+            ws.cell(row=row, column=2).font = Font(name="Arial", size=12)
+            ws.cell(row=row, column=2).number_format = "0.0%"
+            ws.cell(row=row, column=2).alignment = Alignment(
+                horizontal="center", vertical="center"
+            )
+
+        # Level 3: Alternatives
+        alt_start_row = criteria_start_row + len(criteria_names) + 2
+        ws.cell(row=alt_start_row, column=1).value = "Рівень 3: Альтернативи"
+        ws.cell(row=alt_start_row, column=1).font = Font(
+            name="Arial", size=12, bold=True, color="FFFFFF"
+        )
+        ws.cell(row=alt_start_row, column=1).fill = PatternFill(
+            start_color="70AD47", end_color="70AD47", fill_type="solid"
+        )
+        ws.cell(row=alt_start_row, column=1).alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        ws.merge_cells(f"A{alt_start_row}:H{alt_start_row}")
+
+        # Alternatives with global priorities
+        for i, (alternative, priority) in enumerate(
+            zip(alternatives_names, global_priorities)
+        ):
+            row = alt_start_row + 1 + i
+            ws.cell(row=row, column=1).value = f"• {alternative}"
+            ws.cell(row=row, column=1).font = Font(name="Arial", size=12, bold=True)
+            ws.cell(row=row, column=1).alignment = Alignment(
+                horizontal="left", vertical="center", wrap_text=True
+            )
+            ws.cell(row=row, column=2).value = f"({priority:.1%})"
+            ws.cell(row=row, column=2).font = Font(name="Arial", size=12)
+            ws.cell(row=row, column=2).number_format = "0.0%"
+            ws.cell(row=row, column=2).alignment = Alignment(
+                horizontal="center", vertical="center"
+            )
+
+        # Add visual hierarchy with arrows
+        arrow_start_row = alt_start_row + len(alternatives_names) + 3
+        ws.cell(row=arrow_start_row, column=1).value = "↓"
+        ws.cell(row=arrow_start_row, column=1).font = Font(
+            name="Arial", size=14, bold=True
+        )
+        ws.cell(row=arrow_start_row, column=1).alignment = Alignment(
+            horizontal="center", vertical="center"
+        )
+
+        ws.cell(row=arrow_start_row + 1, column=1).value = "↓"
+        ws.cell(row=arrow_start_row + 1, column=1).font = Font(
+            name="Arial", size=14, bold=True
+        )
+        ws.cell(row=arrow_start_row + 1, column=1).alignment = Alignment(
+            horizontal="center", vertical="center"
+        )
+
+        # Add summary table
+        summary_start_row = arrow_start_row + 4
+        ws.cell(row=summary_start_row, column=1).value = (
+            "Підсумкова таблиця пріоритетів"
+        )
+        ws.cell(row=summary_start_row, column=1).font = Font(
+            name="Arial", size=14, bold=True
+        )
+        ws.cell(row=summary_start_row, column=1).fill = PatternFill(
+            start_color="FFC000", end_color="FFC000", fill_type="solid"
+        )
+        ws.cell(row=summary_start_row, column=1).alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        ws.merge_cells(f"A{summary_start_row}:H{summary_start_row}")
+
+        # Table headers
+        headers = ["Альтернатива", "Глобальний пріоритет", "Відсоток"]
+        for i, header in enumerate(headers):
+            cell = ws.cell(row=summary_start_row + 2, column=i + 1)
+            cell.value = header
+            cell.font = Font(name="Arial", size=12, bold=True)
+            cell.fill = PatternFill(
+                start_color="D9E1F2", end_color="D9E1F2", fill_type="solid"
+            )
+            cell.alignment = Alignment(
+                horizontal="center", vertical="center", wrap_text=True
+            )
+            cell.border = Border(
+                left=Side(style="thin"),
+                right=Side(style="thin"),
+                top=Side(style="thin"),
+                bottom=Side(style="thin"),
+            )
+
+        # Table data
+        for i, (alternative, priority) in enumerate(
+            zip(alternatives_names, global_priorities)
+        ):
+            row = summary_start_row + 3 + i
+            ws.cell(row=row, column=1).value = alternative
+            ws.cell(row=row, column=2).value = priority
+            ws.cell(row=row, column=3).value = priority * 100
+
+            # Format cells
+            for col in range(3):
+                cell = ws.cell(row=row, column=col + 1)
+                cell.font = Font(name="Arial", size=12)
+                cell.alignment = Alignment(
+                    horizontal="center", vertical="center", wrap_text=True
+                )
+                cell.border = Border(
+                    left=Side(style="thin"),
+                    right=Side(style="thin"),
+                    top=Side(style="thin"),
+                    bottom=Side(style="thin"),
+                )
+
+            # Format numbers
+            ws.cell(row=row, column=2).number_format = "0.000"
+            ws.cell(row=row, column=3).number_format = "0.0%"
 
     def generate_hierarchy_analysis_excel(self, analysis_data):
         """Generate complete Excel file for hierarchy analysis
@@ -766,7 +1039,9 @@ class HierarchyExcelExporter:
         )
 
         # 5. Charts and visualization (appendix)
-        self.create_chart_sheet(alternatives_names, global_priorities)
+        self.create_chart_sheet(
+            alternatives_names, global_priorities, criteria_names, criteria_weights
+        )
 
         return self.workbook
 
