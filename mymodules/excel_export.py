@@ -85,6 +85,22 @@ class HierarchyExcelExporter:
             bottom=Side(style="thin"),
         )
 
+    def set_percentage_style(self, cell, value, decimal_places=3, bold=False):
+        """Set percentage cell style - values are already in percentage format"""
+        if isinstance(value, (int, float)):
+            cell.value = value  # Values are already in percentage format from database
+        else:
+            cell.value = 0.0
+        cell.number_format = f"0.{'0' * decimal_places}%"
+        cell.font = Font(name="Arial", size=10, bold=bold)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = Border(
+            left=Side(style="thin"),
+            right=Side(style="thin"),
+            top=Side(style="thin"),
+            bottom=Side(style="thin"),
+        )
+
     def convert_fraction_to_float(self, value):
         """Convert string fraction to float"""
         if isinstance(value, (int, float)):
@@ -241,17 +257,13 @@ class HierarchyExcelExporter:
                 normalized_eigenvector[i],
             )
 
-        # Sum row
+        # Sum row (only for last two columns)
         sum_row = len(criteria_names) + 4
         self.set_subheader_style(ws.cell(row=sum_row, column=1), "Сума", "4F81BD")
+        # Empty cells for matrix columns
         for j in range(len(criteria_names)):
             col = j + 2
-            # Calculate sum of column
-            col_sum = sum(
-                self.convert_fraction_to_float(matrix_data[i][j])
-                for i in range(len(criteria_names))
-            )
-            self.set_number_style(ws.cell(row=sum_row, column=col), col_sum)
+            self.set_data_style(ws.cell(row=sum_row, column=col), "")
         # Sum of eigenvector
         eigenvector_sum = sum(eigenvector)
         self.set_number_style(
@@ -311,6 +323,67 @@ class HierarchyExcelExporter:
             ws.cell(row=product_row, column=len(criteria_names) + 2), l_max
         )
 
+        # Consistency indicators
+        consistency_start_row = product_row + 3
+        self.set_header_style(
+            ws.cell(row=consistency_start_row, column=1),
+            "Показники узгодженості",
+            "366092",
+        )
+        ws.merge_cells(f"A{consistency_start_row}:D{consistency_start_row}")
+
+        # Calculate consistency
+        n = len(criteria_names)
+        ci = (l_max - n) / (n - 1) if n > 1 else 0
+        ri_values = {
+            1: 0,
+            2: 0,
+            3: 0.58,
+            4: 0.9,
+            5: 1.12,
+            6: 1.24,
+            7: 1.32,
+            8: 1.41,
+            9: 1.45,
+            10: 1.49,
+        }
+        ri = ri_values.get(n, 1.49)
+        cr = ci / ri if ri > 0 else 0
+
+        self.set_subheader_style(
+            ws.cell(row=consistency_start_row + 2, column=1),
+            "Індекс узгодженості (ІУ)",
+            "4F81BD",
+        )
+        self.set_number_style(ws.cell(row=consistency_start_row + 2, column=2), ci)
+
+        self.set_subheader_style(
+            ws.cell(row=consistency_start_row + 3, column=1),
+            "Відношення узгодженості (ВУ)",
+            "4F81BD",
+        )
+        self.set_percentage_style(ws.cell(row=consistency_start_row + 3, column=2), cr)
+
+        self.set_subheader_style(
+            ws.cell(row=consistency_start_row + 4, column=1), "Статус", "4F81BD"
+        )
+        status = "Прийнятно" if cr <= 0.1 else "Потребує перегляду"
+        self.set_data_style(ws.cell(row=consistency_start_row + 4, column=2), status)
+
+        # Ranking
+        ranking_start_row = consistency_start_row + 6
+        self.set_header_style(
+            ws.cell(row=ranking_start_row, column=1), "Ранжування критеріїв", "366092"
+        )
+        ws.merge_cells(f"A{ranking_start_row}:D{ranking_start_row}")
+
+        # Create ranking text
+        ranking_pairs = list(zip(criteria_names, normalized_eigenvector))
+        ranking_pairs.sort(key=lambda x: x[1], reverse=True)
+        ranking_text = " > ".join([name for name, _ in ranking_pairs])
+        self.set_data_style(ws.cell(row=ranking_start_row + 2, column=1), ranking_text)
+        ws.merge_cells(f"A{ranking_start_row + 2}:D{ranking_start_row + 2}")
+
         self.auto_adjust_columns(ws)
 
     def create_alternatives_matrix_sheet(
@@ -361,17 +434,13 @@ class HierarchyExcelExporter:
                 normalized_eigenvector[i],
             )
 
-        # Sum row
+        # Sum row (only for last two columns)
         sum_row = len(alternatives_names) + 4
-        self.set_subheader_style(ws.cell(row=sum_row, column=1), "Sum", "4F81BD")
+        self.set_subheader_style(ws.cell(row=sum_row, column=1), "Сума", "4F81BD")
+        # Empty cells for matrix columns
         for j in range(len(alternatives_names)):
             col = j + 2
-            # Calculate sum of column
-            col_sum = sum(
-                self.convert_fraction_to_float(matrix_data[i][j])
-                for i in range(len(alternatives_names))
-            )
-            self.set_number_style(ws.cell(row=sum_row, column=col), col_sum)
+            self.set_data_style(ws.cell(row=sum_row, column=col), "")
         # Sum of eigenvector
         eigenvector_sum = sum(eigenvector)
         self.set_number_style(
@@ -431,6 +500,69 @@ class HierarchyExcelExporter:
             ws.cell(row=product_row, column=len(alternatives_names) + 2), l_max
         )
 
+        # Consistency indicators
+        consistency_start_row = product_row + 3
+        self.set_header_style(
+            ws.cell(row=consistency_start_row, column=1),
+            "Показники узгодженості",
+            "366092",
+        )
+        ws.merge_cells(f"A{consistency_start_row}:D{consistency_start_row}")
+
+        # Calculate consistency
+        n = len(alternatives_names)
+        ci = (l_max - n) / (n - 1) if n > 1 else 0
+        ri_values = {
+            1: 0,
+            2: 0,
+            3: 0.58,
+            4: 0.9,
+            5: 1.12,
+            6: 1.24,
+            7: 1.32,
+            8: 1.41,
+            9: 1.45,
+            10: 1.49,
+        }
+        ri = ri_values.get(n, 1.49)
+        cr = ci / ri if ri > 0 else 0
+
+        self.set_subheader_style(
+            ws.cell(row=consistency_start_row + 2, column=1),
+            "Індекс узгодженості (ІУ)",
+            "4F81BD",
+        )
+        self.set_number_style(ws.cell(row=consistency_start_row + 2, column=2), ci)
+
+        self.set_subheader_style(
+            ws.cell(row=consistency_start_row + 3, column=1),
+            "Відношення узгодженості (ВУ)",
+            "4F81BD",
+        )
+        self.set_percentage_style(ws.cell(row=consistency_start_row + 3, column=2), cr)
+
+        self.set_subheader_style(
+            ws.cell(row=consistency_start_row + 4, column=1), "Статус", "4F81BD"
+        )
+        status = "Прийнятно" if cr < 10 else "Потребує перегляду"
+        self.set_data_style(ws.cell(row=consistency_start_row + 4, column=2), status)
+
+        # Ranking
+        ranking_start_row = consistency_start_row + 6
+        self.set_header_style(
+            ws.cell(row=ranking_start_row, column=1),
+            f"Ранжування альтернатив ({criteria_name})",
+            "366092",
+        )
+        ws.merge_cells(f"A{ranking_start_row}:D{ranking_start_row}")
+
+        # Create ranking text
+        ranking_pairs = list(zip(alternatives_names, normalized_eigenvector))
+        ranking_pairs.sort(key=lambda x: x[1], reverse=True)
+        ranking_text = " > ".join([name for name, _ in ranking_pairs])
+        self.set_data_style(ws.cell(row=ranking_start_row + 2, column=1), ranking_text)
+        ws.merge_cells(f"A{ranking_start_row + 2}:D{ranking_start_row + 2}")
+
         self.auto_adjust_columns(ws)
 
     def create_results_sheet(
@@ -484,6 +616,20 @@ class HierarchyExcelExporter:
             )
             self.set_data_style(ws.cell(row=row, column=len(criteria_names) + 3), i + 1)
 
+        # Sum row for global priorities
+        sum_row = len(alternatives_names) + 5
+        self.set_subheader_style(ws.cell(row=sum_row, column=1), "Сума", "4F81BD")
+        # Empty cells for criteria columns
+        for j in range(len(criteria_names)):
+            col = j + 2
+            self.set_data_style(ws.cell(row=sum_row, column=col), "")
+        # Sum of global priorities (should be 1)
+        global_sum = sum(global_priorities)
+        self.set_number_style(
+            ws.cell(row=sum_row, column=len(criteria_names) + 2), global_sum, bold=True
+        )
+        self.set_data_style(ws.cell(row=sum_row, column=len(criteria_names) + 3), "")
+
         self.auto_adjust_columns(ws)
 
     def create_consistency_sheet(
@@ -504,7 +650,7 @@ class HierarchyExcelExporter:
 
         self.set_data_style(ws.cell(row=4, column=1), "Критерії")
         self.set_number_style(ws.cell(row=4, column=2), criteria_consistency["ci"])
-        self.set_number_style(ws.cell(row=4, column=3), criteria_consistency["cr"])
+        self.set_percentage_style(ws.cell(row=4, column=3), criteria_consistency["cr"])
         status = (
             "Прийнятно" if criteria_consistency["cr"] <= 0.1 else "Потребує перегляду"
         )
@@ -525,7 +671,7 @@ class HierarchyExcelExporter:
             row = i + 7
             self.set_data_style(ws.cell(row=row, column=1), criteria_names[i])
             self.set_number_style(ws.cell(row=row, column=2), ci)
-            self.set_number_style(ws.cell(row=row, column=3), cr)
+            self.set_percentage_style(ws.cell(row=row, column=3), cr)
             status = "Acceptable" if cr <= 0.1 else "Review Required"
             self.set_data_style(ws.cell(row=row, column=4), status)
 
@@ -610,13 +756,7 @@ class HierarchyExcelExporter:
                 alternatives_weights[i],  # Use correct normalized weights
             )
 
-        # 4. Criteria Analysis
-        self.create_criteria_sheet(criteria_names, criteria_weights)
-
-        # 5. Alternatives Analysis
-        self.create_alternatives_sheet(alternatives_names, global_priorities)
-
-        # 6. Results (summary)
+        # 4. Results (summary)
         self.create_results_sheet(
             alternatives_names,
             criteria_names,
@@ -625,12 +765,7 @@ class HierarchyExcelExporter:
             global_priorities,
         )
 
-        # 7. Consistency indicators (validation)
-        self.create_consistency_sheet(
-            criteria_consistency, alternatives_consistency, criteria_names
-        )
-
-        # 8. Charts and visualization (appendix)
+        # 5. Charts and visualization (appendix)
         self.create_chart_sheet(alternatives_names, global_priorities)
 
         return self.workbook
