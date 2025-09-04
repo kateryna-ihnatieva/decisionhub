@@ -876,6 +876,7 @@ def export_excel(result_id):
             "alternatives_matrices": alternatives_matrix_record.comparison_matrix,
             "criteria_eigenvector": criteria_matrix_record.components_eigenvector,
             "alternatives_eigenvectors": alternatives_matrix_record.components_eigenvector_alt,
+            "alternatives_weights": alternatives_matrix_record.normalized_eigenvector_alt,
             "criteria_consistency": {
                 "ci": criteria_matrix_record.index_consistency[0],
                 "cr": criteria_matrix_record.relation_consistency[0],
