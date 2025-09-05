@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, Response
 
 # from mymodules.mai import *  # Unused import removed
 from models import (
@@ -12,6 +12,8 @@ from models import (
 from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
+from mymodules.savage_excel_export import SavageExcelExporter
+from datetime import datetime
 
 savage_bp = Blueprint("savage", __name__, url_prefix="/savage")
 
@@ -296,3 +298,66 @@ def result(method_id=None):
 
     session["flag"] = 1
     return render_template("Savage/result.html", **context)
+
+
+@savage_bp.route("/export/excel/<int:method_id>")
+def export_excel(method_id):
+    """Export savage analysis to Excel"""
+    try:
+        # Get data from database
+        savage_conditions = SavageConditions.query.get(method_id)
+        savage_alternatives = SavageAlternatives.query.get(method_id)
+        savage_cost_matrix = SavageCostMatrix.query.get(method_id)
+        savage_task = SavageTask.query.get(method_id)
+
+        if not all([savage_conditions, savage_alternatives, savage_cost_matrix]):
+            return Response("Data not found", status=404)
+
+        # Get task description
+        task_description = "Savage Analysis"
+        if savage_task and savage_task.task:
+            task_description = savage_task.task
+
+        # Calculate optimal message exactly like on website
+        cost_matrix = savage_cost_matrix.matrix or []
+        loss_matrix = savage_cost_matrix.loss_matrix or []
+        max_losses = savage_cost_matrix.max_losses or []
+        name_alternatives = savage_alternatives.names or []
+
+        if max_losses and name_alternatives:
+            min_loss = min(max_losses)
+            min_index = max_losses.index(min_loss)
+            optimal_alternative = name_alternatives[min_index]
+            optimal_message = f"Оптимальною за критерієм Севіджа є альтернатива {optimal_alternative} (мінімальні втрати {min_loss})."
+        else:
+            optimal_message = "Немає даних для аналізу"
+
+        # Prepare analysis data
+        analysis_data = {
+            "method_id": method_id,
+            "savage_task": task_description,
+            "name_alternatives": name_alternatives,
+            "name_conditions": savage_conditions.names or [],
+            "cost_matrix": cost_matrix,
+            "loss_matrix": loss_matrix,
+            "max_losses": max_losses,
+            "optimal_message": optimal_message,
+        }
+
+        # Generate Excel file
+        exporter = SavageExcelExporter()
+        workbook = exporter.generate_savage_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Return Excel file
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=Savage_Analysis_Task{method_id}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+            },
+        )
+
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        return Response("Export failed", status=500)
