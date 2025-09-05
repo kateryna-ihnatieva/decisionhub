@@ -404,7 +404,7 @@
               class="matrix-input"
               type="text"
               name="matrix_binary"
-              id="matrix[{{j}}][{{i}}]"
+              id="matrix[{{i}}][{{j}}]"
               value=""
               readonly
             >
@@ -434,5 +434,110 @@
     </form>
   </div>
 </div>
+
+<script>
+// Use event delegation for better compatibility
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔧 Binary matrix JavaScript loaded');
+
+  // Use event delegation for matrix inputs
+  document.addEventListener('input', function(event) {
+    if (event.target.classList.contains('matrix-input') && !event.target.hasAttribute('readonly')) {
+      const value = event.target.value;
+      const id = event.target.id;
+
+      // Extract coordinates from id like "matrix[0][1]"
+      const match = id.match(/matrix\[(\d+)\]\[(\d+)\]/);
+      if (match) {
+        const row = parseInt(match[1]);
+        const col = parseInt(match[2]);
+
+        // Find the opposite cell (swap row and col)
+        const oppositeId = `matrix[${col}][${row}]`;
+        const oppositeInput = document.getElementById(oppositeId);
+
+        if (oppositeInput && oppositeInput.hasAttribute('readonly')) {
+          // Calculate opposite value for binary relations
+          let oppositeValue = '';
+          if (value === '1') {
+            oppositeValue = '-1';
+          } else if (value === '-1') {
+            oppositeValue = '1';
+          } else if (value === '0') {
+            oppositeValue = '0';
+          }
+
+          // Set the opposite value
+          oppositeInput.value = oppositeValue;
+        }
+      }
+    }
+  });
+
+  // Use event delegation for validation
+  document.addEventListener('blur', function(event) {
+    if (event.target.classList.contains('matrix-input') && !event.target.hasAttribute('readonly')) {
+      const value = event.target.value;
+      const validValues = ['-1', '0', '1'];
+
+      if (value && !validValues.includes(value)) {
+        event.target.style.borderColor = '#ff6b7a';
+        event.target.style.boxShadow = '0 0 10px rgba(255, 107, 122, 0.3)';
+      } else {
+        event.target.style.borderColor = '';
+        event.target.style.boxShadow = '';
+      }
+    }
+  }, true);
+
+  // Use event delegation for focus highlighting
+  document.addEventListener('focus', function(event) {
+    if (event.target.classList.contains('matrix-input') && !event.target.hasAttribute('readonly')) {
+      const id = event.target.id;
+      const match = id.match(/matrix\[(\d+)\]\[(\d+)\]/);
+      if (match) {
+        const row = parseInt(match[1]);
+        const col = parseInt(match[2]);
+
+        // Highlight current cell
+        event.target.style.backgroundColor = 'rgba(102, 252, 241, 0.1)';
+        event.target.style.borderColor = 'var(--color-accent)';
+
+        // Highlight opposite cell
+        const oppositeId = `matrix[${col}][${row}]`;
+        const oppositeInput = document.getElementById(oppositeId);
+        if (oppositeInput) {
+          oppositeInput.style.backgroundColor = 'rgba(142, 228, 175, 0.1)';
+          oppositeInput.style.borderColor = 'var(--color-link)';
+        }
+      }
+    }
+  }, true);
+
+  // Use event delegation for blur highlighting removal
+  document.addEventListener('blur', function(event) {
+    if (event.target.classList.contains('matrix-input') && !event.target.hasAttribute('readonly')) {
+      const id = event.target.id;
+      const match = id.match(/matrix\[(\d+)\]\[(\d+)\]/);
+      if (match) {
+        const row = parseInt(match[1]);
+        const col = parseInt(match[2]);
+
+        // Remove highlighting from current cell
+        event.target.style.backgroundColor = '';
+        event.target.style.borderColor = '';
+
+        // Remove highlighting from opposite cell
+        const oppositeId = `matrix[${col}][${row}]`;
+        const oppositeInput = document.getElementById(oppositeId);
+        if (oppositeInput) {
+          oppositeInput.style.backgroundColor = '';
+          oppositeInput.style.borderColor = '';
+        }
+      }
+    }
+  }, true);
+});
+</script>
 
 {% endblock %}

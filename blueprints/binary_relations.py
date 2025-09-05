@@ -1,12 +1,22 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    session,
+    redirect,
+    url_for,
+    Response,
+)
 from mymodules.binary import *
 from models import *
 from mymodules.mai import *
 from flask_login import current_user
 from mymodules.methods import *
 from mymodules.gpt_response import *
+from mymodules.binary_excel_export import BinaryExcelExporter
 
 import operator
+from datetime import datetime
 
 binary_relations_bp = Blueprint("binary_relations", __name__, url_prefix="/binary")
 
@@ -320,3 +330,84 @@ def result(method_id=None):
     session["matr"] = 1
 
     return render_template("Binary/result.html", **context)
+
+
+@binary_relations_bp.route("/export/excel/<int:method_id>")
+def export_excel(method_id):
+    """Export binary analysis results to Excel"""
+    try:
+        # Check if user is authenticated
+        if not current_user.is_authenticated:
+            return Response("Unauthorized", status=401)
+
+        # Get result record
+        result = Result.query.filter_by(
+            method_id=method_id, user_id=current_user.get_id(), method_name="Binary"
+        ).first()
+
+        if not result:
+            return Response("Result not found", status=404)
+
+        # Get binary data
+        binary_names = BinaryNames.query.get(method_id)
+        binary_matrix = BinaryMatrix.query.get(method_id)
+        binary_ranj = BinaryRanj.query.get(method_id)
+        binary_transitivity = BinaryTransitivity.query.get(method_id)
+
+        if not all([binary_names, binary_matrix, binary_ranj, binary_transitivity]):
+            return Response("Binary data not found", status=404)
+
+        # Get task description
+        task_description = "Binary Relations Analysis"
+        if binary_transitivity.task_id:
+            binary_task = BinaryTask.query.get(binary_transitivity.task_id)
+            if binary_task and binary_task.task:
+                task_description = binary_task.task
+
+        # Prepare analysis data
+        names = binary_names.names
+        matrix = binary_matrix.matrix
+        sorted_dict = binary_ranj.sorted_sum
+        ranj_str = binary_ranj.ranj
+
+        # Calculate sums for matrix
+        sum_dict = {obj: sum([int(x) for x in row]) for obj, row in zip(names, matrix)}
+
+        analysis_data = {
+            "method_id": method_id,
+            "task_description": task_description,
+            "names": names,
+            "matrix": matrix,
+            "sorted_dict": sum_dict,  # Use calculated sums
+            "ranj_str": ranj_str,
+            "comb": binary_transitivity.comb,
+            "cond_tranz": binary_transitivity.condition_transitivity,
+            "vidnosh": binary_transitivity.ratio,
+            "prim": binary_transitivity.note,
+            "visnovok": binary_transitivity.binary_conclusion,
+        }
+
+        # Generate Excel
+        exporter = BinaryExcelExporter()
+        workbook = exporter.generate_binary_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Prepare response
+        from flask import make_response
+
+        response = make_response(excel_bytes)
+        response.headers["Content-Type"] = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename=Binary_Analysis_Task{method_id}_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+        )
+
+        return response
+
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return Response(f"Export error: {str(e)}", status=500)

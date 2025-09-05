@@ -1,10 +1,12 @@
-from flask import Blueprint, render_template, request, session, send_file
+from flask import Blueprint, render_template, request, session, send_file, Response
 from flask_login import current_user
 from mymodules.gpt_response import *
 from mymodules.methods import *
 from models import *
 from mymodules.experts_func import *
+from mymodules.experts_excel_export import ExpertsExcelExporter
 from docxtpl import DocxTemplate
+from datetime import datetime
 
 experts_bp = Blueprint("experts", __name__, url_prefix="/experts")
 
@@ -489,7 +491,7 @@ def experts_result(method_id=None):
         "m_i": m_i,
         "r_i": r_i,
         "l_value": l_value,
-        "l_value_sum": int(sum(l_value)),
+        "l_value_sum": round(sum(l_value)) if l_value else 0,
         "method_id": method_id,
         "rank_str": rank_str,
         "experts_task": experts_task,
@@ -499,3 +501,116 @@ def experts_result(method_id=None):
 
     session["flag"] = 1
     return render_template("Experts/result.html", **context)
+
+
+@experts_bp.route("/export/excel/<int:method_id>")
+def export_excel(method_id):
+    """Export experts analysis results to Excel"""
+    try:
+        # Get data from database
+        experts_data = ExpertsData.query.get(method_id)
+        if not experts_data:
+            return Response("Analysis not found", status=404, mimetype="text/plain")
+
+        experts_competency = ExpertsCompetency.query.get(method_id)
+        if not experts_competency:
+            return Response(
+                "Competency data not found", status=404, mimetype="text/plain"
+            )
+
+        experts_name_research = ExpertsNameResearch.query.get(method_id)
+        if not experts_name_research:
+            return Response(
+                "Research names not found", status=404, mimetype="text/plain"
+            )
+
+        experts_task = ExpertsTask.query.get(method_id)
+        task_description = "Experts Analysis"
+        if experts_task and experts_task.task:
+            task_description = experts_task.task
+
+        # Get data from database
+        m_i = experts_data.m_i or []
+        r_i = experts_data.r_i or []
+        l_value = experts_data.lambda_value or []
+        name_research = experts_name_research.names or []
+
+        # Debug: print values
+        print(f"Debug - m_i: {m_i}")
+        print(f"Debug - r_i: {r_i}")
+        print(f"Debug - l_value: {l_value}")
+        print(f"Debug - l_value_sum: {sum(l_value) if l_value else 0}")
+
+        # Recalculate values to ensure consistency
+        try:
+            # Import the calculation functions
+            from mymodules.experts_func import make_m_i, make_r_i, make_lambda
+
+            # Get competency data
+            k_k = experts_competency.k_k or []
+            experts_data_table = experts_data.experts_data_table or []
+            num_experts = len(experts_data_table)
+
+            # Recalculate values
+            if k_k and experts_data_table and num_experts > 0:
+                m_i = make_m_i(k_k, experts_data_table, num_experts, len(name_research))
+                r_i = make_r_i(m_i)
+                l_value = make_lambda(len(name_research), r_i)
+                print(f"Debug - Recalculated m_i: {m_i}")
+                print(f"Debug - Recalculated r_i: {r_i}")
+                print(f"Debug - Recalculated l_value: {l_value}")
+                print(
+                    f"Debug - Recalculated l_value_sum: {sum(l_value) if l_value else 0}"
+                )
+        except Exception as e:
+            print(f"Error recalculating values: {e}")
+            # Use original values if recalculation fails
+            pass
+
+        try:
+            rank_str = rank_results(r_i, m_i, name_research)
+        except Exception as e:
+            print(f"Error calculating rank_str: {e}")
+            rank_str = "Аналіз завершено"
+
+        # Prepare analysis data
+        l_value_sum = round(sum(l_value)) if l_value else 0
+        print(f"Debug - Final l_value_sum: {l_value_sum}")
+
+        analysis_data = {
+            "method_id": method_id,
+            "experts_task": task_description,
+            "table_competency": experts_competency.table_competency or [],
+            "k_k": experts_competency.k_k or [],
+            "k_a": experts_competency.k_a or [],
+            "name_arguments": name_arguments,
+            "name_research": name_research,
+            "experts_data_table": experts_data.experts_data_table or [],
+            "m_i": m_i,
+            "r_i": r_i,
+            "l_value": l_value,
+            "l_value_sum": l_value_sum,
+            "rank_str": rank_str,
+        }
+
+        # Generate Excel file
+        exporter = ExpertsExcelExporter()
+        workbook = exporter.generate_experts_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Create filename
+        filename = f"Experts_Analysis_Task{method_id}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+
+        # Return Excel file
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Length": str(len(excel_bytes)),
+            },
+        )
+
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        return Response(f"Export failed: {str(e)}", status=500, mimetype="text/plain")

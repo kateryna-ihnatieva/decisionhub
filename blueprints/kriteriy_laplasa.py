@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, Response
 from mymodules.mai import *
 from models import (
     LaplasaConditions,
@@ -11,6 +11,8 @@ from models import (
 from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
+from mymodules.laplasa_excel_export import LaplasaExcelExporter
+from datetime import datetime
 
 kriteriy_laplasa_bp = Blueprint("kriteriy_laplasa", __name__, url_prefix="/laplasa")
 
@@ -448,6 +450,7 @@ def result(method_id=None):
         "cost_matrix": cost_matrix,
         "optimal_variants": optimal_variants,
         "id": new_record_id,
+        "method_id": new_record_id,
         "laplasa_task": laplasa_task,
         "optimal_message": optimal_message,
         "laplasa_plot": generate_plot(optimal_variants, name_alternatives, False),
@@ -456,3 +459,63 @@ def result(method_id=None):
     session["flag"] = 1
 
     return render_template("Laplasa/result.html", **context)
+
+
+@kriteriy_laplasa_bp.route("/export/excel/<int:method_id>")
+def export_excel(method_id):
+    """Export Laplasa analysis to Excel"""
+    try:
+        # Fetch data from database
+        laplasa_conditions = LaplasaConditions.query.get(method_id)
+        laplasa_alternatives = LaplasaAlternatives.query.get(method_id)
+        laplasa_cost_matrix = LaplasaCostMatrix.query.get(method_id)
+        laplasa_task = LaplasaTask.query.get(method_id)
+
+        if not all([laplasa_conditions, laplasa_alternatives, laplasa_cost_matrix]):
+            return Response("Data not found", status=404)
+
+        # Get task description
+        task_description = "Laplasa Analysis"
+        if laplasa_task and laplasa_task.task:
+            task_description = laplasa_task.task
+
+        # Calculate optimal message exactly like on website
+        optimal_variants = laplasa_cost_matrix.optimal_variants or []
+        name_alternatives = laplasa_alternatives.names or []
+
+        if optimal_variants and name_alternatives:
+            max_value = max(optimal_variants)
+            max_index = optimal_variants.index(max_value)
+            optimal_alternative = name_alternatives[max_index]
+            optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+        else:
+            optimal_message = "Немає даних для аналізу"
+
+        # Prepare analysis data
+        analysis_data = {
+            "method_id": method_id,
+            "laplasa_task": task_description,
+            "name_alternatives": name_alternatives,
+            "name_conditions": laplasa_conditions.names or [],
+            "cost_matrix": laplasa_cost_matrix.matrix or [],
+            "optimal_variants": optimal_variants,
+            "optimal_message": optimal_message,
+        }
+
+        # Generate Excel file
+        exporter = LaplasaExcelExporter()
+        workbook = exporter.generate_laplasa_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Return Excel file
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=Laplasa_Analysis_Task{method_id}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+            },
+        )
+
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        return Response(f"Export failed: {str(e)}", status=500)

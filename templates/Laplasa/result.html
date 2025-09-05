@@ -139,6 +139,95 @@
     filter: drop-shadow(0 0 4px rgba(142, 228, 175, 0.2));
   }
 
+  /* Export Button Styles */
+  .export-container {
+    text-align: center;
+    margin: 30px 0;
+    padding: 20px;
+  }
+
+  .page-header .export-container {
+    margin: 30px 0 0 0;
+  }
+
+  .export-btn {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.2),
+      rgba(142, 228, 175, 0.2));
+    border: 2px solid rgba(102, 252, 241, 0.4);
+    border-radius: 15px;
+    padding: 15px 30px;
+    color: var(--color-accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .export-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.5s ease;
+  }
+
+  .export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 252, 241, 0.3);
+    border-color: rgba(102, 252, 241, 0.6);
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.3),
+      rgba(142, 228, 175, 0.3));
+  }
+
+  .export-btn:hover::before {
+    left: 100%;
+  }
+
+  .export-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 20px rgba(102, 252, 241, 0.2);
+  }
+
+  .export-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .export-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.1);
+  }
+
+  .export-icon {
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .export-text {
+    font-weight: 600;
+  }
+
+  .export-loading {
+    font-weight: 600;
+    color: var(--color-link);
+  }
+
   .main-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -488,6 +577,17 @@
     <h1 class="method-title">Метод Лапласа</h1>
     <img src="{{ url_for('static', filename='img/laplasa.png') }}" alt="Laplasa" class="method-icon">
     <div class="step-indicator">Результати аналізу</div>
+
+    <!-- Export Button -->
+    {% if method_id %}
+    <div class="export-container">
+      <button id="export-excel-btn" class="export-btn" data-method-id="{{ method_id }}">
+        <span class="export-icon">📊</span>
+        <span class="export-text">Завантажити Excel</span>
+        <span class="export-loading" style="display: none;">⏳ Generating...</span>
+      </button>
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -557,5 +657,42 @@
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const exportBtn = document.getElementById('export-excel-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', function() {
+      const methodId = this.getAttribute('data-method-id');
+      const exportIcon = this.querySelector('.export-icon');
+      const exportText = this.querySelector('.export-text');
+      const exportLoading = this.querySelector('.export-loading');
+
+      // Show loading state
+      exportBtn.disabled = true;
+      exportIcon.style.display = 'none';
+      exportText.style.display = 'none';
+      exportLoading.style.display = 'inline';
+
+      // Create download link
+      const downloadUrl = `/laplasa/export/excel/${methodId}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `Laplasa_Analysis_Task${methodId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Reset button state after a delay
+      setTimeout(() => {
+        exportBtn.disabled = false;
+        exportIcon.style.display = 'inline';
+        exportText.style.display = 'inline';
+        exportLoading.style.display = 'none';
+      }, 2000);
+    });
+  }
+});
+</script>
 
 {% endblock %}

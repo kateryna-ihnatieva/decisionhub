@@ -86,3 +86,4 @@ Werkzeug==3.0.1
 wsproto==1.2.0
 yarl==1.9.4
 zopfli==0.2.3
+openpyxl==3.1.2

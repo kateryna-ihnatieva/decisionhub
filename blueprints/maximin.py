@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, Response
 from mymodules.mai import *
 from models import (
     MaximinConditions,
@@ -11,6 +11,8 @@ from models import (
 from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
+from mymodules.maximin_excel_export import MaximinExcelExporter
+from datetime import datetime
 
 maximin_bp = Blueprint("maximin", __name__, url_prefix="/maximin")
 
@@ -296,3 +298,82 @@ def result(method_id=None):
     session["flag"] = 1
 
     return render_template("Maximin/result.html", **context)
+
+
+@maximin_bp.route("/export/excel/<int:method_id>")
+def export_excel(method_id):
+    """Export maximin analysis to Excel"""
+    try:
+        # Get data from database
+        maximin_conditions = MaximinConditions.query.get(method_id)
+        maximin_alternatives = MaximinAlternatives.query.get(method_id)
+        maximin_cost_matrix = MaximinCostMatrix.query.get(method_id)
+        maximin_task = MaximinTask.query.get(method_id)
+
+        if not all([maximin_conditions, maximin_alternatives, maximin_cost_matrix]):
+            return Response("Data not found", status=404)
+
+        # Get task description
+        task_description = "Maximin Analysis"
+        if maximin_task and maximin_task.task:
+            task_description = maximin_task.task
+
+        # Calculate optimal message exactly like on website
+        cost_matrix = maximin_cost_matrix.matrix or []
+        name_alternatives = maximin_alternatives.names or []
+        matrix_type = maximin_task.matrix_type if maximin_task else "profit"
+
+        if cost_matrix and name_alternatives:
+            if matrix_type == "profit":
+                min_values = [min(map(int, sublist)) for sublist in cost_matrix]
+                max_value = max(min_values)
+                max_index = min_values.index(max_value)
+                optimal_alternative = name_alternatives[max_index]
+                optimal_message = (
+                    f"Оптимальною за критерієм максимуму мінімальних "
+                    f"значень є альтернатива {optimal_alternative} "
+                    f"(максимальне значення {max_value})."
+                )
+            else:  # cost matrix
+                min_values = [min(map(int, sublist)) for sublist in cost_matrix]
+                min_value = min(min_values)
+                min_index = min_values.index(min_value)
+                optimal_alternative = name_alternatives[min_index]
+                optimal_message = (
+                    f"Оптимальною за критерієм мінімуму максимальних "
+                    f"значень є альтернатива {optimal_alternative} "
+                    f"(мінімальне значення {min_value})."
+                )
+        else:
+            optimal_message = "Немає даних для аналізу"
+            min_values = []
+
+        # Prepare analysis data
+        analysis_data = {
+            "method_id": method_id,
+            "maximin_task": task_description,
+            "name_alternatives": name_alternatives,
+            "name_conditions": maximin_conditions.names or [],
+            "cost_matrix": cost_matrix,
+            "min_values": min_values,
+            "matrix_type": matrix_type,
+            "optimal_message": optimal_message,
+        }
+
+        # Generate Excel file
+        exporter = MaximinExcelExporter()
+        workbook = exporter.generate_maximin_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Return Excel file
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=Maximin_Analysis_Task{method_id}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+            },
+        )
+
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        return Response("Export failed", status=500)

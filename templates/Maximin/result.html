@@ -139,6 +139,89 @@
     filter: drop-shadow(0 0 4px rgba(142, 228, 175, 0.2));
   }
 
+  /* Export button styles */
+  .page-header .export-container {
+    margin-top: 25px;
+  }
+
+  .export-btn {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.2),
+      rgba(142, 228, 175, 0.2));
+    border: 2px solid rgba(102, 252, 241, 0.4);
+    border-radius: 15px;
+    padding: 15px 30px;
+    color: var(--color-accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .export-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.5s ease;
+  }
+
+  .export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 252, 241, 0.3);
+    border-color: rgba(102, 252, 241, 0.6);
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.3),
+      rgba(142, 228, 175, 0.3));
+  }
+
+  .export-btn:hover::before {
+    left: 100%;
+  }
+
+  .export-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 20px rgba(102, 252, 241, 0.2);
+  }
+
+  .export-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .export-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.1);
+  }
+
+  .export-icon {
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .export-text {
+    font-weight: 600;
+  }
+
+  .export-loading {
+    font-weight: 600;
+    color: var(--color-link);
+  }
+
   .main-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -488,6 +571,15 @@
       <h1 class="method-title">Максимінний критерій</h1>
     <img src="{{ url_for('static', filename='img/maximin.png') }}" alt="Maximin" class="method-icon">
     <div class="step-indicator">Результати аналізу</div>
+
+    <!-- Export button -->
+    <div class="export-container">
+      <button id="export-excel-btn" class="export-btn" data-method-id="{{ id }}">
+        <span class="export-icon">📊</span>
+        <span class="export-text">Завантажити Excel</span>
+        <span class="export-loading" style="display: none;">⏳ Generating...</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -558,5 +650,39 @@
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exportBtn = document.getElementById('export-excel-btn');
+    const btnText = exportBtn.querySelector('.export-text');
+    const btnLoading = exportBtn.querySelector('.export-loading');
+
+    exportBtn.addEventListener('click', function() {
+        const methodId = this.getAttribute('data-method-id');
+
+        // Show loading state
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline';
+        exportBtn.disabled = true;
+
+        // Create download link
+        const link = document.createElement('a');
+        link.href = `/maximin/export/excel/${methodId}`;
+        link.download = `Maximin_Analysis_Task${methodId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Reset button state after a delay
+        setTimeout(() => {
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
+            exportBtn.disabled = false;
+        }, 2000);
+    });
+});
+</script>
 
 {% endblock %}

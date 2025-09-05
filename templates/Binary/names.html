@@ -297,10 +297,10 @@
 
     <div class="names-grid">
       {% for i in range(num) %}
-      <div class="input-group">
-        <span class="input-counter">{{ i+1 }}</span>
+      <div class="name-item">
+        <div class="object-number">{{ i+1 }}</div>
         <input
-          class="input-field"
+          class="name-input with-number"
           type="text"
           name="names"
           id="object{{ i+1 }}"
