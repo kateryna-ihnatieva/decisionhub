@@ -278,6 +278,10 @@
     padding: 20px;
   }
 
+  .method-hero .export-container {
+    margin: 30px 0 0 0;
+  }
+
   .export-btn {
     background: linear-gradient(135deg,
       rgba(102, 252, 241, 0.2),
@@ -416,6 +420,17 @@
     <h1 class="method-title">Метод Бінарних Відношень</h1>
     <img src="{{ url_for('static', filename='img/binary.png') }}" alt="Binary Relations" class="method-icon">
     <div class="step-indicator">✅ Результати аналізу</div>
+
+    <!-- Export Button -->
+    {% if method_id %}
+    <div class="export-container">
+      <button id="export-excel-btn" class="export-btn" data-method-id="{{ method_id }}">
+        <span class="export-icon">📊</span>
+        <span class="export-text">Завантажити Excel</span>
+        <span class="export-loading" style="display: none;">⏳ Generating...</span>
+      </button>
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -551,17 +566,6 @@
       <div class="conclusion-title">Висновок</div>
       <div class="conclusion-text">{{ visnovok }}</div>
     </div>
-
-    <!-- Export Button -->
-    {% if method_id %}
-    <div class="export-container">
-      <button id="export-excel-btn" class="export-btn" data-method-id="{{ method_id }}">
-        <span class="export-icon">📊</span>
-        <span class="export-text">Download Excel Report</span>
-        <span class="export-loading" style="display: none;">⏳ Generating...</span>
-      </button>
-    </div>
-    {% endif %}
 
   </form>
 </div>

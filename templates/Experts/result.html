@@ -366,6 +366,93 @@
     font-size: 1.1rem;
   }
 
+  .export-container {
+    text-align: center;
+    margin: 40px 0;
+  }
+
+  .page-header .export-container {
+    margin: 30px 0 0 0;
+  }
+
+  .export-btn {
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.2),
+      rgba(142, 228, 175, 0.2));
+    border: 2px solid rgba(102, 252, 241, 0.4);
+    border-radius: 15px;
+    padding: 15px 30px;
+    color: var(--color-accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .export-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+    transition: left 0.5s ease;
+  }
+
+  .export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 252, 241, 0.3);
+    border-color: rgba(102, 252, 241, 0.6);
+    background: linear-gradient(135deg,
+      rgba(102, 252, 241, 0.3),
+      rgba(142, 228, 175, 0.3));
+  }
+
+  .export-btn:hover::before {
+    left: 100%;
+  }
+
+  .export-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 20px rgba(102, 252, 241, 0.2);
+  }
+
+  .export-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .export-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.1);
+  }
+
+  .export-icon {
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px rgba(102, 252, 241, 0.4));
+  }
+
+  .export-text {
+    font-weight: 600;
+  }
+
+  .export-loading {
+    font-weight: 600;
+    color: var(--color-link);
+  }
+
   .conclusion-section {
     background: linear-gradient(135deg,
       rgba(102, 252, 241, 0.08) 0%,
@@ -563,6 +650,15 @@
     <img src="{{ url_for('static', filename='img/experts.png') }}" alt="Experts" class="method-icon">
     <p class="subtitle">Результати дослідження та аналіз</p>
     <div class="success-badge">Розрахунки завершено</div>
+
+    <!-- Export Button -->
+    <div class="export-container">
+      <button id="export-excel-btn" class="export-btn" data-method-id="{{ method_id }}">
+        <span class="export-icon">📊</span>
+        <span class="export-text">Завантажити Excel</span>
+        <span class="export-loading" style="display: none;">⏳ Generating...</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -650,6 +746,7 @@
     </div>
   </div>
 
+
   {% if experts_task %}
   <div class="task-section">
     <div class="task-content">
@@ -673,5 +770,40 @@
   </div>
   {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const exportBtn = document.getElementById('export-excel-btn');
+  const exportIcon = exportBtn.querySelector('.export-icon');
+  const exportText = exportBtn.querySelector('.export-text');
+  const exportLoading = exportBtn.querySelector('.export-loading');
+
+  exportBtn.addEventListener('click', function() {
+    const methodId = this.getAttribute('data-method-id');
+
+    // Show loading state
+    exportBtn.disabled = true;
+    exportIcon.style.display = 'none';
+    exportText.style.display = 'none';
+    exportLoading.style.display = 'inline';
+
+    // Create download link
+    const link = document.createElement('a');
+    link.href = `/experts/export/excel/${methodId}`;
+    link.download = `Experts_Analysis_Task${methodId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Reset button state after a short delay
+    setTimeout(() => {
+      exportBtn.disabled = false;
+      exportIcon.style.display = 'inline';
+      exportText.style.display = 'inline';
+      exportLoading.style.display = 'none';
+    }, 2000);
+  });
+});
+</script>
 
 {% endblock %}
