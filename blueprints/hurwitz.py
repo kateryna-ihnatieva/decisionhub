@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, Response
 
 # from mymodules.mai import *  # Unused import removed
 from models import (
@@ -12,6 +12,8 @@ from models import (
 from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
+from mymodules.hurwitz_excel_export import HurwitzExcelExporter
+from datetime import datetime
 
 hurwitz_bp = Blueprint("hurwitz", __name__, url_prefix="/hurwitz")
 
@@ -296,3 +298,84 @@ def result(method_id=None):
     session["flag"] = 1
 
     return render_template("Hurwitz/result.html", **context)
+
+
+@hurwitz_bp.route("/export/excel/<int:method_id>")
+def export_excel(method_id):
+    """Export hurwitz analysis to Excel"""
+    try:
+        # Get data from database
+        hurwitz_conditions = HurwitzConditions.query.get(method_id)
+        hurwitz_alternatives = HurwitzAlternatives.query.get(method_id)
+        hurwitz_cost_matrix = HurwitzCostMatrix.query.get(method_id)
+        hurwitz_task = HurwitzTask.query.get(method_id)
+
+        if not all([hurwitz_conditions, hurwitz_alternatives, hurwitz_cost_matrix]):
+            return Response("Data not found", status=404)
+
+        # Get task description
+        task_description = "Hurwitz Analysis"
+        if hurwitz_task and hurwitz_task.task:
+            task_description = hurwitz_task.task
+
+        # Calculate values exactly like in result function
+        cost_matrix = hurwitz_cost_matrix.matrix or []
+        alpha = hurwitz_cost_matrix.alpha or 0.5
+        name_alternatives = hurwitz_alternatives.names or []
+
+        # Calculate min_values, max_values, and hurwitz_values from cost_matrix
+        min_values = []
+        max_values = []
+        hurwitz_values = []
+
+        if cost_matrix and name_alternatives:
+            for row in cost_matrix:
+                row_int = list(map(float, row))  # Convert to float
+                min_val = min(row_int)
+                max_val = max(row_int)
+                H = alpha * max_val + (1 - alpha) * min_val
+                hurwitz_values.append(H)
+                max_values.append(max_val)
+                min_values.append(min_val)
+
+            if hurwitz_values and name_alternatives:
+                max_hurwitz = max(hurwitz_values)
+                max_index = hurwitz_values.index(max_hurwitz)
+                optimal_alternative = name_alternatives[max_index]
+                optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення критерію Гурвіца: {max_hurwitz:.2f}."
+            else:
+                optimal_message = "Немає даних для аналізу"
+        else:
+            optimal_message = "Немає даних для аналізу"
+
+        # Prepare analysis data
+        analysis_data = {
+            "method_id": method_id,
+            "hurwitz_task": task_description,
+            "name_alternatives": name_alternatives,
+            "name_conditions": hurwitz_conditions.names or [],
+            "cost_matrix": cost_matrix,
+            "min_values": min_values,
+            "max_values": max_values,
+            "hurwitz_values": hurwitz_values,
+            "alpha": alpha,
+            "optimal_message": optimal_message,
+        }
+
+        # Generate Excel file
+        exporter = HurwitzExcelExporter()
+        workbook = exporter.generate_hurwitz_analysis_excel(analysis_data)
+        excel_bytes = exporter.save_to_bytes()
+
+        # Return Excel file
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=Hurwitz_Analysis_Task{method_id}_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+            },
+        )
+
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        return Response("Export failed", status=500)
