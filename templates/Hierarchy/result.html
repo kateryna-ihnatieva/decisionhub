@@ -830,7 +830,7 @@
     </form>
 
     <form method="POST">
-      <div class="criteria-section-title">Матриці парних порівнянь для альтернатив</div>
+      <div class="section-title">Матриця парних порівнянь для альтернатив</div>
 
       {% for num in range(num_criteria) %}
       <div class="criteria-section-title">Критерій "{{name_criteria[num]}}"</div>
@@ -852,16 +852,16 @@
             <tr>
               <th>{{ name_alternatives[i] }}</th>
               {% for j in range(name_alternatives | length) %}
-              <td>{{ matrix_alt[num][i][j] }}</td>
+              <td>{{ matrix_alt[0][num][i][j] if matrix_alt and matrix_alt|length > 0 and num < matrix_alt[0]|length and i < matrix_alt[0][num]|length and j < matrix_alt[0][num][i]|length else 0 }}</td>
               {% endfor %}
-              <td>{{ components_eigenvector_alt[num][i] | round(3) }}</td>
-              <td>{{ normalized_eigenvector_alt[num][i] | round(3) }}</td>
+              <td>{{ components_eigenvector_alt[0][num] | default(0) | round(3) }}</td>
+              <td>{{ normalized_eigenvector_alt[0][num] | default(0) | round(3) }}</td>
             </tr>
             {% endfor %}
             <tr class="sum-row">
               <th colspan="{{ num_alternatives+1 }}">Сума</th>
-              <td>{{ components_eigenvector_alt[num] | sum | round(3) }}</td>
-              <td>{{ normalized_eigenvector_alt[num] | sum | round | int }}</td>
+              <td>{{ components_eigenvector_alt[0][num] | default(0) | round(3) }}</td>
+              <td>{{ normalized_eigenvector_alt[0][num] | default(0) | round | int }}</td>
             </tr>
           </tbody>
         </table>
@@ -873,16 +873,16 @@
             <tr>
               <th>Сума по стовпцях</th>
               {% for i in range(num_alternatives) %}
-              <td>{{ sum_col_alt[num][i] | round(3) }}</td>
+              <td>{{ sum_col_alt[0][num] | default(0) | round(3) }}</td>
               {% endfor %}
               <th>Разом (Lmax)</th>
             </tr>
             <tr>
               <th>Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету</th>
               {% for i in range(num_alternatives) %}
-              <td>{{ prod_col_alt[num][i] | round(3) }}</td>
+              <td>{{ prod_col_alt[0][num] | default(0) | round(3) }}</td>
               {% endfor %}
-              <td>{{ l_max_alt[num][0] | round(3) }}</td>
+              <td>{{ l_max_alt[0][num] | default(0) | round(3) }}</td>
             </tr>
           </tbody>
         </table>
@@ -891,16 +891,16 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Індекс узгодженості</div>
-          <div class="stat-value">{{ index_consistency_alt[num][0] | round(3) }}</div>
+          <div class="stat-value">{{ index_consistency_alt[0][num] | default(0) | round(3) }}</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Відношення узгодженості</div>
-          <div class="stat-value">{{ relation_consistency_alt[num][0] | round(3) }}%</div>
+          <div class="stat-value">{{ relation_consistency_alt[0][num] | default(0) | round(3) }}%</div>
         </div>
       </div>
 
       <div class="conclusion">
-        <div class="conclusion-text">Висновок по критерію "{{ name_criteria[num] }}": {{ ranj_alt[num][0] }}</div>
+        <div class="conclusion-text">Висновок по критерію "{{ name_criteria[num] if name_criteria and num < name_criteria|length else 'N/A' }}": {{ ranj_alt[0][num] | default('N/A') }}</div>
       </div>
       {% endfor %}
     </form>
@@ -937,9 +937,9 @@
           <tr>
             <th><i>{{ name_alternatives[i] }}</i></th>
             {% for j in range(normalized_eigenvector_alt | length) %}
-            <td>{{ normalized_eigenvector_alt[j][i] | round(3) }}</td>
+            <td>{{ normalized_eigenvector_alt[j][i] | default(0) | round(3) }}</td>
             {% endfor %}
-            <td><strong>{{ global_prior[i] | round(3) }}</strong></td>
+            <td><strong>{{ global_prior[i] | default(0) | round(3) }}</strong></td>
           </tr>
           {% endfor %}
           <tr class="sum-row">

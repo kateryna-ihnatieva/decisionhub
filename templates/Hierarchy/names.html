@@ -217,6 +217,158 @@
     filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
   }
 
+  .section-title.file-upload::before {
+    content: '📁';
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.4));
+  }
+
+  /* File Upload Styles */
+  .file-upload-container {
+    margin-bottom: 20px;
+  }
+
+  .file-upload-area {
+    border: 2px dashed rgba(102, 252, 241, 0.3);
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    background: rgba(5, 56, 107, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .file-upload-area:hover {
+    border-color: var(--color-accent);
+    background: rgba(5, 56, 107, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .file-upload-area.dragover {
+    border-color: var(--color-link);
+    background: rgba(142, 228, 175, 0.1);
+    transform: scale(1.02);
+  }
+
+  .file-upload-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .upload-icon {
+    color: var(--color-accent);
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 10px rgba(102, 252, 241, 0.3));
+  }
+
+  .upload-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 8px;
+  }
+
+  .upload-formats {
+    font-size: 0.9rem;
+    color: rgba(237, 245, 225, 0.7);
+    margin-bottom: 20px;
+  }
+
+  .upload-button {
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-link) 100%);
+    color: var(--color-background);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .upload-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 252, 241, 0.3);
+  }
+
+  .file-info {
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: 15px;
+  }
+
+  .file-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+  }
+
+  .file-name {
+    font-weight: 600;
+    color: var(--color-text);
+    flex: 1;
+    text-align: left;
+  }
+
+  .file-size {
+    color: rgba(237, 245, 225, 0.7);
+    font-size: 0.9rem;
+  }
+
+  .remove-file {
+    background: rgba(220, 53, 69, 0.8);
+    color: var(--color-text);
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .remove-file:hover {
+    background: #dc3545;
+    transform: scale(1.1);
+  }
+
+  .upload-error {
+    background: rgba(255, 107, 125, 0.1);
+    border: 1px solid rgba(255, 107, 125, 0.3);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: 15px;
+  }
+
+  .error-text {
+    color: #ffccd5;
+    font-weight: 500;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(102, 252, 241, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--color-accent);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
 
 
   .section-title::after {
@@ -465,17 +617,57 @@
 
 <div class="main-container">
   <div class="names-form">
-    <form action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
+    <form id="hierarchy-form" action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
 
       <!-- Скрытые поля для сохранения данных черновика -->
       <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
       <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+
+      <!-- Скрытые поля для матриц (заполняются при загрузке файла) -->
+      <input type="hidden" name="criteria_matrix" id="criteria_matrix_input">
+      <input type="hidden" name="alternatives_matrices" id="alternatives_matrices_input">
+      <input type="hidden" name="file_uploaded" id="file_uploaded_input" value="false">
 
       {% if error %}
       <div class="alert-danger" role="alert">
         <i>{{ error }}</i>
       </div>
       {% endif %}
+
+      <!-- File Upload Section -->
+      <div class="input-section">
+        <div class="section-title file-upload">
+          <span>📁</span>
+          Завантажити з файлу
+        </div>
+        <div class="file-upload-container">
+          <div class="file-upload-area" id="file-upload-area">
+            <div class="file-upload-content">
+              <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7,10 12,15 17,10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <p class="upload-text">Перетягніть файл сюди або натисніть для вибору</p>
+              <p class="upload-formats">Підтримувані формати: .xlsx, .xls, .csv</p>
+              <button type="button" class="upload-button" onclick="document.getElementById('matrix_file').click()">
+                Вибрати файл
+              </button>
+            </div>
+            <input type="file" id="matrix_file" name="matrix_file" accept=".xlsx,.xls,.csv" style="display: none;">
+          </div>
+          <div class="file-info" id="file-info" style="display: none;">
+            <div class="file-details">
+              <span class="file-name" id="file-name"></span>
+              <span class="file-size" id="file-size"></span>
+              <button type="button" class="remove-file" onclick="removeFile()">×</button>
+            </div>
+          </div>
+          <div class="upload-error" id="upload-error" style="display: none;">
+            <span class="error-text" id="error-text"></span>
+          </div>
+        </div>
+      </div>
 
       <div class="input-section">
         <div class="section-title criteria">Назви критеріїв</div>
@@ -523,5 +715,297 @@
     </form>
   </div>
 </div>
+
+<script>
+// File upload functionality
+let selectedFile = null;
+
+// Get form data
+const numCriteria = {{ num_criteria | int }};
+const numAlternatives = {{ num_alternatives | int }};
+
+// File upload area elements
+const fileUploadArea = document.getElementById('file-upload-area');
+const fileInput = document.getElementById('matrix_file');
+const fileInfo = document.getElementById('file-info');
+const uploadError = document.getElementById('upload-error');
+const fileName = document.getElementById('file-name');
+const fileSize = document.getElementById('file-size');
+const errorText = document.getElementById('error-text');
+
+// Drag and drop functionality
+fileUploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  fileUploadArea.classList.add('dragover');
+});
+
+fileUploadArea.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  fileUploadArea.classList.remove('dragover');
+});
+
+fileUploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  fileUploadArea.classList.remove('dragover');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleFileSelect(files[0]);
+  }
+});
+
+// Click to select file
+fileUploadArea.addEventListener('click', () => {
+  fileInput.click();
+});
+
+// File input change
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleFileSelect(e.target.files[0]);
+  }
+});
+
+function handleFileSelect(file) {
+  // Validate file
+  const allowedTypes = ['.xlsx', '.xls', '.csv'];
+  const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+  if (!allowedTypes.includes(fileExt)) {
+    showError('Unsupported file format. Please select .xlsx, .xls, or .csv file.');
+    return;
+  }
+
+  // Check file size (10MB limit)
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    showError('File too large. Maximum size is 10MB.');
+    return;
+  }
+
+  selectedFile = file;
+  showFileInfo(file);
+  hideError();
+
+  // Upload and process file
+  uploadFile(file);
+}
+
+function showFileInfo(file) {
+  fileName.textContent = file.name;
+  fileSize.textContent = formatFileSize(file.size);
+  fileInfo.style.display = 'block';
+  fileUploadArea.style.display = 'none';
+}
+
+function removeFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  fileInfo.style.display = 'none';
+  fileUploadArea.style.display = 'block';
+  hideError();
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showError(message) {
+  errorText.textContent = message;
+  uploadError.style.display = 'block';
+}
+
+function hideError() {
+  uploadError.style.display = 'none';
+}
+
+function uploadFile(file) {
+  const formData = new FormData();
+  formData.append('matrix_file', file);
+  formData.append('num_criteria', numCriteria);
+  formData.append('num_alternatives', numAlternatives);
+
+  // Show loading state
+  const uploadButton = document.querySelector('.upload-button');
+  const originalText = uploadButton.textContent;
+  uploadButton.innerHTML = '<span class="loading-spinner"></span>Завантаження...';
+  uploadButton.disabled = true;
+
+  fetch('/hierarchy/upload_matrix', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken') // Add CSRF token if needed
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Fill form fields with uploaded data
+      fillFormFields(
+        data.criteria_names,
+        data.alternatives_names,
+        data.criteria_matrix,
+        data.alternatives_matrices
+      );
+      showSuccess('File uploaded and processed successfully!');
+    } else {
+      showError(data.error || 'Upload failed');
+    }
+  })
+  .catch(error => {
+    console.error('Upload error:', error);
+    showError('Upload failed: ' + error.message);
+  })
+  .finally(() => {
+    // Reset button state
+    uploadButton.textContent = originalText;
+    uploadButton.disabled = false;
+  });
+}
+
+function fillFormFields(criteriaNames, alternativesNames, criteriaMatrix, alternativesMatrices) {
+  // Fill criteria names
+  const criteriaInputs = document.querySelectorAll('input[name="name_criteria"]');
+  criteriaInputs.forEach((input, index) => {
+    if (criteriaNames[index]) {
+      input.value = criteriaNames[index];
+    }
+  });
+
+  // Fill alternatives names
+  const alternativesInputs = document.querySelectorAll('input[name="name_alternatives"]');
+  alternativesInputs.forEach((input, index) => {
+    if (alternativesNames[index]) {
+      input.value = alternativesNames[index];
+    }
+  });
+
+  // Fill hidden matrix fields
+  const criteriaMatrixInput = document.getElementById('criteria_matrix_input');
+  const alternativesMatricesInput = document.getElementById('alternatives_matrices_input');
+  const fileUploadedInput = document.getElementById('file_uploaded_input');
+
+  if (criteriaMatrixInput && criteriaMatrix) {
+    criteriaMatrixInput.value = JSON.stringify(criteriaMatrix);
+  }
+
+  if (alternativesMatricesInput && alternativesMatrices) {
+    alternativesMatricesInput.value = JSON.stringify(alternativesMatrices);
+  }
+
+  if (fileUploadedInput) {
+    fileUploadedInput.value = 'true';
+  }
+
+  // Store matrix data for later use
+  window.uploadedCriteriaMatrix = criteriaMatrix;
+  window.uploadedAlternativesMatrices = alternativesMatrices;
+
+  // Update form action to go directly to results when file is uploaded
+  updateFormAction();
+
+  // Show success message with matrix info
+  console.log('Hierarchy file uploaded successfully:', {
+    criteriaNames: criteriaNames,
+    alternativesNames: alternativesNames,
+    criteriaMatrix: criteriaMatrix,
+    alternativesMatrices: alternativesMatrices
+  });
+}
+
+function updateFormAction() {
+  const form = document.getElementById('hierarchy-form');
+  const fileUploadedInput = document.getElementById('file_uploaded_input');
+
+  if (form && fileUploadedInput) {
+    if (fileUploadedInput.value === 'true') {
+      // If file was uploaded, go directly to results
+      form.action = "{{ url_for('hierarchy.result_from_file') }}";
+      console.log('Form action updated to go directly to results');
+    } else {
+      // If no file uploaded, go to matrix input page
+      form.action = "{{ url_for('hierarchy.matrix_krit') }}";
+      console.log('Form action set to matrix input page');
+    }
+  }
+}
+
+// Add form submission debug
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('hierarchy-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      console.log('Form submitted!');
+      console.log('Form action:', form.action);
+      console.log('File uploaded:', document.getElementById('file_uploaded_input').value);
+      console.log('Form data:', new FormData(form));
+    });
+  }
+});
+
+function showSuccess(message) {
+  // Create success notification
+  const successDiv = document.createElement('div');
+  successDiv.className = 'alert-success';
+  successDiv.style.cssText = `
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    color: #8EE4AF;
+    padding: 15px 20px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(10px);
+    font-style: italic;
+    animation: slideIn 0.5s ease-out;
+  `;
+  successDiv.innerHTML = `<i>${message}</i>`;
+
+  // Insert after file upload section
+  const fileUploadSection = document.querySelector('.file-upload-container');
+  fileUploadSection.parentNode.insertBefore(successDiv, fileUploadSection.nextSibling);
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    successDiv.remove();
+  }, 5000);
+}
+
+// Add slideIn animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+document.head.appendChild(style);
+
+// CSRF token helper function
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
 
 {% endblock %}

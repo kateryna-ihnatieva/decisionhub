@@ -14,6 +14,7 @@ from flask_login import current_user
 from mymodules.methods import *
 from mymodules.gpt_response import *
 from mymodules.binary_excel_export import BinaryExcelExporter
+from mymodules.file_upload import process_uploaded_file
 
 import operator
 from datetime import datetime
@@ -411,3 +412,38 @@ def export_excel(method_id):
 
         traceback.print_exc()
         return Response(f"Export error: {str(e)}", status=500)
+
+
+@binary_relations_bp.route("/upload_matrix", methods=["POST"])
+def upload_matrix():
+    """Handle file upload for matrix data"""
+    try:
+        # Get the uploaded file
+        file = request.files.get("matrix_file")
+        if not file:
+            return {"success": False, "error": "No file uploaded"}, 400
+
+        # Get expected size from request
+        expected_size = request.form.get("expected_size")
+        if not expected_size:
+            return {"success": False, "error": "Expected size not provided"}, 400
+
+        try:
+            expected_size = int(expected_size)
+        except ValueError:
+            return {"success": False, "error": "Invalid expected size"}, 400
+
+        # Process the uploaded file
+        result = process_uploaded_file(file, expected_size)
+
+        if result["success"]:
+            return {
+                "success": True,
+                "names": result["names"],
+                "matrix": result["matrix"],
+            }
+        else:
+            return {"success": False, "error": result["error"]}, 400
+
+    except Exception as e:
+        return {"success": False, "error": f"Upload failed: {str(e)}"}, 500

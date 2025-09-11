@@ -11,7 +11,7 @@
 # █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from blueprints import (
     hierarchy_bp,
     binary_relations_bp,
@@ -37,6 +37,10 @@ import os
 from sqlalchemy.orm import Session
 from flask_paginate import Pagination, get_page_args
 from mymodules.methods import add_object_to_db
+from mymodules.file_parser import FileParser
+from werkzeug.utils import secure_filename
+import tempfile
+import json
 
 load_dotenv()
 
@@ -44,6 +48,11 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["TIMEZONE"] = "Europe/Kiev"
+
+# File upload configuration
+app.config["UPLOAD_FOLDER"] = "uploads"
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
+ALLOWED_EXTENSIONS = {"xlsx", "xls", "csv"}
 
 db.init_app(app)
 
@@ -331,8 +340,17 @@ def delete_result(result_id):
     if result:
         # Видалення пов'язаних записів
         if result.method_name == "Hierarchy":
+            # Delete alternatives matrices that reference this criteria_id
+            HierarchyAlternativesMatrix.query.filter_by(
+                criteria_id=result.method_id
+            ).delete()
+            # Delete alternatives matrices that reference this hierarchy_alternatives_id
+            HierarchyAlternativesMatrix.query.filter_by(
+                hierarchy_alternatives_id=result.method_id
+            ).delete()
+            # Delete criteria matrix
             HierarchyCriteriaMatrix.query.filter_by(id=result.method_id).delete()
-            HierarchyAlternativesMatrix.query.filter_by(id=result.method_id).delete()
+            # Delete main records
             HierarchyCriteria.query.filter_by(id=result.method_id).delete()
             HierarchyAlternatives.query.filter_by(id=result.method_id).delete()
             HierarchyTask.query.filter_by(id=result.method_id).delete()
@@ -383,6 +401,289 @@ def change_name():
         return redirect(url_for("profile"))
 
     return render_template("change_name.html", **context)
+
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route("/upload_file", methods=["POST"])
+@login_required
+def upload_file():
+    """Handle file upload and parsing"""
+    try:
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"})
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"})
+
+        if not allowed_file(file.filename):
+            return jsonify(
+                {
+                    "success": False,
+                    "error": "Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed",
+                }
+            )
+
+        # Get method parameters
+        method_type = request.form.get("method_type")
+        expected_criteria = int(request.form.get("expected_criteria", 0))
+        expected_alternatives = int(request.form.get("expected_alternatives", 0))
+
+        if not method_type:
+            return jsonify({"success": False, "error": "Method type not specified"})
+
+        # Save file temporarily
+        filename = secure_filename(file.filename)
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, filename)
+        file.save(temp_path)
+
+        try:
+            # Parse file
+            parser = FileParser()
+            result = parser.parse_file(
+                temp_path, method_type, expected_criteria, expected_alternatives
+            )
+
+            if result["success"]:
+                # Store parsed data in session for later use
+                session["uploaded_data"] = {
+                    "method_type": method_type,
+                    "criteria_names": result.get("criteria_names", []),
+                    "alternative_names": result.get("alternative_names", []),
+                    "condition_names": result.get("condition_names", []),
+                    "matrices": result.get("matrices", []),
+                    "matrix": result.get("matrix", []),
+                    "file_name": filename,
+                }
+
+                return jsonify(
+                    {
+                        "success": True,
+                        "message": "File parsed successfully",
+                        "data": {
+                            "criteria_names": result.get("criteria_names", []),
+                            "alternative_names": result.get("alternative_names", []),
+                            "condition_names": result.get("condition_names", []),
+                            "matrices_count": len(result.get("matrices", [])),
+                            "matrix_size": (
+                                len(result.get("matrix", []))
+                                if result.get("matrix")
+                                else 0
+                            ),
+                        },
+                    }
+                )
+            else:
+                return jsonify(
+                    {
+                        "success": False,
+                        "error": result.get("error", "Unknown parsing error"),
+                    }
+                )
+
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            if os.path.exists(temp_dir):
+                os.rmdir(temp_dir)
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Upload error: {str(e)}"})
+
+
+@app.route("/parse_file_preview", methods=["POST"])
+@login_required
+def parse_file_preview():
+    """Preview file content without saving to database"""
+    try:
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"})
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"})
+
+        if not allowed_file(file.filename):
+            return jsonify({"success": False, "error": "Invalid file type"})
+
+        method_type = request.form.get("method_type")
+        expected_criteria = int(request.form.get("expected_criteria", 0))
+        expected_alternatives = int(request.form.get("expected_alternatives", 0))
+
+        # Save file temporarily
+        filename = secure_filename(file.filename)
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, filename)
+        file.save(temp_path)
+
+        try:
+            # Parse file
+            parser = FileParser()
+            result = parser.parse_file(
+                temp_path, method_type, expected_criteria, expected_alternatives
+            )
+
+            return jsonify(
+                {
+                    "success": result["success"],
+                    "error": result.get("error", ""),
+                    "preview": {
+                        "criteria_names": result.get("criteria_names", []),
+                        "alternative_names": result.get("alternative_names", []),
+                        "condition_names": result.get("condition_names", []),
+                        "matrices": result.get("matrices", [])[
+                            :3
+                        ],  # Show first 3 matrices for preview
+                        "matrix": (
+                            result.get("matrix", [])[:5] if result.get("matrix") else []
+                        ),  # Show first 5 rows
+                    },
+                }
+            )
+
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            if os.path.exists(temp_dir):
+                os.rmdir(temp_dir)
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Preview error: {str(e)}"})
+
+
+@app.route("/download_example/<method_type>")
+@login_required
+def download_example(method_type):
+    """Download example file for the specified method"""
+    try:
+        # Create example file based on method type
+        parser = FileParser()
+
+        if method_type == "hierarchy":
+            # Create example hierarchy file
+            example_data = {
+                "criteria_names": ["Quality", "Price", "Service"],
+                "alternative_names": ["Option A", "Option B", "Option C", "Option D"],
+                "matrices": [
+                    # Criteria comparison matrix
+                    {
+                        "names": ["Quality", "Price", "Service"],
+                        "matrix": [[1, 2, 3], [0.5, 1, 4], [0.33, 0.25, 1]],
+                    },
+                    # Alternative matrices for each criterion
+                    {
+                        "names": ["Option A", "Option B", "Option C", "Option D"],
+                        "matrix": [
+                            [1, 5, 1, 1],
+                            [0.2, 1, 1, 1],
+                            [1, 1, 1, 1],
+                            [1, 1, 1, 1],
+                        ],
+                    },
+                    {
+                        "names": ["Option A", "Option B", "Option C", "Option D"],
+                        "matrix": [
+                            [1, 0.5, 2, 3],
+                            [2, 1, 4, 5],
+                            [0.5, 0.25, 1, 2],
+                            [0.33, 0.2, 0.5, 1],
+                        ],
+                    },
+                    {
+                        "names": ["Option A", "Option B", "Option C", "Option D"],
+                        "matrix": [
+                            [1, 1, 1, 1],
+                            [1, 1, 1, 1],
+                            [1, 1, 1, 1],
+                            [1, 1, 1, 1],
+                        ],
+                    },
+                ],
+            }
+        elif method_type in ["laplasa", "maximin", "savage", "hurwitz"]:
+            # Create example cost matrix file
+            example_data = {
+                "alternative_names": ["Option A", "Option B", "Option C", "Option D"],
+                "condition_names": ["Condition 1", "Condition 2", "Condition 3"],
+                "matrix": [
+                    [100, 200, 150],
+                    [120, 180, 160],
+                    [90, 220, 140],
+                    [110, 190, 170],
+                ],
+            }
+        elif method_type == "binary":
+            # Create example binary relations file
+            example_data = {
+                "alternative_names": ["Option A", "Option B", "Option C", "Option D"],
+                "matrix": [[0, 1, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1], [1, 0, 0, 0]],
+            }
+        else:
+            return jsonify({"success": False, "error": "Unknown method type"})
+
+        # Create temporary Excel file
+        import pandas as pd
+
+        temp_dir = tempfile.mkdtemp()
+
+        if method_type == "hierarchy":
+            # Create multiple sheets for hierarchy
+            with pd.ExcelWriter(
+                os.path.join(temp_dir, f"example_{method_type}.xlsx"), engine="openpyxl"
+            ) as writer:
+                # Criteria matrix
+                criteria_df = pd.DataFrame(
+                    example_data["matrices"][0]["matrix"],
+                    index=example_data["matrices"][0]["names"],
+                    columns=example_data["matrices"][0]["names"],
+                )
+                criteria_df.to_excel(writer, sheet_name="Criteria")
+
+                # Alternative matrices
+                for i, matrix in enumerate(example_data["matrices"][1:], 1):
+                    alt_df = pd.DataFrame(
+                        matrix["matrix"], index=matrix["names"], columns=matrix["names"]
+                    )
+                    alt_df.to_excel(writer, sheet_name=f"Criterion_{i}")
+        else:
+            # Create single sheet for other methods
+            if "matrix" in example_data:
+                df = pd.DataFrame(
+                    example_data["matrix"],
+                    index=example_data["alternative_names"],
+                    columns=example_data.get(
+                        "condition_names", example_data["alternative_names"]
+                    ),
+                )
+            else:
+                df = pd.DataFrame(
+                    example_data["matrices"][0]["matrix"],
+                    index=example_data["matrices"][0]["names"],
+                    columns=example_data["matrices"][0]["names"],
+                )
+
+            df.to_excel(os.path.join(temp_dir, f"example_{method_type}.xlsx"))
+
+        # Return file
+        from flask import send_file
+
+        return send_file(
+            os.path.join(temp_dir, f"example_{method_type}.xlsx"),
+            as_attachment=True,
+            download_name=f"example_{method_type}.xlsx",
+        )
+
+    except Exception as e:
+        return jsonify(
+            {"success": False, "error": f"Error creating example file: {str(e)}"}
+        )
 
 
 if __name__ == "__main__":

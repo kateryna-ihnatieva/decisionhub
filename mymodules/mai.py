@@ -39,6 +39,57 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
     return matr
 
 
+def safe_eval(value):
+    """Safely evaluate a value, handling null bytes and control characters"""
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    # Convert to string and clean
+    value_str = str(value)
+
+    # Remove null bytes and control characters
+    cleaned = (
+        value_str.replace("\x00", "")
+        .replace("\x01", "")
+        .replace("\x02", "")
+        .replace("\x03", "")
+        .replace("\x04", "")
+        .replace("\x05", "")
+        .replace("\x06", "")
+        .replace("\x07", "")
+        .replace("\x08", "")
+        .replace("\x0b", "")
+        .replace("\x0c", "")
+        .replace("\x0e", "")
+        .replace("\x0f", "")
+        .replace("\x10", "")
+        .replace("\x11", "")
+        .replace("\x12", "")
+        .replace("\x13", "")
+        .replace("\x14", "")
+        .replace("\x15", "")
+        .replace("\x16", "")
+        .replace("\x17", "")
+        .replace("\x18", "")
+        .replace("\x19", "")
+        .replace("\x1a", "")
+        .replace("\x1b", "")
+        .replace("\x1c", "")
+        .replace("\x1d", "")
+        .replace("\x1e", "")
+        .replace("\x1f", "")
+    )
+
+    # Keep only printable characters
+    cleaned = "".join(char for char in cleaned if ord(char) >= 32 or char in "\t\n\r")
+    cleaned = cleaned.strip()
+
+    try:
+        return float(cleaned)
+    except (ValueError, TypeError):
+        return 0.0
+
+
 # Оцінки компонент власного вектора
 def do_comp_vector(krit=0, criteria=0, matr=0, num_alt=0):
     comp_vector = [[] for _ in range(criteria)] if krit == 0 else []
@@ -46,14 +97,14 @@ def do_comp_vector(krit=0, criteria=0, matr=0, num_alt=0):
         for c in range(criteria):
             dob = 1
             for num in matr[c]:
-                dob *= eval(num)
+                dob *= safe_eval(num)
             comp_vector.append(dob ** (1 / criteria))  # За формулою
     else:
         for count in range(criteria):
             for c in range(num_alt):
                 dob = 1
                 for num in matr[count][c]:
-                    dob *= eval(num)
+                    dob *= safe_eval(num)
                 comp_vector[count].append(dob ** (1 / num_alt))
     return comp_vector
 
@@ -79,12 +130,12 @@ def do_sum_col(krit=0, matr=0, criteria=0, num_alt=0):
         for i in range(criteria):
             s = 0
             for j in range(criteria):
-                s += eval(matr[j][i])
+                s += safe_eval(matr[j][i])
             sum_col.append(s)
     else:
         for c in range(criteria):
             sum_col[c] = [
-                sum([eval(matr[c][j][i]) for j in range(num_alt)])
+                sum([safe_eval(matr[c][j][i]) for j in range(num_alt)])
                 for i in range(num_alt)
             ]
 
@@ -308,6 +359,12 @@ def generate_hierarchy_tree(
 
     # Альтернативи
     for alternative_name, global_priority in zip(name_alternatives_tree, global_prior):
+        # Ensure global_priority is a scalar value
+        if isinstance(global_priority, list) and len(global_priority) > 0:
+            global_priority = global_priority[0]
+        elif isinstance(global_priority, list) and len(global_priority) == 0:
+            global_priority = 0.0
+
         label = f"{alternative_name}\n({global_priority:.3f})"
         dot.node(
             f"alternative_{alternative_name}",
