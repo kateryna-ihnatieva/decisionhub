@@ -500,6 +500,9 @@ def matrix_alt():
 
 @hierarchy_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None, file_data=None):
+    current_app.logger.info(
+        f"[DEBUG] result() called with method_id={method_id}, file_data={file_data is not None}"
+    )
 
     # Check if we have file data in session (from result_from_file redirect)
     if (
@@ -587,16 +590,20 @@ def result(method_id=None, file_data=None):
             )
             task = HierarchyTask.query.get(task_id)
 
-            # Save criteria - let database generate unique ID
-            criteria_id = add_object_to_db(db, HierarchyCriteria, names=criteria_names)
-
-            # Save alternatives - let database generate unique ID
+            # Save criteria and alternatives with method_id as their ID
+            criteria_id = add_object_to_db(
+                db, HierarchyCriteria, id=method_id, names=criteria_names
+            )
             alternatives_id = add_object_to_db(
-                db, HierarchyAlternatives, names=alternatives_names
+                db, HierarchyAlternatives, id=method_id, names=alternatives_names
             )
 
-            # Use task_id as the main reference ID for all related records
-            common_id = task_id
+            # Use method_id as the common reference ID
+            common_id = method_id
+
+            current_app.logger.info(
+                f"[DEBUG] File upload - criteria_id: {criteria_id}, alternatives_id: {alternatives_id}, common_id: {common_id}, method_id: {method_id}"
+            )
 
             # Process criteria matrix - keep as numbers, don't convert to strings
             # Flatten the 2D matrix to 1D list for do_matrix
@@ -646,6 +653,30 @@ def result(method_id=None, file_data=None):
                 criteria=len(criteria_names),
             )
             ranj_krit = do_ranj(krit=1, lst_norm_vector=lst_norm_vector_krit)
+
+            # Create HierarchyCriteriaMatrix record for export functionality
+            current_app.logger.info(
+                f"[DEBUG] Creating HierarchyCriteriaMatrix with id={common_id}, hierarchy_criteria_id={criteria_id}"
+            )
+            criteria_matrix_id = add_object_to_db(
+                db,
+                HierarchyCriteriaMatrix,
+                id=common_id,
+                hierarchy_criteria_id=criteria_id,
+                comparison_matrix=matrix_krit,
+                components_eigenvector=comp_vector_krit,
+                normalized_eigenvector=norm_vector_krit,
+                sum_col=sum_col_krit,
+                prod_col=prod_col_krit,
+                l_max=l_max_krit,
+                index_consistency=index_consistency_krit,
+                relation_consistency=relation_consistency_krit,
+                lst_normalized_eigenvector=lst_norm_vector_krit,
+                ranj=ranj_krit,
+            )
+            current_app.logger.info(
+                f"[DEBUG] Created HierarchyCriteriaMatrix with ID: {criteria_matrix_id}"
+            )
 
             # Create plot first
             plot_id = add_object_to_db(db, GlobalPrioritiesPlot, plot_data=[])
@@ -763,9 +794,13 @@ def result(method_id=None, file_data=None):
 
             # Create single HierarchyAlternativesMatrix record with all data
             try:
+                current_app.logger.info(
+                    f"[DEBUG] Creating HierarchyAlternativesMatrix with id={common_id}, criteria_id={criteria_id}, hierarchy_alternatives_id={alternatives_id}"
+                )
                 alt_matrix_id = add_object_to_db(
                     db,
                     HierarchyAlternativesMatrix,
+                    id=common_id,
                     criteria_id=criteria_id,
                     hierarchy_alternatives_id=alternatives_id,
                     matr_alt=all_matr_alt_flat,
@@ -832,19 +867,43 @@ def result(method_id=None, file_data=None):
                     )
                     norm_vectors_alt.append([norm_vector])
                 elif isinstance(norm_vector, list) and len(norm_vector) > 0:
-                    # If it's a list, check if it contains nested lists
+                    # If it's a list, check if it contains nested lists or dictionaries
                     if isinstance(norm_vector[0], list):
                         # Nested list structure - extract the first element
                         current_app.logger.info(
                             f"[DEBUG] norm_vector[{i}] is nested list with length {len(norm_vector)}"
                         )
                         criterion_vector = norm_vector[0]
+                    elif isinstance(norm_vector[0], dict):
+                        # List of dictionaries - extract values in order
+                        current_app.logger.info(
+                            f"[DEBUG] norm_vector[{i}] is list of dictionaries with length {len(norm_vector)}"
+                        )
+                        # Get the first dictionary and extract values in the order of alternatives
+                        first_dict = norm_vector[0]
+                        criterion_vector = [
+                            first_dict.get(alt_name, 0.0)
+                            for alt_name in alternatives_names
+                        ]
                     else:
                         # Flat list structure
                         current_app.logger.info(
                             f"[DEBUG] norm_vector[{i}] is flat list with length {len(norm_vector)}"
                         )
                         criterion_vector = norm_vector
+                    current_app.logger.info(
+                        f"[DEBUG] criterion_vector[{i}]: {criterion_vector}"
+                    )
+                    norm_vectors_alt.append(criterion_vector)
+                elif isinstance(norm_vector, dict):
+                    # Single dictionary - extract values in order
+                    current_app.logger.info(
+                        f"[DEBUG] norm_vector[{i}] is single dictionary: {norm_vector}"
+                    )
+                    criterion_vector = [
+                        norm_vector.get(alt_name, 0.0)
+                        for alt_name in alternatives_names
+                    ]
                     current_app.logger.info(
                         f"[DEBUG] criterion_vector[{i}]: {criterion_vector}"
                     )
@@ -900,6 +959,29 @@ def result(method_id=None, file_data=None):
             alt_matrix_result.ranj_global = ranj_global
             db.session.commit()
 
+            # Find result_id for export functionality
+            result_id = None
+            if current_user.is_authenticated:
+                result_record = Result.query.filter_by(
+                    method_id=method_id,
+                    method_name="Hierarchy",
+                    user_id=current_user.get_id(),
+                ).first()
+            else:
+                result_record = Result.query.filter_by(
+                    method_id=method_id, method_name="Hierarchy", user_id=None
+                ).first()
+
+            if result_record:
+                result_id = result_record.id
+                current_app.logger.info(
+                    f"[DEBUG] Found result_id: {result_id} for method_id: {method_id}"
+                )
+            else:
+                current_app.logger.warning(
+                    f"[DEBUG] No result_id found for method_id: {method_id}"
+                )
+
             # Render template with file data
             return render_template(
                 "Hierarchy/result.html",
@@ -933,6 +1015,8 @@ def result(method_id=None, file_data=None):
                 global_prior=global_prior,
                 global_prior_plot=generate_plot(global_prior, alternatives_names),
                 global_priorities_plot_id=plot_id,
+                result_id=result_id,
+                method_id=method_id,
             )
 
         except json.JSONDecodeError:
@@ -1233,6 +1317,31 @@ def result(method_id=None, file_data=None):
             user_id=user_id,
         )
 
+        # Create Result record for file data processing (if not already created)
+        if file_data:
+            # Use method_id for file data processing
+            user_id = current_user.get_id() if current_user.is_authenticated else None
+            existing_result = Result.query.filter_by(
+                method_id=method_id, method_name="Hierarchy", user_id=user_id
+            ).first()
+            if not existing_result:
+                add_object_to_db(
+                    db,
+                    Result,
+                    method_name="Hierarchy",
+                    method_id=method_id,
+                    user_id=user_id,
+                )
+                current_app.logger.info(
+                    f"[DEBUG] Created Result record with method_id={method_id}, user_id={user_id}"
+                )
+            else:
+                current_app.logger.info(
+                    f"[DEBUG] Result record already exists with method_id={method_id}, user_id={user_id}"
+                )
+
+            # Result record already has the correct method_id, no need to update
+
     generate_hierarchy_tree(
         name_criteria, name_alternatives, normalized_eigenvector, global_prior
     )
@@ -1240,11 +1349,31 @@ def result(method_id=None, file_data=None):
     # Find result_id for this analysis
     result_id = None
     user_id = current_user.get_id() if current_user.is_authenticated else None
+
+    # For file data, use common_id; for regular data, use method_id
+    search_method_id = common_id if file_data else method_id
+    current_app.logger.info(
+        f"[DEBUG] Searching for Result with method_id={search_method_id}, user_id={user_id}"
+    )
     result = Result.query.filter_by(
-        method_id=method_id, method_name="Hierarchy", user_id=user_id
+        method_id=search_method_id, method_name="Hierarchy", user_id=user_id
     ).first()
     if result:
         result_id = result.id
+        current_app.logger.info(f"[DEBUG] Found Result with id={result_id}")
+    else:
+        current_app.logger.info(
+            f"[DEBUG] No Result found for method_id={search_method_id}, user_id={user_id}"
+        )
+        # Try to find any Result with this method_id regardless of user_id
+        any_result = Result.query.filter_by(
+            method_id=search_method_id, method_name="Hierarchy"
+        ).first()
+        if any_result:
+            current_app.logger.info(
+                f"[DEBUG] Found Result with different user_id: {any_result.user_id}"
+            )
+            result_id = any_result.id
 
     # Debug: Check current_user status
     current_app.logger.info(
@@ -1294,6 +1423,8 @@ def result(method_id=None, file_data=None):
 
     # Debug: Check what name is being passed to template
     current_app.logger.info(f"[DEBUG] context['name']: {context['name']}")
+    current_app.logger.info(f"[DEBUG] context['result_id']: {context['result_id']}")
+    current_app.logger.info(f"[DEBUG] method_id: {method_id}")
 
     # Перевірка відношення узгодженості
     current_app.logger.info(
@@ -1359,11 +1490,76 @@ def export_excel(result_id):
         current_app.logger.info(f"[DEBUG] Getting data for method_id: {method_id}")
 
         # Get basic data using method_id to find related records
-        criteria_record = HierarchyCriteria.query.get(method_id)
-        alternatives_record = HierarchyAlternatives.query.get(method_id)
-        task_record = HierarchyTask.query.get(method_id)
-        criteria_matrix_record = HierarchyCriteriaMatrix.query.get(method_id)
-        alternatives_matrix_record = HierarchyAlternativesMatrix.query.get(method_id)
+        # For file uploads, we need to find records by method_id, not by ID
+        criteria_record = HierarchyCriteria.query.filter_by(id=method_id).first()
+        alternatives_record = HierarchyAlternatives.query.filter_by(
+            id=method_id
+        ).first()
+        task_record = HierarchyTask.query.filter_by(id=method_id).first()
+        criteria_matrix_record = HierarchyCriteriaMatrix.query.filter_by(
+            id=method_id
+        ).first()
+        alternatives_matrix_record = HierarchyAlternativesMatrix.query.filter_by(
+            id=method_id
+        ).first()
+
+        # If not found by id, try to find by criteria_id and alternatives_id
+        if not criteria_matrix_record and criteria_record:
+            current_app.logger.info(
+                f"[DEBUG] Searching criteria_matrix by hierarchy_criteria_id={criteria_record.id}"
+            )
+            criteria_matrix_record = HierarchyCriteriaMatrix.query.filter_by(
+                hierarchy_criteria_id=criteria_record.id
+            ).first()
+            current_app.logger.info(
+                f"[DEBUG] Found criteria_matrix_record by hierarchy_criteria_id: {criteria_matrix_record is not None}"
+            )
+            if criteria_matrix_record:
+                current_app.logger.info(
+                    f"[DEBUG] Found criteria_matrix_record.id: {criteria_matrix_record.id}"
+                )
+
+        if not alternatives_matrix_record and alternatives_record:
+            current_app.logger.info(
+                f"[DEBUG] Searching alternatives_matrix by hierarchy_alternatives_id={alternatives_record.id}"
+            )
+            alternatives_matrix_record = HierarchyAlternativesMatrix.query.filter_by(
+                hierarchy_alternatives_id=alternatives_record.id
+            ).first()
+            current_app.logger.info(
+                f"[DEBUG] Found alternatives_matrix_record by hierarchy_alternatives_id: {alternatives_matrix_record is not None}"
+            )
+            if alternatives_matrix_record:
+                current_app.logger.info(
+                    f"[DEBUG] Found alternatives_matrix_record.id: {alternatives_matrix_record.id}"
+                )
+
+        # Additional search attempts if still not found
+        if not criteria_matrix_record:
+            current_app.logger.info(
+                f"[DEBUG] Trying to find any HierarchyCriteriaMatrix records..."
+            )
+            all_criteria_matrices = HierarchyCriteriaMatrix.query.all()
+            current_app.logger.info(
+                f"[DEBUG] Found {len(all_criteria_matrices)} HierarchyCriteriaMatrix records"
+            )
+            for i, cm in enumerate(all_criteria_matrices[:5]):  # Show first 5
+                current_app.logger.info(
+                    f"[DEBUG]   [{i}] id={cm.id}, hierarchy_criteria_id={cm.hierarchy_criteria_id}"
+                )
+
+        if not alternatives_matrix_record:
+            current_app.logger.info(
+                f"[DEBUG] Trying to find any HierarchyAlternativesMatrix records..."
+            )
+            all_alternatives_matrices = HierarchyAlternativesMatrix.query.all()
+            current_app.logger.info(
+                f"[DEBUG] Found {len(all_alternatives_matrices)} HierarchyAlternativesMatrix records"
+            )
+            for i, am in enumerate(all_alternatives_matrices[:5]):  # Show first 5
+                current_app.logger.info(
+                    f"[DEBUG]   [{i}] id={am.id}, hierarchy_alternatives_id={am.hierarchy_alternatives_id}"
+                )
 
         current_app.logger.info(
             f"[DEBUG] Retrieved records with method_id: {method_id}"
@@ -1371,16 +1567,44 @@ def export_excel(result_id):
 
         current_app.logger.info(f"Data records found:")
         current_app.logger.info(f"  criteria_record: {criteria_record is not None}")
+        if criteria_record:
+            current_app.logger.info(f"    criteria_record.id: {criteria_record.id}")
+            current_app.logger.info(
+                f"    criteria_record.names: {criteria_record.names}"
+            )
         current_app.logger.info(
             f"  alternatives_record: {alternatives_record is not None}"
         )
+        if alternatives_record:
+            current_app.logger.info(
+                f"    alternatives_record.id: {alternatives_record.id}"
+            )
+            current_app.logger.info(
+                f"    alternatives_record.names: {alternatives_record.names}"
+            )
         current_app.logger.info(f"  task_record: {task_record is not None}")
+        if task_record:
+            current_app.logger.info(f"    task_record.id: {task_record.id}")
         current_app.logger.info(
             f"  criteria_matrix_record: {criteria_matrix_record is not None}"
         )
+        if criteria_matrix_record:
+            current_app.logger.info(
+                f"    criteria_matrix_record.id: {criteria_matrix_record.id}"
+            )
+            current_app.logger.info(
+                f"    criteria_matrix_record.hierarchy_criteria_id: {criteria_matrix_record.hierarchy_criteria_id}"
+            )
         current_app.logger.info(
             f"  alternatives_matrix_record: {alternatives_matrix_record is not None}"
         )
+        if alternatives_matrix_record:
+            current_app.logger.info(
+                f"    alternatives_matrix_record.id: {alternatives_matrix_record.id}"
+            )
+            current_app.logger.info(
+                f"    alternatives_matrix_record.hierarchy_alternatives_id: {alternatives_matrix_record.hierarchy_alternatives_id}"
+            )
 
         if not all(
             [
@@ -1390,8 +1614,22 @@ def export_excel(result_id):
                 alternatives_matrix_record,
             ]
         ):
+            missing_records = []
+            if not criteria_record:
+                missing_records.append("criteria_record")
+            if not alternatives_record:
+                missing_records.append("alternatives_record")
+            if not criteria_matrix_record:
+                missing_records.append("criteria_matrix_record")
+            if not alternatives_matrix_record:
+                missing_records.append("alternatives_matrix_record")
+
             current_app.logger.error(
                 f"Incomplete analysis data for method_id: {method_id}"
+            )
+            current_app.logger.error(f"Missing records: {', '.join(missing_records)}")
+            current_app.logger.error(
+                f"Search criteria: method_id={method_id}, criteria_id={criteria_record.id if criteria_record else 'None'}, alternatives_id={alternatives_record.id if alternatives_record else 'None'}"
             )
             return Response(
                 "Incomplete analysis data", status=400, mimetype="text/plain"
@@ -1602,8 +1840,14 @@ def result_from_file():
 
         # Create records in database to get method_id
         new_record_id = add_object_to_db(db, HierarchyCriteria, names=criteria_names)
+        current_app.logger.info(
+            f"[DEBUG] Created HierarchyCriteria with ID: {new_record_id}"
+        )
         add_object_to_db(
             db, HierarchyAlternatives, id=new_record_id, names=alternatives_names
+        )
+        current_app.logger.info(
+            f"[DEBUG] Created HierarchyAlternatives with ID: {new_record_id}"
         )
 
         # Create Result record for file uploads (if user is authenticated)
@@ -1629,6 +1873,9 @@ def result_from_file():
         session["file_alternatives_matrices"] = file_data["alternatives_matrices"]
 
         # Redirect to the result page with method_id
+        current_app.logger.info(
+            f"[DEBUG] Redirecting to /hierarchy/result/{new_record_id}"
+        )
         return redirect(url_for("hierarchy.result", method_id=new_record_id))
 
     except Exception as e:
