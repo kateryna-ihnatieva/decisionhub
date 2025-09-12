@@ -205,8 +205,16 @@ def matrix_krit():
     task_id = add_object_to_db(db, HierarchyTask, task=task_description)
     current_app.logger.info(f"Created HierarchyTask with ID: {task_id}")
 
-    # Clean up session to avoid cookie size issues
-    session.clear()
+    # Clean up specific session keys to avoid cookie size issues
+    # Keep user authentication data intact
+    keys_to_remove = [
+        key
+        for key in session.keys()
+        if key.startswith(("hierarchy_", "matrix_", "alt_", "crit_"))
+    ]
+    for key in keys_to_remove:
+        session.pop(key, None)
+
     session["new_record_id"] = new_record_id
     session["num_alternatives"] = num_alternatives
     session["num_criteria"] = num_criteria
@@ -1307,7 +1315,6 @@ def result(method_id=None, file_data=None):
 
 
 @hierarchy_bp.route("/export/excel/<int:result_id>")
-@login_required
 def export_excel(result_id):
     """Export hierarchy analysis results to Excel file"""
     try:
@@ -1326,11 +1333,13 @@ def export_excel(result_id):
             )
 
         # Check if user has access to this result
-        if (
-            result.user_id != current_user.get_id()
-            and current_user.get_name() != "admin"
-        ):
-            return Response("Access denied", status=403, mimetype="text/plain")
+        if current_user.is_authenticated:
+            if (
+                result.user_id != current_user.get_id()
+                and current_user.get_name() != "admin"
+            ):
+                return Response("Access denied", status=403, mimetype="text/plain")
+        # For unauthenticated users, allow access to any result
 
         # Get analysis data from database
         method_id = result.method_id
@@ -1494,7 +1503,6 @@ def export_excel(result_id):
 
 
 @hierarchy_bp.route("/upload_matrix", methods=["POST"])
-@login_required
 def upload_matrix():
     """Handle file upload for hierarchy matrix data"""
     try:
@@ -1542,7 +1550,6 @@ def upload_matrix():
 
 
 @hierarchy_bp.route("/result_from_file", methods=["POST"])
-@login_required
 def result_from_file():
     """Process hierarchy analysis from uploaded file data and redirect to result page"""
     try:

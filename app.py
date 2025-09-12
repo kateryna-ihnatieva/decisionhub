@@ -430,6 +430,22 @@ def delete_result(result_id):
             ).delete()
             ExpertsCompetency.query.filter_by(id=result.method_id).delete()
             ExpertsNameResearch.query.filter_by(id=result.method_id).delete()
+        elif result.method_name == "Laplasa":
+            LaplasaCostMatrix.query.filter_by(id=result.method_id).delete()
+            LaplasaAlternatives.query.filter_by(id=result.method_id).delete()
+            LaplasaConditions.query.filter_by(id=result.method_id).delete()
+        elif result.method_name == "Maximin":
+            MaximinCostMatrix.query.filter_by(id=result.method_id).delete()
+            MaximinAlternatives.query.filter_by(id=result.method_id).delete()
+            MaximinConditions.query.filter_by(id=result.method_id).delete()
+        elif result.method_name == "Savage":
+            SavageCostMatrix.query.filter_by(id=result.method_id).delete()
+            SavageAlternatives.query.filter_by(id=result.method_id).delete()
+            SavageConditions.query.filter_by(id=result.method_id).delete()
+        elif result.method_name == "Hurwitz":
+            HurwitzCostMatrix.query.filter_by(id=result.method_id).delete()
+            HurwitzAlternatives.query.filter_by(id=result.method_id).delete()
+            HurwitzConditions.query.filter_by(id=result.method_id).delete()
 
         # Видалення самого результату
         db.session.delete(result)
