@@ -189,11 +189,19 @@ def profile():
 
         if method_name == "Hierarchy":
             session = Session(bind=db.engine)
-            criteria_names = session.get(HierarchyCriteria, result.method_id).names
-            alternatives_names = session.get(
-                HierarchyAlternatives, result.method_id
-            ).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            criteria_record = session.get(HierarchyCriteria, result.method_id)
+            alternatives_record = session.get(HierarchyAlternatives, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not criteria_record or not alternatives_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            criteria_names = criteria_record.names
+            alternatives_names = alternatives_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
@@ -208,8 +216,17 @@ def profile():
 
         if method_name == "Binary":
             session = Session(bind=db.engine)
-            binary_names = session.get(BinaryNames, result.method_id).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            binary_record = session.get(BinaryNames, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not binary_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            binary_names = binary_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
@@ -223,8 +240,17 @@ def profile():
 
         if method_name == "Experts":
             session = Session(bind=db.engine)
-            name_research = session.get(ExpertsNameResearch, result.method_id).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            research_record = session.get(ExpertsNameResearch, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not research_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            name_research = research_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
@@ -238,9 +264,19 @@ def profile():
 
         if method_name == "Laplasa":
             session = Session(bind=db.engine)
-            name_alternatives = session.get(LaplasaAlternatives, result.method_id).names
-            name_conditions = session.get(LaplasaConditions, result.method_id).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            alternatives_record = session.get(LaplasaAlternatives, result.method_id)
+            conditions_record = session.get(LaplasaConditions, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not alternatives_record or not conditions_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            name_alternatives = alternatives_record.names
+            name_conditions = conditions_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
@@ -255,9 +291,19 @@ def profile():
 
         if method_name == "Maximin":
             session = Session(bind=db.engine)
-            name_alternatives = session.get(MaximinAlternatives, result.method_id).names
-            name_conditions = session.get(MaximinConditions, result.method_id).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            alternatives_record = session.get(MaximinAlternatives, result.method_id)
+            conditions_record = session.get(MaximinConditions, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not alternatives_record or not conditions_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            name_alternatives = alternatives_record.names
+            name_conditions = conditions_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
@@ -272,9 +318,19 @@ def profile():
 
         if method_name == "Savage":
             session = Session(bind=db.engine)
-            name_alternatives = session.get(SavageAlternatives, result.method_id).names
-            name_conditions = session.get(SavageConditions, result.method_id).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            alternatives_record = session.get(SavageAlternatives, result.method_id)
+            conditions_record = session.get(SavageConditions, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not alternatives_record or not conditions_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            name_alternatives = alternatives_record.names
+            name_conditions = conditions_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
@@ -289,9 +345,19 @@ def profile():
 
         if method_name == "Hurwitz":
             session = Session(bind=db.engine)
-            name_alternatives = session.get(HurwitzAlternatives, result.method_id).names
-            name_conditions = session.get(HurwitzConditions, result.method_id).names
-            owner_name = session.get(User, result.user_id).name
+
+            # Check if records exist before accessing them
+            alternatives_record = session.get(HurwitzAlternatives, result.method_id)
+            conditions_record = session.get(HurwitzConditions, result.method_id)
+            user_record = session.get(User, result.user_id)
+
+            if not alternatives_record or not conditions_record or not user_record:
+                # Skip this result if data is missing
+                continue
+
+            name_alternatives = alternatives_record.names
+            name_conditions = conditions_record.names
+            owner_name = user_record.name
             result_history.append(
                 {
                     "result_id": result_id,
