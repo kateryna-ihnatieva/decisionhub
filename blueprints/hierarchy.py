@@ -582,7 +582,13 @@ def result(method_id=None, file_data=None):
                 return redirect(url_for("hierarchy.index"))
 
             # Create hierarchy task with method_id as its ID
-            task_description = f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+            # Use task from session if available, otherwise use default
+            hierarchy_task = session.get("hierarchy_task")
+            task_description = (
+                hierarchy_task
+                if hierarchy_task
+                else f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+            )
             current_app.logger.info(
                 f"[DEBUG] Creating HierarchyTask with id={method_id}, task='{task_description}'"
             )
@@ -1830,6 +1836,10 @@ def result_from_file():
             "criteria_matrix": request.form.get("criteria_matrix"),
             "alternatives_matrices": request.form.get("alternatives_matrices"),
         }
+
+        # Get task description from form
+        hierarchy_task = request.form.get("hierarchy_task")
+        current_app.logger.info(f"[DEBUG] Extracted hierarchy_task: '{hierarchy_task}'")
         current_app.logger.info(f"[DEBUG] Extracted file_data: {file_data}")
 
         # Check if all required data is present
@@ -1869,7 +1879,11 @@ def result_from_file():
         )
 
         # Create HierarchyTask with new_record_id as its ID
-        task_description = f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+        task_description = (
+            hierarchy_task
+            if hierarchy_task
+            else f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+        )
         add_object_to_db(
             db,
             HierarchyTask,
