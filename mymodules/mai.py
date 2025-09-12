@@ -67,6 +67,7 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
         # Если значение пустое или Undefined — ставим 1.0 по умолчанию
         if value is None or isinstance(value, Undefined) or str(value).strip() == "":
             matr[i][j] = 1.0
+            print(f"[DEBUG] Empty value, setting matr[{i}][{j}] = 1.0")
             return
 
         # Обрабатываем значение как float
@@ -74,27 +75,59 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
             if isinstance(value, str):
                 if "/" in value:
                     frac = Fraction(value)
-                    matr[i][j] = float(frac)
+                    result = float(frac)
+                    matr[i][j] = result
+                    matr[j][i] = 1.0 / result if result != 0 else 1.0
+                    print(
+                        f"[DEBUG] Fraction {value} -> {result}, setting matr[{i}][{j}] = {result}, matr[{j}][{i}] = {1.0/result if result != 0 else 1.0}"
+                    )
                 else:
                     n = float(value)
                     if n == 0:
                         matr[i][j] = 1.0
+                        matr[j][i] = 1.0
+                        print(
+                            f"[DEBUG] Zero value, setting matr[{i}][{j}] = 1.0, matr[{j}][{i}] = 1.0"
+                        )
                     elif n >= 1:
-                        matr[i][j] = 1.0 / n
+                        result = 1.0 / n
+                        matr[i][j] = result
+                        matr[j][i] = n
+                        print(
+                            f"[DEBUG] Value {n} >= 1, setting matr[{i}][{j}] = 1/{n} = {result}, matr[{j}][{i}] = {n}"
+                        )
                     else:
                         matr[i][j] = n
+                        matr[j][i] = 1.0 / n if n != 0 else 1.0
+                        print(
+                            f"[DEBUG] Value {n} < 1, setting matr[{i}][{j}] = {n}, matr[{j}][{i}] = {1.0/n if n != 0 else 1.0}"
+                        )
             else:
                 # Если уже число, конвертируем в float
                 n = float(value)
                 if n == 0:
                     matr[i][j] = 1.0
+                    matr[j][i] = 1.0
+                    print(
+                        f"[DEBUG] Zero value, setting matr[{i}][{j}] = 1.0, matr[{j}][{i}] = 1.0"
+                    )
                 elif n >= 1:
-                    matr[i][j] = 1.0 / n
+                    result = 1.0 / n
+                    matr[i][j] = result
+                    matr[j][i] = n
+                    print(
+                        f"[DEBUG] Value {n} >= 1, setting matr[{i}][{j}] = 1/{n} = {result}, matr[{j}][{i}] = {n}"
+                    )
                 else:
                     matr[i][j] = n
+                    matr[j][i] = 1.0 / n if n != 0 else 1.0
+                    print(
+                        f"[DEBUG] Value {n} < 1, setting matr[{i}][{j}] = {n}, matr[{j}][{i}] = {1.0/n if n != 0 else 1.0}"
+                    )
         except (ValueError, TypeError) as e:
             print(f"[WARNING] Failed to process value {value}: {e}, using 1.0")
             matr[i][j] = 1.0
+            matr[j][i] = 1.0
 
     matr = []
     if krit:
@@ -121,15 +154,32 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
         dims = f"{len(matr)}x{len(matr[0]) if matr else 'N/A'}"
         print(f"[DEBUG] Matrix dimensions: {dims}")
 
+        # Process only lower triangular part to set reciprocal values
         for i in range(len(matr)):
             for j in range(len(matr[i])):
                 if i > j:
                     pos = f"({i}, {j})"
                     msg = f"[DEBUG] About to process element at position {pos}"
                     print(msg)
-                    process_matrix_element(matr, i, j)
+                    # Get the original value from upper triangular position
+                    original_value = matr[j][i]
+                    print(f"[DEBUG] Original value at ({j},{i}): {original_value}")
+
+                    # Set the reciprocal value in lower triangular position
+                    if original_value != 0:
+                        reciprocal_value = 1.0 / original_value
+                        matr[i][j] = reciprocal_value
+                        print(
+                            f"[DEBUG] Setting reciprocal at ({i},{j}): {reciprocal_value}"
+                        )
+                    else:
+                        matr[i][j] = 1.0
+                        print(f"[DEBUG] Zero original value, setting ({i},{j}): 1.0")
     else:
         print("[DEBUG] Processing alternatives matrix (krit=0)")
+        print(f"[DEBUG] Total matrix elements: {len(matrix)}")
+        print(f"[DEBUG] Expected elements per matrix: {num_alt * num_alt}")
+        print(f"[DEBUG] Number of criteria: {criteria}")
         for i in range(criteria):
             print(f"[DEBUG] Creating matrix for criterion {i}")
             new_matrix = []
@@ -139,13 +189,28 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
                     idx = i * num_alt * num_alt + row_idx * num_alt + col_idx
                     if idx < len(matrix):
                         try:
-                            row.append(float(matrix[idx]))
+                            value = float(matrix[idx])
+                            row.append(value)
+                            if i in [1, 4]:  # Debug matrices 2 and 5 (0-indexed)
+                                print(
+                                    f"[DEBUG] Matrix {i+1}, pos ({row_idx},{col_idx}): {matrix[idx]} -> {value}"
+                                )
                         except (ValueError, TypeError):
                             row.append(1.0)
+                            if i in [1, 4]:
+                                print(
+                                    f"[DEBUG] Matrix {i+1}, pos ({row_idx},{col_idx}): {matrix[idx]} -> 1.0 (conversion error)"
+                                )
                     else:
                         row.append(1.0)
+                        if i in [1, 4]:
+                            print(
+                                f"[DEBUG] Matrix {i+1}, pos ({row_idx},{col_idx}): index {idx} out of range -> 1.0"
+                            )
                 new_matrix.append(row)
             matr.append(new_matrix)
+            if i in [1, 4]:  # Debug matrices 2 and 5
+                print(f"[DEBUG] Final matrix {i+1}: {new_matrix}")
 
         print(f"[DEBUG] Final matr structure: {matr}")
         # Змінюємо елементи нижньої трикутної матриці
@@ -163,7 +228,21 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
                             f"element at {pos}"
                         )
                         print(msg)
-                        process_matrix_element(m, i, j)
+                        original_value = m[j][i]
+                        print(f"[DEBUG] Original value at ({j},{i}): {original_value}")
+
+                        # Set the reciprocal value in lower triangular position
+                        if original_value != 0:
+                            reciprocal_value = 1.0 / original_value
+                            m[i][j] = reciprocal_value
+                            print(
+                                f"[DEBUG] Setting reciprocal at ({i},{j}): {reciprocal_value}"
+                            )
+                        else:
+                            m[i][j] = 1.0
+                            print(
+                                f"[DEBUG] Zero original value, setting ({i},{j}): 1.0"
+                            )
 
     return matr
 
