@@ -506,7 +506,7 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
                 <li><a class="nav-link {% block drafts %}{% endblock %}" href="{{ url_for('drafts.index') }}">Чернетки</a></li>
 </ul>
 <div class="sidebar-footer mt-auto">
-{% if name %}
+{% if name or current_user.is_authenticated %}
 <!-- Красивая карточка профиля для развернутого сайдбара -->
 <div class="user-profile-card">
     <div class="user-avatar-container">
@@ -515,7 +515,7 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
         </a>
     </div>
     <div class="user-info">
-        <a href="{{ url_for('profile') }}" class="user-name">{{ name }}</a>
+        <a href="{{ url_for('profile') }}" class="user-name">{{ name or current_user.get_name() }}</a>
         <div class="user-actions">
             <a href="{{ url_for('profile') }}" class="action-btn profile-btn">
                 <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">

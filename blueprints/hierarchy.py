@@ -1223,14 +1223,15 @@ def result(method_id=None, file_data=None):
             task_id=task_id,
         )
 
-        if current_user.is_authenticated:
-            add_object_to_db(
-                db,
-                Result,
-                method_name="Hierarchy",
-                method_id=new_record_id,
-                user_id=current_user.get_id(),
-            )
+        # Create Result record for all users (authenticated and unauthenticated)
+        user_id = current_user.get_id() if current_user.is_authenticated else None
+        add_object_to_db(
+            db,
+            Result,
+            method_name="Hierarchy",
+            method_id=new_record_id,
+            user_id=user_id,
+        )
 
     generate_hierarchy_tree(
         name_criteria, name_alternatives, normalized_eigenvector, global_prior
@@ -1238,12 +1239,21 @@ def result(method_id=None, file_data=None):
 
     # Find result_id for this analysis
     result_id = None
+    user_id = current_user.get_id() if current_user.is_authenticated else None
+    result = Result.query.filter_by(
+        method_id=method_id, method_name="Hierarchy", user_id=user_id
+    ).first()
+    if result:
+        result_id = result.id
+
+    # Debug: Check current_user status
+    current_app.logger.info(
+        f"[DEBUG] current_user.is_authenticated: {current_user.is_authenticated}"
+    )
     if current_user.is_authenticated:
-        result = Result.query.filter_by(
-            method_id=method_id, method_name="Hierarchy", user_id=current_user.get_id()
-        ).first()
-        if result:
-            result_id = result.id
+        current_app.logger.info(
+            f"[DEBUG] current_user.get_name(): {current_user.get_name()}"
+        )
 
     context = {
         "title": "Результат",
@@ -1281,6 +1291,9 @@ def result(method_id=None, file_data=None):
         "task": hierarchy_task if hierarchy_task else None,
         # 'gpt_response': gpt_response
     }
+
+    # Debug: Check what name is being passed to template
+    current_app.logger.info(f"[DEBUG] context['name']: {context['name']}")
 
     # Перевірка відношення узгодженості
     current_app.logger.info(
@@ -1591,6 +1604,17 @@ def result_from_file():
         new_record_id = add_object_to_db(db, HierarchyCriteria, names=criteria_names)
         add_object_to_db(
             db, HierarchyAlternatives, id=new_record_id, names=alternatives_names
+        )
+
+        # Create Result record for file uploads (if user is authenticated)
+        # Create Result record for all users (authenticated and unauthenticated)
+        user_id = current_user.get_id() if current_user.is_authenticated else None
+        add_object_to_db(
+            db,
+            Result,
+            method_name="Hierarchy",
+            method_id=new_record_id,
+            user_id=user_id,
         )
 
         # Store data in session for the result function
