@@ -94,6 +94,14 @@ def names():
 
 @hierarchy_bp.route("/matrix-krit", methods=["GET", "POST"])
 def matrix_krit():
+    # Debug: Log session data at the start
+    current_app.logger.info(f"matrix_krit() called - method: {request.method}")
+    current_app.logger.info(f"Session new_record_id: {session.get('new_record_id')}")
+    current_app.logger.info(
+        f"Session num_alternatives: {session.get('num_alternatives')}"
+    )
+    current_app.logger.info(f"Session num_criteria: {session.get('num_criteria')}")
+
     if request.method == "GET":
         # GET запрос - показываем страницу с возможностью загрузки черновика
         num_alternatives = int(session.get("num_alternatives", 0))
@@ -140,6 +148,9 @@ def matrix_krit():
         return render_template("Hierarchy/matrix_krit.html", **context)
 
     # POST запрос - обработка формы
+    current_app.logger.info(
+        f"matrix_krit() POST - Session new_record_id: {session.get('new_record_id')}"
+    )
     num_alternatives = int(session.get("num_alternatives"))
     num_criteria = int(session.get("num_criteria"))
     hierarchy_task = session.get("hierarchy_task")
@@ -162,21 +173,48 @@ def matrix_krit():
 
         return render_template("Hierarchy/names.html", **context)
 
+    # Clean up session to avoid cookie size issues
+    session.clear()
+
     # Сохраняем имена в сессии для возможного восстановления
     session["name_alternatives"] = name_alternatives
     session["name_criteria"] = name_criteria
 
     # Збереження даних у БД
+    current_app.logger.info(f"Creating HierarchyCriteria with names: {name_criteria}")
     new_record_id = add_object_to_db(db, HierarchyCriteria, names=name_criteria)
+    current_app.logger.info(f"Created HierarchyCriteria with ID: {new_record_id}")
 
-    add_object_to_db(
+    current_app.logger.info(
+        f"Creating HierarchyAlternatives with ID: {new_record_id}, names: {name_alternatives}"
+    )
+    alternatives_id = add_object_to_db(
         db, HierarchyAlternatives, id=new_record_id, names=name_alternatives
     )
+    current_app.logger.info(f"Created HierarchyAlternatives with ID: {alternatives_id}")
 
     if hierarchy_task:
-        add_object_to_db(db, HierarchyTask, id=new_record_id, task=hierarchy_task)
+        current_app.logger.info(
+            f"Creating HierarchyTask with ID: {new_record_id}, task: {hierarchy_task}"
+        )
+        task_id = add_object_to_db(
+            db, HierarchyTask, id=new_record_id, task=hierarchy_task
+        )
+        current_app.logger.info(f"Created HierarchyTask with ID: {task_id}")
 
+    # Clean up session to avoid cookie size issues
+    session.clear()
     session["new_record_id"] = new_record_id
+    session["num_alternatives"] = num_alternatives
+    session["num_criteria"] = num_criteria
+    session["name_alternatives"] = name_alternatives
+    session["name_criteria"] = name_criteria
+    if hierarchy_task:
+        session["hierarchy_task"] = hierarchy_task
+    current_app.logger.info(f"Set session new_record_id to: {new_record_id}")
+    current_app.logger.info(
+        f"Session size after cleanup: {len(str(session))} characters"
+    )
 
     context = {
         "title": "Матриця",
@@ -192,6 +230,16 @@ def matrix_krit():
 
 @hierarchy_bp.route("/matrix-alt", methods=["GET", "POST"])
 def matrix_alt():
+    # Debug: Log session data at the start
+    current_app.logger.info(
+        f"matrix_alt() called - session keys: {list(session.keys())}"
+    )
+    current_app.logger.info(f"Session new_record_id: {session.get('new_record_id')}")
+    current_app.logger.info(
+        f"Session num_alternatives: {session.get('num_alternatives')}"
+    )
+    current_app.logger.info(f"Session num_criteria: {session.get('num_criteria')}")
+
     # Проверяем, загружается ли черновик
     draft_id = request.args.get("draft")
 
@@ -279,8 +327,40 @@ def matrix_alt():
     num_alternatives = int(session.get("num_alternatives"))
     num_criteria = int(session.get("num_criteria"))
 
-    name_alternatives = HierarchyAlternatives.query.get(new_record_id).names
-    name_criteria = HierarchyCriteria.query.get(new_record_id).names
+    # Debug: Log the IDs we're working with
+    current_app.logger.info(
+        f"Processing hierarchy matrix_alt with new_record_id: {new_record_id}"
+    )
+    current_app.logger.info(
+        f"Session data - num_alternatives: {num_alternatives}, num_criteria: {num_criteria}"
+    )
+
+    # Check if records exist before accessing them
+    alternatives_record = HierarchyAlternatives.query.get(new_record_id)
+    criteria_record = HierarchyCriteria.query.get(new_record_id)
+
+    # Debug: Log what we found in the database
+    current_app.logger.info(
+        f"Database query results - alternatives_record: {alternatives_record}, criteria_record: {criteria_record}"
+    )
+    if alternatives_record:
+        current_app.logger.info(
+            f"Alternatives record ID: {alternatives_record.id}, names: {alternatives_record.names}"
+        )
+    if criteria_record:
+        current_app.logger.info(
+            f"Criteria record ID: {criteria_record.id}, names: {criteria_record.names}"
+        )
+
+    if not alternatives_record or not criteria_record:
+        current_app.logger.error(
+            f"Missing records - alternatives_record: {alternatives_record}, criteria_record: {criteria_record}"
+        )
+        flash("Error: Required data not found. Please start over.", "error")
+        return redirect(url_for("hierarchy.index"))
+
+    name_alternatives = alternatives_record.names
+    name_criteria = criteria_record.names
     matr_krit = request.form.getlist("matrix_krit")
 
     # Если матрица критериев пустая, создаем базовую матрицу
