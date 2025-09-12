@@ -581,14 +581,22 @@ def result(method_id=None, file_data=None):
                 flash("Missing required data from file upload", "error")
                 return redirect(url_for("hierarchy.index"))
 
-            # Create hierarchy task first to get a unique ID (always create, even if no description)
+            # Create hierarchy task with method_id as its ID
             task_description = f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+            current_app.logger.info(
+                f"[DEBUG] Creating HierarchyTask with id={method_id}, task='{task_description}'"
+            )
             task_id = add_object_to_db(
                 db,
                 HierarchyTask,
+                id=method_id,
                 task=task_description,
             )
+            current_app.logger.info(
+                f"[DEBUG] Created HierarchyTask with task_id={task_id}"
+            )
             task = HierarchyTask.query.get(task_id)
+            current_app.logger.info(f"[DEBUG] Retrieved HierarchyTask: {task}")
 
             # Save criteria and alternatives with method_id as their ID
             criteria_id = add_object_to_db(
@@ -1585,6 +1593,11 @@ def export_excel(result_id):
         current_app.logger.info(f"  task_record: {task_record is not None}")
         if task_record:
             current_app.logger.info(f"    task_record.id: {task_record.id}")
+            current_app.logger.info(f"    task_record.task: {task_record.task}")
+        else:
+            current_app.logger.info(
+                f"    task_record: None - no task found for method_id={method_id}"
+            )
         current_app.logger.info(
             f"  criteria_matrix_record: {criteria_matrix_record is not None}"
         )
@@ -1696,9 +1709,14 @@ def export_excel(result_id):
             f"  Fixed alternatives_consistency: ci={fixed_ci}, cr={fixed_cr}"
         )
 
+        task_description_value = task_record.task if task_record else None
+        current_app.logger.info(
+            f"[DEBUG] task_description for Excel export: '{task_description_value}'"
+        )
+
         analysis_data = {
             "method_id": method_id,
-            "task_description": task_record.task if task_record else None,
+            "task_description": task_description_value,
             "criteria_names": criteria_record.names,
             "alternatives_names": alternatives_record.names,
             "criteria_weights": criteria_matrix_record.normalized_eigenvector,
@@ -1848,6 +1866,18 @@ def result_from_file():
         )
         current_app.logger.info(
             f"[DEBUG] Created HierarchyAlternatives with ID: {new_record_id}"
+        )
+
+        # Create HierarchyTask with new_record_id as its ID
+        task_description = f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+        add_object_to_db(
+            db,
+            HierarchyTask,
+            id=new_record_id,
+            task=task_description,
+        )
+        current_app.logger.info(
+            f"[DEBUG] Created HierarchyTask with ID: {new_record_id}, task: {task_description}"
         )
 
         # Create Result record for file uploads (if user is authenticated)

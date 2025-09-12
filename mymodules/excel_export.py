@@ -171,13 +171,19 @@ class HierarchyExcelExporter:
         ws["B5"] = created_date or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Task description
+        print(
+            f"[DEBUG] create_general_info_sheet - task_description: '{task_description}'"
+        )
         if task_description:
+            print(f"[DEBUG] Adding task description to Excel: '{task_description}'")
             ws["A7"] = "Опис завдання:"
             ws["A8"] = task_description
             ws.merge_cells("A8:D12")
             ws["A8"].alignment = Alignment(
                 horizontal="left", vertical="top", wrap_text=True
             )
+        else:
+            print(f"[DEBUG] No task description provided")
 
         # Style the information cells
         for row in range(3, 6):
