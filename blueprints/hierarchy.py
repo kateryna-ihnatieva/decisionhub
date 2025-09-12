@@ -837,14 +837,41 @@ def result(method_id=None, file_data=None):
             current_app.logger.info(f"[DEBUG] norm_vectors_alt: {norm_vectors_alt}")
             current_app.logger.info(f"[DEBUG] num_alt: {len(alternatives_names)}")
 
-            ranj_global = do_global_prior(
+            global_prior = do_global_prior(
                 norm_vector=norm_vector_krit,
                 norm_vector_alt=norm_vectors_alt,
                 num_alt=len(alternatives_names),
             )
 
+            # Create ranking string from global priorities
+            # Create a dictionary mapping alternatives to their priorities
+            alt_priorities = {}
+            for i, alt_name in enumerate(alternatives_names):
+                if i < len(global_prior):
+                    alt_priorities[alt_name] = global_prior[i]
+
+            # Sort by priority (descending)
+            sorted_alternatives = sorted(
+                alt_priorities.items(), key=lambda x: x[1], reverse=True
+            )
+
+            # Create ranking string
+            ranj_global = []
+            if sorted_alternatives:
+                ranj_str = ""
+                for i, (alt_name, priority) in enumerate(sorted_alternatives):
+                    if i == 0:
+                        ranj_str += alt_name
+                    else:
+                        prev_priority = sorted_alternatives[i - 1][1]
+                        if abs(priority - prev_priority) < 0.001:  # Equal priority
+                            ranj_str += " = " + alt_name
+                        else:
+                            ranj_str += " > " + alt_name
+                ranj_global.append(ranj_str)
+
             # Update the single record with global priorities
-            alt_matrix_result.global_prior = ranj_global
+            alt_matrix_result.global_prior = global_prior
             alt_matrix_result.lst_normalized_eigenvector_global = norm_vectors_alt
             alt_matrix_result.ranj_global = ranj_global
             db.session.commit()
@@ -879,7 +906,8 @@ def result(method_id=None, file_data=None):
                 ranj_alt=all_ranjs_alt,
                 ranj_global=ranj_global,
                 lst_normalized_eigenvector_global=norm_vectors_alt,
-                global_prior=ranj_global,
+                global_prior=global_prior,
+                global_prior_plot=generate_plot(global_prior, alternatives_names),
                 global_priorities_plot_id=plot_id,
             )
 
