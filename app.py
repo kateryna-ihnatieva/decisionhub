@@ -340,17 +340,8 @@ def delete_result(result_id):
     if result:
         # Видалення пов'язаних записів
         if result.method_name == "Hierarchy":
-            # Delete alternatives matrices that reference this criteria_id
-            HierarchyAlternativesMatrix.query.filter_by(
-                criteria_id=result.method_id
-            ).delete()
-            # Delete alternatives matrices that reference this hierarchy_alternatives_id
-            HierarchyAlternativesMatrix.query.filter_by(
-                hierarchy_alternatives_id=result.method_id
-            ).delete()
-            # Delete criteria matrix
             HierarchyCriteriaMatrix.query.filter_by(id=result.method_id).delete()
-            # Delete main records
+            HierarchyAlternativesMatrix.query.filter_by(id=result.method_id).delete()
             HierarchyCriteria.query.filter_by(id=result.method_id).delete()
             HierarchyAlternatives.query.filter_by(id=result.method_id).delete()
             HierarchyTask.query.filter_by(id=result.method_id).delete()

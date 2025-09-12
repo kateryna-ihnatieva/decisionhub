@@ -23,7 +23,7 @@ class HierarchyAlternatives(db.Model):
 
 class HierarchyTask(db.Model):
     __tablename__ = "hierarchy_tasks"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     task = db.Column(db.Text)
 
 

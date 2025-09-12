@@ -617,16 +617,18 @@
 
 <div class="main-container">
   <div class="names-form">
-    <form id="hierarchy-form" action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
+    <form action="{{ url_for('hierarchy.matrix_krit') }}" method="POST">
 
-      <!-- Скрытые поля для сохранения данных черновика -->
-      <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
-      <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
+        <!-- Скрытые поля для сохранения данных черновика -->
+        <input type="hidden" name="num_alternatives" value="{{ num_alternatives }}">
+        <input type="hidden" name="num_criteria" value="{{ num_criteria }}">
 
-      <!-- Скрытые поля для матриц (заполняются при загрузке файла) -->
-      <input type="hidden" name="criteria_matrix" id="criteria_matrix_input">
-      <input type="hidden" name="alternatives_matrices" id="alternatives_matrices_input">
-      <input type="hidden" name="file_uploaded" id="file_uploaded_input" value="false">
+        <!-- Скрытые поля для данных файла -->
+        <input type="hidden" name="criteria_names" id="criteria_names_input">
+        <input type="hidden" name="alternatives_names" id="alternatives_names_input">
+        <input type="hidden" name="criteria_matrix" id="criteria_matrix_input">
+        <input type="hidden" name="alternatives_matrices" id="alternatives_matrices_input">
+        <input type="hidden" name="file_uploaded" id="file_uploaded_input" value="false">
 
       {% if error %}
       <div class="alert-danger" role="alert">
@@ -885,22 +887,12 @@ function fillFormFields(criteriaNames, alternativesNames, criteriaMatrix, altern
     }
   });
 
-  // Fill hidden matrix fields
-  const criteriaMatrixInput = document.getElementById('criteria_matrix_input');
-  const alternativesMatricesInput = document.getElementById('alternatives_matrices_input');
-  const fileUploadedInput = document.getElementById('file_uploaded_input');
-
-  if (criteriaMatrixInput && criteriaMatrix) {
-    criteriaMatrixInput.value = JSON.stringify(criteriaMatrix);
-  }
-
-  if (alternativesMatricesInput && alternativesMatrices) {
-    alternativesMatricesInput.value = JSON.stringify(alternativesMatrices);
-  }
-
-  if (fileUploadedInput) {
-    fileUploadedInput.value = 'true';
-  }
+  // Fill hidden fields with file data
+  document.getElementById('criteria_names_input').value = JSON.stringify(criteriaNames);
+  document.getElementById('alternatives_names_input').value = JSON.stringify(alternativesNames);
+  document.getElementById('criteria_matrix_input').value = JSON.stringify(criteriaMatrix);
+  document.getElementById('alternatives_matrices_input').value = JSON.stringify(alternativesMatrices);
+  document.getElementById('file_uploaded_input').value = 'true';
 
   // Store matrix data for later use
   window.uploadedCriteriaMatrix = criteriaMatrix;
@@ -919,7 +911,7 @@ function fillFormFields(criteriaNames, alternativesNames, criteriaMatrix, altern
 }
 
 function updateFormAction() {
-  const form = document.getElementById('hierarchy-form');
+  const form = document.querySelector('form');
   const fileUploadedInput = document.getElementById('file_uploaded_input');
 
   if (form && fileUploadedInput) {
@@ -934,19 +926,6 @@ function updateFormAction() {
     }
   }
 }
-
-// Add form submission debug
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('hierarchy-form');
-  if (form) {
-    form.addEventListener('submit', function(e) {
-      console.log('Form submitted!');
-      console.log('Form action:', form.action);
-      console.log('File uploaded:', document.getElementById('file_uploaded_input').value);
-      console.log('Form data:', new FormData(form));
-    });
-  }
-});
 
 function showSuccess(message) {
   // Create success notification

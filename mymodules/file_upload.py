@@ -11,63 +11,6 @@ class FileUploadError(Exception):
     pass
 
 
-def clean_string(s):
-    """Clean string by removing null bytes and control characters"""
-    if s is None:
-        return ""
-
-    s = str(s)
-    # Remove common null bytes and control characters
-    cleaned = (
-        s.replace("\x00", "")
-        .replace("\x01", "")
-        .replace("\x02", "")
-        .replace("\x03", "")
-    )
-    cleaned = (
-        cleaned.replace("\x04", "")
-        .replace("\x05", "")
-        .replace("\x06", "")
-        .replace("\x07", "")
-    )
-    cleaned = (
-        cleaned.replace("\x08", "")
-        .replace("\x0b", "")
-        .replace("\x0c", "")
-        .replace("\x0e", "")
-    )
-    cleaned = (
-        cleaned.replace("\x0f", "")
-        .replace("\x10", "")
-        .replace("\x11", "")
-        .replace("\x12", "")
-    )
-    cleaned = (
-        cleaned.replace("\x13", "")
-        .replace("\x14", "")
-        .replace("\x15", "")
-        .replace("\x16", "")
-    )
-    cleaned = (
-        cleaned.replace("\x17", "")
-        .replace("\x18", "")
-        .replace("\x19", "")
-        .replace("\x1a", "")
-    )
-    cleaned = (
-        cleaned.replace("\x1b", "")
-        .replace("\x1c", "")
-        .replace("\x1d", "")
-        .replace("\x1e", "")
-    )
-    cleaned = cleaned.replace("\x1f", "")
-
-    # Keep only printable characters, whitespace, and common characters
-    cleaned = "".join(char for char in cleaned if ord(char) >= 32 or char in "\t\n\r")
-
-    return cleaned.strip()
-
-
 def validate_file(file, max_size_mb=10):
     """
     Validate uploaded file for format and size
@@ -125,35 +68,11 @@ def parse_excel_file(file_path, expected_size):
             # Convert to list of lists
             data = []
             for row in worksheet.iter_rows(values_only=True):
-                cleaned_row = []
-                for cell in row:
-                    if cell is None:
-                        cleaned_row.append("")
-                    else:
-                        cell_str = str(cell)
-                        # Remove null bytes and other control characters
-                        cell_str = clean_string(cell_str)
-                        cleaned_row.append(cell_str)
-                data.append(cleaned_row)
+                data.append([cell if cell is not None else "" for cell in row])
         else:
             # Use pandas for .xls files
             df = pd.read_excel(file_path, header=None)
             data = df.fillna("").values.tolist()
-
-            # Clean data to remove null bytes
-            cleaned_data = []
-            for row in data:
-                cleaned_row = []
-                for cell in row:
-                    if pd.isna(cell):
-                        cleaned_row.append("")
-                    else:
-                        cell_str = str(cell)
-                        # Remove null bytes and other control characters
-                        cell_str = clean_string(cell_str)
-                        cleaned_row.append(cell_str)
-                cleaned_data.append(cleaned_row)
-            data = cleaned_data
 
         return extract_names_and_matrix(data, expected_size)
 
@@ -186,31 +105,6 @@ def parse_csv_file(file_path, expected_size):
                 df = pd.read_csv(file_path, header=None, sep=sep)
                 if not df.empty:
                     data = df.fillna("").values.tolist()
-
-                    # Clean data to remove null bytes
-                    cleaned_data = []
-                    for row in data:
-                        cleaned_row = []
-                        for cell in row:
-                            if pd.isna(cell):
-                                cleaned_row.append("")
-                            else:
-                                cell_str = str(cell)
-                                # Remove null bytes and other control characters
-                                cell_str = (
-                                    cell_str.replace("\x00", "")
-                                    .replace("\x01", "")
-                                    .replace("\x02", "")
-                                    .replace("\x03", "")
-                                )
-                                cell_str = "".join(
-                                    char
-                                    for char in cell_str
-                                    if ord(char) >= 32 or char in "\t\n\r"
-                                )
-                                cleaned_row.append(cell_str.strip())
-                        cleaned_data.append(cleaned_row)
-                    data = cleaned_data
                     break
             except Exception:
                 continue
@@ -242,30 +136,6 @@ def extract_names_and_matrix(data, expected_size):
     try:
         if not data or len(data) == 0:
             return {"names": [], "matrix": [], "error": "File is empty"}
-
-        # Additional cleaning to remove null bytes from all data
-        cleaned_data = []
-        for row in data:
-            cleaned_row = []
-            for cell in row:
-                if cell is None:
-                    cleaned_row.append("")
-                else:
-                    cell_str = str(cell)
-                    # Remove null bytes and other control characters
-                    cell_str = (
-                        cell_str.replace("\x00", "")
-                        .replace("\x01", "")
-                        .replace("\x02", "")
-                        .replace("\x03", "")
-                    )
-                    cell_str = "".join(
-                        char for char in cell_str if ord(char) >= 32 or char in "\t\n\r"
-                    )
-                    cleaned_row.append(cell_str.strip())
-            cleaned_data.append(cleaned_row)
-
-        data = cleaned_data
 
         # Clean data - remove completely empty rows
         data = [row for row in data if any(str(cell).strip() for cell in row)]
@@ -357,18 +227,9 @@ def extract_names_and_matrix(data, expected_size):
                     else:
                         # Try to evaluate as expression (for cases like "1/2" written as "1/2")
                         try:
-                            # Handle fractions like "1/2"
-                            if "/" in cell_str:
-                                parts = cell_str.split("/")
-                                if len(parts) == 2:
-                                    value = float(parts[0]) / float(parts[1])
-                                else:
-                                    value = float(cell_str)
-                            else:
-                                value = float(cell_str)
-                            row.append(value)
-                        except (ValueError, ZeroDivisionError):
-                            row.append(0.0)
+                            row.append(float(eval(cell_str)))
+                        except Exception:
+                            row.append(cell_str)
                 except Exception:
                     row.append(cell_str)
 
@@ -429,26 +290,6 @@ def save_uploaded_file(file, upload_folder):
     file.save(file_path)
 
     return file_path
-
-
-def clean_data(data):
-    """Clean data by removing empty rows and columns, and null bytes"""
-    if not data:
-        return []
-
-    # Remove null bytes and clean each cell
-    cleaned = []
-    for row in data:
-        cleaned_row = []
-        for cell in row:
-            cleaned_cell = clean_string(cell)
-            cleaned_row.append(cleaned_cell)
-        cleaned.append(cleaned_row)
-
-    # Remove completely empty rows
-    cleaned = [row for row in cleaned if any(cell for cell in row)]
-
-    return cleaned
 
 
 def cleanup_file(file_path):
@@ -579,7 +420,7 @@ def process_hierarchy_file(
             if file_ext in [".xlsx", ".xls"]:
                 data = parse_excel_data(file_path)
             elif file_ext == ".csv":
-                data = parse_csv_data(file_path)
+                data = parse_csv_data_with_empty_rows(file_path)
             else:
                 return {
                     "success": False,
@@ -655,6 +496,33 @@ def parse_csv_data(file_path):
     return data
 
 
+def parse_csv_data_with_empty_rows(file_path):
+    """Parse CSV file and return raw data preserving empty rows"""
+    separators = [",", ";", "\t", "|"]
+    data = None
+
+    for sep in separators:
+        try:
+            df = pd.read_csv(
+                file_path,
+                header=None,
+                sep=sep,
+                keep_default_na=False,
+                dtype=str,
+                skip_blank_lines=False,
+            )
+            if not df.empty:
+                data = df.values.tolist()
+                break
+        except Exception:
+            continue
+
+    if data is None:
+        raise Exception("Could not parse CSV file with any known separator")
+
+    return data
+
+
 def extract_hierarchy_data(data, num_criteria, num_alternatives):
     """
     Extract criteria and alternatives data from hierarchy file
@@ -662,6 +530,7 @@ def extract_hierarchy_data(data, num_criteria, num_alternatives):
     For hierarchy analysis:
     - First matrix: criteria names and matrix
     - Second matrix: alternatives names and matrix
+    - Subsequent matrices: alternatives comparison matrices for each criterion
 
     Args:
         data: Raw file data
@@ -682,31 +551,7 @@ def extract_hierarchy_data(data, num_criteria, num_alternatives):
                 "error": "File is empty",
             }
 
-        # Additional cleaning to remove null bytes from all data
-        cleaned_data = []
-        for row in data:
-            cleaned_row = []
-            for cell in row:
-                if cell is None:
-                    cleaned_row.append("")
-                else:
-                    cell_str = str(cell)
-                    # Remove null bytes and other control characters
-                    cell_str = (
-                        cell_str.replace("\x00", "")
-                        .replace("\x01", "")
-                        .replace("\x02", "")
-                        .replace("\x03", "")
-                    )
-                    cell_str = "".join(
-                        char for char in cell_str if ord(char) >= 32 or char in "\t\n\r"
-                    )
-                    cleaned_row.append(cell_str.strip())
-            cleaned_data.append(cleaned_row)
-
-        data = cleaned_data
-
-        # Find matrix boundaries by looking for empty rows BEFORE cleaning data
+        # Find matrix boundaries by looking for empty rows
         matrix_boundaries = []
         current_start = 0
 
@@ -739,10 +584,21 @@ def extract_hierarchy_data(data, num_criteria, num_alternatives):
         cleaned_matrices = []
         for start, end in matrix_boundaries:
             matrix_data = data[start:end]
-            # Clean data including null bytes removal
-            cleaned_matrix = clean_data(matrix_data)
+            # Clean data - remove completely empty rows
+            cleaned_matrix = [
+                row for row in matrix_data if any(str(cell).strip() for cell in row)
+            ]
             if cleaned_matrix:  # Only add non-empty matrices
-                cleaned_matrices.append(cleaned_matrix)
+                # Split each row by comma if it's a single string
+                processed_matrix = []
+                for row in cleaned_matrix:
+                    if len(row) == 1 and isinstance(row[0], str) and "," in row[0]:
+                        # Split the string by comma
+                        processed_row = [cell.strip() for cell in row[0].split(",")]
+                        processed_matrix.append(processed_row)
+                    else:
+                        processed_matrix.append(row)
+                cleaned_matrices.append(processed_matrix)
 
         if len(cleaned_matrices) < 2:
             return {
@@ -816,10 +672,6 @@ def extract_hierarchy_data(data, num_criteria, num_alternatives):
                 "alternatives_matrices": [],
                 "error": f"Expected {num_criteria} alternatives matrices, but found {len(alternatives_matrices)}",
             }
-
-        print(
-            f"[DEBUG] Extracted {len(alternatives_matrices)} alternatives matrices for {num_criteria} criteria"
-        )
 
         return {
             "success": True,
