@@ -193,14 +193,17 @@ def matrix_krit():
     )
     current_app.logger.info(f"Created HierarchyAlternatives with ID: {alternatives_id}")
 
-    if hierarchy_task:
-        current_app.logger.info(
-            f"Creating HierarchyTask with ID: {new_record_id}, task: {hierarchy_task}"
-        )
-        task_id = add_object_to_db(
-            db, HierarchyTask, id=new_record_id, task=hierarchy_task
-        )
-        current_app.logger.info(f"Created HierarchyTask with ID: {task_id}")
+    # Always create a task, even if no description provided
+    task_description = (
+        hierarchy_task
+        if hierarchy_task
+        else f"Hierarchy analysis with {num_criteria} criteria and {num_alternatives} alternatives"
+    )
+    current_app.logger.info(
+        f"Creating HierarchyTask with ID: {new_record_id}, task: {task_description}"
+    )
+    task_id = add_object_to_db(db, HierarchyTask, task=task_description)
+    current_app.logger.info(f"Created HierarchyTask with ID: {task_id}")
 
     # Clean up session to avoid cookie size issues
     session.clear()
@@ -209,6 +212,7 @@ def matrix_krit():
     session["num_criteria"] = num_criteria
     session["name_alternatives"] = name_alternatives
     session["name_criteria"] = name_criteria
+    session["task_id"] = task_id  # Always save task_id
     if hierarchy_task:
         session["hierarchy_task"] = hierarchy_task
     current_app.logger.info(f"Set session new_record_id to: {new_record_id}")
@@ -268,7 +272,6 @@ def matrix_alt():
                     add_object_to_db(
                         db,
                         HierarchyTask,
-                        id=new_record_id,
                         task=draft.form_data["task"],
                     )
 
@@ -377,12 +380,11 @@ def matrix_alt():
             matrix_krit.append(row)
     else:
         # Створення списку з матриць по рівнях
-        # Debug: Check for Undefined values in criteria matrix from form
-        print(
-            f"[DEBUG] Criteria matrix from form (first 10 elements): {matr_krit[:10]}"
-        )
-        for i, val in enumerate(matr_krit[:10]):
-            print(f"[DEBUG] Criteria element {i}: type={type(val)}, value={val}")
+        # Check for invalid values in criteria matrix from form
+        if any(val in ["", None, "undefined", "Undefined"] for val in matr_krit[:10]):
+            print(f"[ERROR] Invalid values found in criteria matrix")
+            flash("Invalid criteria matrix data", "error")
+            return redirect(url_for("hierarchy.index"))
 
         matrix_krit = do_matrix(krit=1, matrix=matr_krit, criteria=num_criteria)
 
@@ -489,7 +491,408 @@ def matrix_alt():
 
 
 @hierarchy_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
-def result(method_id=None):
+def result(method_id=None, file_data=None):
+
+    # If file_data is provided, process it first
+    if file_data:
+        try:
+            current_app.logger.info(
+                f"[DEBUG] Processing file_data in result function: {file_data}"
+            )
+            # Parse JSON data from file
+            criteria_names = json.loads(file_data["criteria_names"])
+            alternatives_names = json.loads(file_data["alternatives_names"])
+            criteria_matrix = json.loads(file_data["criteria_matrix"])
+            current_app.logger.info(f"[DEBUG] Parsed criteria_names: {criteria_names}")
+            current_app.logger.info(
+                f"[DEBUG] Parsed alternatives_names: {alternatives_names}"
+            )
+            current_app.logger.info(
+                f"[DEBUG] Parsed criteria_matrix: {criteria_matrix}"
+            )
+            alternatives_matrices = json.loads(file_data["alternatives_matrices"])
+            current_app.logger.info(
+                f"[DEBUG] Parsed alternatives_matrices: {alternatives_matrices}, type: {type(alternatives_matrices)}"
+            )
+
+            # Ensure they are lists, not tuples
+            if isinstance(criteria_names, tuple):
+                criteria_names = list(criteria_names)
+            if isinstance(alternatives_names, tuple):
+                alternatives_names = list(alternatives_names)
+            if isinstance(criteria_matrix, tuple):
+                criteria_matrix = list(criteria_matrix)
+            if isinstance(alternatives_matrices, tuple):
+                alternatives_matrices = list(alternatives_matrices)
+
+            # Convert all matrix elements to float to ensure proper data types
+            criteria_matrix = [[float(x) for x in row] for row in criteria_matrix]
+
+            # Fix nested structure issue - alternatives_matrices from file has extra nesting level
+            if (
+                alternatives_matrices
+                and len(alternatives_matrices) > 0
+                and isinstance(alternatives_matrices[0][0][0], list)
+            ):
+                # Data from file has structure [[[matrix1]], [[matrix2]], ...] - need to flatten
+                alternatives_matrices = [matrix[0] for matrix in alternatives_matrices]
+
+            alternatives_matrices = [
+                [[float(x) for x in row] for row in matrix]
+                for matrix in alternatives_matrices
+            ]
+
+            # Validate data
+            if not all(
+                [
+                    criteria_names,
+                    alternatives_names,
+                    criteria_matrix,
+                    alternatives_matrices,
+                ]
+            ):
+                flash("Missing required data from file upload", "error")
+                return redirect(url_for("hierarchy.index"))
+
+            # Create hierarchy task first to get a unique ID (always create, even if no description)
+            task_description = f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives"
+            task_id = add_object_to_db(
+                db,
+                HierarchyTask,
+                task=task_description,
+            )
+            task = HierarchyTask.query.get(task_id)
+
+            # Save criteria - let database generate unique ID
+            criteria_id = add_object_to_db(db, HierarchyCriteria, names=criteria_names)
+
+            # Save alternatives - let database generate unique ID
+            alternatives_id = add_object_to_db(
+                db, HierarchyAlternatives, names=alternatives_names
+            )
+
+            # Use task_id as the main reference ID for all related records
+            common_id = task_id
+
+            # Process criteria matrix - keep as numbers, don't convert to strings
+            # Flatten the 2D matrix to 1D list for do_matrix
+            criteria_matrix_flat = []
+            for row in criteria_matrix:
+                criteria_matrix_flat.extend(
+                    [str(x) for x in row]
+                )  # Convert to strings only for do_matrix
+
+            # Check for invalid values in criteria matrix
+            if any(
+                val in ["", None, "undefined", "Undefined"]
+                for val in criteria_matrix_flat[:10]
+            ):
+                print(f"[ERROR] Invalid values found in criteria matrix")
+                flash("Invalid criteria matrix data", "error")
+                return redirect(url_for("hierarchy.index"))
+
+            matrix_krit = do_matrix(
+                krit=1, matrix=criteria_matrix_flat, criteria=len(criteria_names)
+            )
+            comp_vector_krit = do_comp_vector(
+                krit=1, criteria=len(criteria_names), matr=matrix_krit
+            )
+            norm_vector_krit = do_norm_vector(
+                krit=1, comp_vector=comp_vector_krit, criteria=len(criteria_names)
+            )
+            sum_col_krit = do_sum_col(
+                krit=1, matr=matrix_krit, criteria=len(criteria_names)
+            )
+            prod_col_krit = do_prod_col(
+                krit=1,
+                criteria=len(criteria_names),
+                sum_col=sum_col_krit,
+                norm_vector=norm_vector_krit,
+            )
+            l_max_krit = do_l_max(
+                krit=1, prod_col=prod_col_krit, criteria=len(criteria_names)
+            )
+            index_consistency_krit, relation_consistency_krit = do_consistency(
+                krit=1, l_max=l_max_krit, criteria=len(criteria_names)
+            )
+            lst_norm_vector_krit = do_lst_norm_vector(
+                krit=1,
+                name=criteria_names,
+                norm_vector=norm_vector_krit,
+                criteria=len(criteria_names),
+            )
+            ranj_krit = do_ranj(krit=1, lst_norm_vector=lst_norm_vector_krit)
+
+            # Create plot first
+            plot_id = add_object_to_db(db, GlobalPrioritiesPlot, plot_data=[])
+
+            # Process alternatives matrices - collect all data and create single record
+            current_app.logger.info(
+                f"[DEBUG] Starting to process alternatives_matrices: {alternatives_matrices}"
+            )
+            all_matrices_alt = []
+            all_comp_vectors_alt = []
+            all_norm_vectors_alt = []
+            all_sum_cols_alt = []
+            all_prod_cols_alt = []
+            all_l_maxs_alt = []
+            all_index_consistency_alt = []
+            all_relation_consistency_alt = []
+            all_lst_norm_vectors_alt = []
+            all_ranjs_alt = []
+            all_matr_alt_flat = []
+
+            # Flatten all alternatives matrices into a single list
+            all_alt_matrices_flat = []
+            for i, alt_matrix in enumerate(alternatives_matrices):
+                current_app.logger.info(
+                    f"[DEBUG] Processing alternatives matrix {i + 1}/{len(alternatives_matrices)}: {alt_matrix}, type: {type(alt_matrix)}"
+                )
+                current_app.logger.info(
+                    f"[DEBUG] Matrix structure check - is list: {isinstance(alt_matrix, list)}, length: {len(alt_matrix) if isinstance(alt_matrix, list) else 'N/A'}"
+                )
+
+                # Flatten the 2D matrix to 1D list
+                alt_matrix_flat = []
+                for row in alt_matrix:
+                    alt_matrix_flat.extend([str(x) for x in row])
+
+                # Check for invalid values in alternatives matrix
+                if not alt_matrix_flat or any(
+                    val in ["", None, "undefined", "Undefined"]
+                    for val in alt_matrix_flat
+                ):
+                    print(f"[ERROR] Invalid values found in alternatives matrix {i}")
+                    flash("Invalid matrix data detected", "error")
+                    return redirect(url_for("hierarchy.index"))
+
+                all_alt_matrices_flat.extend(alt_matrix_flat)
+
+            # Process all alternatives matrices at once
+            matrix_alt = do_matrix(
+                krit=0,
+                matrix=all_alt_matrices_flat,
+                criteria=len(alternatives_matrices),
+                num_alt=len(alternatives_names),
+            )
+
+            comp_vector_alt = do_comp_vector(
+                krit=0,
+                criteria=len(alternatives_matrices),
+                matr=matrix_alt,
+                num_alt=len(alternatives_names),
+            )
+            norm_vector_alt = do_norm_vector(
+                krit=0,
+                comp_vector=comp_vector_alt,
+                criteria=len(alternatives_matrices),
+                num_alt=len(alternatives_names),
+            )
+            sum_col_alt = do_sum_col(
+                krit=0,
+                matr=matrix_alt,
+                criteria=len(alternatives_matrices),
+                num_alt=len(alternatives_names),
+            )
+            prod_col_alt = do_prod_col(
+                krit=0,
+                criteria=len(alternatives_matrices),
+                num_alt=len(alternatives_names),
+                sum_col=sum_col_alt,
+                norm_vector=norm_vector_alt,
+            )
+            l_max_alt = do_l_max(
+                krit=0, prod_col=prod_col_alt, criteria=len(alternatives_matrices)
+            )
+            index_consistency_alt, relation_consistency_alt = do_consistency(
+                krit=0,
+                l_max=l_max_alt,
+                criteria=len(alternatives_matrices),
+                num_alt=len(alternatives_names),
+            )
+            lst_norm_vector_alt = do_lst_norm_vector(
+                krit=0,
+                name=alternatives_names,
+                norm_vector=norm_vector_alt,
+                criteria=len(alternatives_matrices),
+                num_alt=len(alternatives_names),
+            )
+            ranj_alt = do_ranj(
+                krit=0,
+                lst_norm_vector=lst_norm_vector_alt,
+                criteria=len(alternatives_matrices),
+                g=0,
+            )
+
+            # Store results
+            all_matrices_alt = matrix_alt
+            all_comp_vectors_alt = comp_vector_alt
+            all_norm_vectors_alt = norm_vector_alt
+            all_sum_cols_alt = sum_col_alt
+            all_prod_cols_alt = prod_col_alt
+            all_l_maxs_alt = l_max_alt
+            all_index_consistency_alt = index_consistency_alt
+            all_relation_consistency_alt = relation_consistency_alt
+            all_lst_norm_vectors_alt = lst_norm_vector_alt
+            all_ranjs_alt = ranj_alt
+            all_matr_alt_flat = all_alt_matrices_flat
+
+            # Create single HierarchyAlternativesMatrix record with all data
+            try:
+                alt_matrix_id = add_object_to_db(
+                    db,
+                    HierarchyAlternativesMatrix,
+                    criteria_id=criteria_id,
+                    hierarchy_alternatives_id=alternatives_id,
+                    matr_alt=all_matr_alt_flat,
+                    comparison_matrix=all_matrices_alt,
+                    components_eigenvector_alt=all_comp_vectors_alt,
+                    normalized_eigenvector_alt=all_norm_vectors_alt,
+                    sum_col_alt=all_sum_cols_alt,
+                    prod_col_alt=all_prod_cols_alt,
+                    l_max_alt=all_l_maxs_alt,
+                    index_consistency_alt=all_index_consistency_alt,
+                    relation_consistency_alt=all_relation_consistency_alt,
+                    lst_normalized_eigenvector_alt=all_lst_norm_vectors_alt,
+                    ranj_alt=all_ranjs_alt,
+                    global_prior=[],
+                    lst_normalized_eigenvector_global=[],
+                    ranj_global=[],
+                    global_priorities_plot_id=plot_id,
+                    task_id=task_id,
+                )
+                current_app.logger.info(
+                    f"[DEBUG] alt_matrix_id: {alt_matrix_id}, type: {type(alt_matrix_id)}"
+                )
+                alt_matrix_result = HierarchyAlternativesMatrix.query.get(alt_matrix_id)
+                current_app.logger.info(
+                    f"[DEBUG] alt_matrix_result: {alt_matrix_result}"
+                )
+                alternatives_matrices_results = [
+                    alt_matrix_result
+                ]  # Single record containing all matrices
+                current_app.logger.info(
+                    f"[DEBUG] alternatives_matrices_results: {alternatives_matrices_results}"
+                )
+            except Exception as e:
+                print(
+                    f"[ERROR] Failed to create HierarchyAlternativesMatrix record: {str(e)}"
+                )
+                flash("Failed to save analysis data", "error")
+                return redirect(url_for("hierarchy.index"))
+
+            # Calculate global priorities
+            norm_vectors_alt = []
+            alt_result = alternatives_matrices_results[
+                0
+            ]  # Single record containing all matrices
+
+            # Extract normalized vectors for each criterion
+            current_app.logger.info(
+                f"[DEBUG] Processing normalized_eigenvector_alt: {alt_result.normalized_eigenvector_alt}"
+            )
+            current_app.logger.info(f"[DEBUG] alt_result type: {type(alt_result)}")
+            current_app.logger.info(
+                f"[DEBUG] alt_result.normalized_eigenvector_alt type: {type(alt_result.normalized_eigenvector_alt)}"
+            )
+            for i, norm_vector in enumerate(alt_result.normalized_eigenvector_alt):
+                current_app.logger.info(
+                    f"[DEBUG] Processing norm_vector[{i}]: {norm_vector}, type: {type(norm_vector)}"
+                )
+
+                # Handle different data structures for normalized vectors
+                if isinstance(norm_vector, (int, float)):
+                    # If it's a single number, wrap it in a list
+                    current_app.logger.info(
+                        f"[DEBUG] norm_vector[{i}] is single value: {norm_vector}"
+                    )
+                    norm_vectors_alt.append([norm_vector])
+                elif isinstance(norm_vector, list) and len(norm_vector) > 0:
+                    # If it's a list, check if it contains nested lists
+                    if isinstance(norm_vector[0], list):
+                        # Nested list structure - extract the first element
+                        current_app.logger.info(
+                            f"[DEBUG] norm_vector[{i}] is nested list with length {len(norm_vector)}"
+                        )
+                        criterion_vector = norm_vector[0]
+                    else:
+                        # Flat list structure
+                        current_app.logger.info(
+                            f"[DEBUG] norm_vector[{i}] is flat list with length {len(norm_vector)}"
+                        )
+                        criterion_vector = norm_vector
+                    current_app.logger.info(
+                        f"[DEBUG] criterion_vector[{i}]: {criterion_vector}"
+                    )
+                    norm_vectors_alt.append(criterion_vector)
+                else:
+                    current_app.logger.warning(
+                        f"[WARNING] Empty or invalid normalized vector for criterion {i}: {norm_vector}"
+                    )
+                    norm_vectors_alt.append([])
+
+            current_app.logger.info(
+                f"[DEBUG] About to call do_global_prior with norm_vector_krit: {norm_vector_krit}"
+            )
+            current_app.logger.info(f"[DEBUG] norm_vectors_alt: {norm_vectors_alt}")
+            current_app.logger.info(f"[DEBUG] num_alt: {len(alternatives_names)}")
+
+            ranj_global = do_global_prior(
+                norm_vector=norm_vector_krit,
+                norm_vector_alt=norm_vectors_alt,
+                num_alt=len(alternatives_names),
+            )
+
+            # Update the single record with global priorities
+            alt_matrix_result.global_prior = ranj_global
+            alt_matrix_result.lst_normalized_eigenvector_global = norm_vectors_alt
+            alt_matrix_result.ranj_global = ranj_global
+            db.session.commit()
+
+            # Render template with file data
+            return render_template(
+                "Hierarchy/result.html",
+                hierarchy_task=task,
+                name_criteria=criteria_names,
+                name_alternatives=alternatives_names,
+                num_criteria=len(criteria_names),
+                num_alternatives=len(alternatives_names),
+                matrix_krit=matrix_krit,
+                components_eigenvector=comp_vector_krit,
+                normalized_eigenvector=norm_vector_krit,
+                sum_col=sum_col_krit,
+                prod_col=prod_col_krit,
+                l_max=l_max_krit,
+                index_consistency=index_consistency_krit,
+                relation_consistency=relation_consistency_krit,
+                lst_normalized_eigenvector=lst_norm_vector_krit,
+                ranj=ranj_krit,
+                matrix_alt=all_matrices_alt,
+                components_eigenvector_alt=all_comp_vectors_alt,
+                normalized_eigenvector_alt=all_norm_vectors_alt,
+                sum_col_alt=all_sum_cols_alt,
+                prod_col_alt=all_prod_cols_alt,
+                l_max_alt=all_l_maxs_alt,
+                index_consistency_alt=all_index_consistency_alt,
+                relation_consistency_alt=all_relation_consistency_alt,
+                lst_normalized_eigenvector_alt=all_lst_norm_vectors_alt,
+                ranj_alt=all_ranjs_alt,
+                ranj_global=ranj_global,
+                lst_normalized_eigenvector_global=norm_vectors_alt,
+                global_prior=ranj_global,
+                global_priorities_plot_id=plot_id,
+            )
+
+        except json.JSONDecodeError:
+            flash("Invalid matrix data format", "error")
+            return redirect(url_for("hierarchy.index"))
+        except Exception as e:
+            import traceback
+
+            print(f"[ERROR] Error processing file data: {str(e)}")
+            print(f"[ERROR] Full traceback: {traceback.format_exc()}")
+            flash("Error processing file data", "error")
+            return redirect(url_for("hierarchy.index"))
 
     if not method_id:
         new_record_id = int(session.get("new_record_id"))
@@ -537,11 +940,27 @@ def result(method_id=None):
     ranj = HierarchyCriteriaMatrix.query.get(new_record_id).ranj
 
     try:
+        # Try to find task by new_record_id first (for backward compatibility)
         hierarchy_task_record = HierarchyTask.query.get(new_record_id)
-        hierarchy_task = hierarchy_task_record.task if hierarchy_task_record else None
+        if hierarchy_task_record:
+            hierarchy_task = hierarchy_task_record.task
+        else:
+            # If not found, try to find by task_id from session
+            task_id = session.get("task_id")
+            if task_id:
+                hierarchy_task_record = HierarchyTask.query.get(task_id)
+                hierarchy_task = (
+                    hierarchy_task_record.task if hierarchy_task_record else None
+                )
+            else:
+                hierarchy_task = None
     except Exception as e:
         print("[!] Error:", e)
         hierarchy_task = None
+
+    # Ensure task_id is defined
+    if "task_id" not in locals():
+        task_id = session.get("task_id") or new_record_id
 
     # Завантажуємо матрицю альтернатив з БД
     existing_alternatives_matrix = HierarchyAlternativesMatrix.query.get(new_record_id)
@@ -619,18 +1038,16 @@ def result(method_id=None):
 
         # Створення списку з матриць по рівнях
         try:
-            # Debug: Check for Undefined values in alternatives matrix from form
-            print(
-                f"[DEBUG] Alternatives matrix from form (first 10 elements): {matr_alt[:10]}"
-            )
-            for i, val in enumerate(matr_alt[:10]):
-                print(f"[DEBUG] Form element {i}: type={type(val)}, value={val}")
+            # Check for invalid values in alternatives matrix from form
+            if any(
+                val in ["", None, "undefined", "Undefined"] for val in matr_alt[:10]
+            ):
+                print(f"[ERROR] Invalid values found in alternatives matrix")
+                flash("Invalid alternatives matrix data", "error")
+                return redirect(url_for("hierarchy.index"))
 
             matrix_alt = do_matrix(
                 num_alt=num_alternatives, matrix=matr_alt, criteria=num_criteria
-            )
-            print(
-                f"[DEBUG] Матрица альтернатив создана успешно: {len(matrix_alt)} критериев"
             )
         except (IndexError, ValueError) as e:
             print(f"[!] Error creating matrix_alt: {e}")
@@ -653,12 +1070,9 @@ def result(method_id=None):
             sum_col_alt = do_sum_col(
                 num_alt=num_alternatives, matr=matrix_alt, criteria=num_criteria
             )
-            print(f"[DEBUG] Сумма по столбцам вычислена успешно")
         except (IndexError, ValueError) as e:
             print(f"[!] Error computing sum_col_alt: {e}")
-            print(f"[DEBUG] matrix_alt structure: {len(matrix_alt)} criteria")
-            for i, crit in enumerate(matrix_alt):
-                print(f"[DEBUG] Criteria {i}: {len(crit)} alternatives")
+            print(f"[ERROR] Matrix structure issue: {len(matrix_alt)} criteria")
             flash(
                 "Ошибка при вычислении суммы по столбцам матрицы альтернатив", "error"
             )
@@ -666,6 +1080,7 @@ def result(method_id=None):
 
         # Добуток додатку по стовпцях і нормалізованої оцінки вектора пріоритету
         prod_col_alt = do_prod_col(
+            krit=0,
             num_alt=num_alternatives,
             criteria=num_criteria,
             sum_col=sum_col_alt,
@@ -673,7 +1088,7 @@ def result(method_id=None):
         )
 
         # Разом (Lmax)
-        l_max_alt = do_l_max(prod_col=prod_col_alt, criteria=num_criteria)
+        l_max_alt = do_l_max(krit=0, prod_col=prod_col_alt, criteria=num_criteria)
 
         # Індекс узгодженості i Відношення узгодженості
         index_consistency_alt, relation_consistency_alt = do_consistency(
@@ -690,7 +1105,9 @@ def result(method_id=None):
 
         # Ранжування
         ranj_alt = do_ranj(
-            lst_norm_vector=lst_normalized_eigenvector_alt, criteria=num_criteria
+            krit=0,
+            lst_norm_vector=lst_normalized_eigenvector_alt,
+            criteria=num_criteria,
         )
 
         # Глобальні пріоритети
@@ -709,6 +1126,7 @@ def result(method_id=None):
             g=1,
         )
         ranj_global = do_ranj(
+            krit=0,
             lst_norm_vector=lst_normalized_eigenvector_global,
             criteria=num_criteria,
             g=1,
@@ -750,7 +1168,7 @@ def result(method_id=None):
             lst_normalized_eigenvector_global=lst_normalized_eigenvector_global,
             ranj_global=ranj_global,
             global_priorities_plot_id=new_record_id,
-            task_id=new_record_id if hierarchy_task else None,
+            task_id=task_id,
         )
 
         if current_user.is_authenticated:
@@ -813,8 +1231,22 @@ def result(method_id=None):
     }
 
     # Перевірка відношення узгодженості
+    current_app.logger.info(
+        f"[DEBUG] relation_consistency_alt: {relation_consistency_alt}"
+    )
     for c in range(num_criteria):
-        if relation_consistency_alt[c][0] > 10:
+        current_app.logger.info(
+            f"[DEBUG] Processing relation_consistency_alt[{c}]: {relation_consistency_alt[c]}, type: {type(relation_consistency_alt[c])}"
+        )
+        # Check if relation_consistency_alt[c] is a list or single value
+        cr_value = (
+            relation_consistency_alt[c][0]
+            if isinstance(relation_consistency_alt[c], list)
+            and len(relation_consistency_alt[c]) > 0
+            else relation_consistency_alt[c]
+        )
+        current_app.logger.info(f"[DEBUG] cr_value[{c}]: {cr_value}")
+        if cr_value > 10:
             context["error"] = (
                 f'Перегляньте свої судження у матриці Критерію "{name_criteria[c]}"'
             )
@@ -858,13 +1290,18 @@ def export_excel(result_id):
 
         # Get analysis data from database
         method_id = result.method_id
+        current_app.logger.info(f"[DEBUG] Getting data for method_id: {method_id}")
 
-        # Get basic data
+        # Get basic data using method_id to find related records
         criteria_record = HierarchyCriteria.query.get(method_id)
         alternatives_record = HierarchyAlternatives.query.get(method_id)
         task_record = HierarchyTask.query.get(method_id)
         criteria_matrix_record = HierarchyCriteriaMatrix.query.get(method_id)
         alternatives_matrix_record = HierarchyAlternativesMatrix.query.get(method_id)
+
+        current_app.logger.info(
+            f"[DEBUG] Retrieved records with method_id: {method_id}"
+        )
 
         current_app.logger.info(f"Data records found:")
         current_app.logger.info(f"  criteria_record: {criteria_record is not None}")
@@ -920,9 +1357,24 @@ def export_excel(result_id):
         current_app.logger.info(
             f"  alternatives_eigenvectors: {alternatives_matrix_record.components_eigenvector_alt}"
         )
+        # Check if consistency values are lists or single values
         current_app.logger.info(
-            f"  criteria_consistency: ci={criteria_matrix_record.index_consistency[0]}, cr={criteria_matrix_record.relation_consistency[0]}"
+            f"[DEBUG] criteria_matrix_record.index_consistency: {criteria_matrix_record.index_consistency}, type: {type(criteria_matrix_record.index_consistency)}"
         )
+        current_app.logger.info(
+            f"[DEBUG] criteria_matrix_record.relation_consistency: {criteria_matrix_record.relation_consistency}, type: {type(criteria_matrix_record.relation_consistency)}"
+        )
+        ci_value = (
+            criteria_matrix_record.index_consistency[0]
+            if isinstance(criteria_matrix_record.index_consistency, list)
+            else criteria_matrix_record.index_consistency
+        )
+        cr_value = (
+            criteria_matrix_record.relation_consistency[0]
+            if isinstance(criteria_matrix_record.relation_consistency, list)
+            else criteria_matrix_record.relation_consistency
+        )
+        current_app.logger.info(f"  criteria_consistency: ci={ci_value}, cr={cr_value}")
         current_app.logger.info(
             f"  alternatives_consistency: ci={alternatives_matrix_record.index_consistency_alt}, cr={alternatives_matrix_record.relation_consistency_alt}"
         )
@@ -953,8 +1405,16 @@ def export_excel(result_id):
             "alternatives_eigenvectors": alternatives_matrix_record.components_eigenvector_alt,
             "alternatives_weights": alternatives_matrix_record.normalized_eigenvector_alt,
             "criteria_consistency": {
-                "ci": criteria_matrix_record.index_consistency[0],
-                "cr": criteria_matrix_record.relation_consistency[0],
+                "ci": (
+                    criteria_matrix_record.index_consistency[0]
+                    if isinstance(criteria_matrix_record.index_consistency, list)
+                    else criteria_matrix_record.index_consistency
+                ),
+                "cr": (
+                    criteria_matrix_record.relation_consistency[0]
+                    if isinstance(criteria_matrix_record.relation_consistency, list)
+                    else criteria_matrix_record.relation_consistency
+                ),
             },
             "alternatives_consistency": {
                 "ci": fixed_ci,
@@ -1042,462 +1502,23 @@ def upload_matrix():
 def result_from_file():
     """Process hierarchy analysis from uploaded file data"""
     try:
+        current_app.logger.info(f"[DEBUG] Starting result_from_file processing")
         # Get data from form
-        criteria_names = request.form.get("criteria_names")
-        alternatives_names = request.form.get("alternatives_names")
-        criteria_matrix_json = request.form.get("criteria_matrix")
-        alternatives_matrices_json = request.form.get("alternatives_matrices")
+        file_data = {
+            "criteria_names": request.form.get("criteria_names"),
+            "alternatives_names": request.form.get("alternatives_names"),
+            "criteria_matrix": request.form.get("criteria_matrix"),
+            "alternatives_matrices": request.form.get("alternatives_matrices"),
+        }
+        current_app.logger.info(f"[DEBUG] Extracted file_data: {file_data}")
 
-        if not all(
-            [
-                criteria_names,
-                alternatives_names,
-                criteria_matrix_json,
-                alternatives_matrices_json,
-            ]
-        ):
+        # Check if all required data is present
+        if not all(file_data.values()):
             flash("Missing required data from file upload", "error")
             return redirect(url_for("hierarchy.index"))
 
-        # Parse JSON data
-        try:
-            print(
-                f"DEBUG: Raw criteria_names from form: {criteria_names}, type: {type(criteria_names)}"
-            )
-            print(
-                f"DEBUG: Raw alternatives_names from form: {alternatives_names}, type: {type(alternatives_names)}"
-            )
-            print(
-                f"DEBUG: Raw criteria_matrix_json from form: {criteria_matrix_json}, type: {type(criteria_matrix_json)}"
-            )
-            print(
-                f"DEBUG: Raw alternatives_matrices_json from form: {alternatives_matrices_json}, type: {type(alternatives_matrices_json)}"
-            )
-
-            criteria_names = json.loads(criteria_names)
-            alternatives_names = json.loads(alternatives_names)
-            criteria_matrix = json.loads(criteria_matrix_json)
-            alternatives_matrices = json.loads(alternatives_matrices_json)
-
-            print(
-                f"DEBUG: After json.loads - criteria_names: {criteria_names}, type: {type(criteria_names)}"
-            )
-            print(
-                f"DEBUG: After json.loads - alternatives_names: {alternatives_names}, type: {type(alternatives_names)}"
-            )
-            print(
-                f"DEBUG: After json.loads - criteria_matrix: {criteria_matrix}, type: {type(criteria_matrix)}"
-            )
-            print(
-                f"DEBUG: After json.loads - alternatives_matrices: {alternatives_matrices}, type: {type(alternatives_matrices)}"
-            )
-
-            # Ensure they are lists, not tuples
-            if isinstance(criteria_names, tuple):
-                print(f"DEBUG: Converting criteria_names from tuple to list")
-                criteria_names = list(criteria_names)
-            if isinstance(alternatives_names, tuple):
-                print(f"DEBUG: Converting alternatives_names from tuple to list")
-                alternatives_names = list(alternatives_names)
-            if isinstance(criteria_matrix, tuple):
-                print(f"DEBUG: Converting criteria_matrix from tuple to list")
-                criteria_matrix = list(criteria_matrix)
-            if isinstance(alternatives_matrices, tuple):
-                print(f"DEBUG: Converting alternatives_matrices from tuple to list")
-                alternatives_matrices = list(alternatives_matrices)
-
-            print(
-                f"DEBUG: Final types - criteria_names: {type(criteria_names)}, alternatives_names: {type(alternatives_names)}"
-            )
-            print(
-                f"DEBUG: Final types - criteria_matrix: {type(criteria_matrix)}, alternatives_matrices: {type(alternatives_matrices)}"
-            )
-
-            # Convert all matrix elements to float to ensure proper data types
-            criteria_matrix = [[float(x) for x in row] for row in criteria_matrix]
-            alternatives_matrices = [
-                [[float(x) for x in row] for row in matrix]
-                for matrix in alternatives_matrices
-            ]
-
-            print(
-                f"DEBUG: After float conversion - criteria_matrix sample: {criteria_matrix[0][:3]}"
-            )
-            print(
-                f"DEBUG: After float conversion - alternatives_matrices sample: {alternatives_matrices[0][0][:3]}"
-            )
-
-        except json.JSONDecodeError:
-            flash("Invalid matrix data format", "error")
-            return redirect(url_for("hierarchy.index"))
-
-        # Validate data
-        if len(criteria_names) != len(criteria_matrix) or len(criteria_names) != len(
-            criteria_matrix[0]
-        ):
-            flash("Invalid criteria matrix dimensions", "error")
-            return redirect(url_for("hierarchy.index"))
-
-        if len(alternatives_names) != len(alternatives_matrices[0]) or len(
-            alternatives_names
-        ) != len(alternatives_matrices[0][0]):
-            flash("Invalid alternatives matrix dimensions", "error")
-            return redirect(url_for("hierarchy.index"))
-
-        # Create hierarchy task first to get a unique ID
-        task_id = add_object_to_db(
-            db,
-            HierarchyTask,
-            task=f"Hierarchy analysis with {len(criteria_names)} criteria and {len(alternatives_names)} alternatives",
-        )
-        task = HierarchyTask.query.get(task_id)
-
-        # Use the same ID for all related records
-        common_id = task_id
-
-        # Save criteria with the same ID
-        criteria_id = add_object_to_db(
-            db, HierarchyCriteria, id=common_id, names=criteria_names
-        )
-
-        # Save alternatives with the same ID
-        alternatives_id = add_object_to_db(
-            db, HierarchyAlternatives, id=common_id, names=alternatives_names
-        )
-
-        # Process criteria matrix
-        # Convert numeric matrix to string matrix and flatten for do_matrix
-        criteria_matrix_str = []
-        for row in criteria_matrix:
-            str_row = []
-            for cell in row:
-                if isinstance(cell, (int, float)):
-                    str_row.append(str(cell))
-                else:
-                    str_row.append(str(cell))
-            criteria_matrix_str.append(str_row)
-
-        # Flatten the 2D matrix to 1D list for do_matrix
-        criteria_matrix_flat = []
-        for row in criteria_matrix_str:
-            criteria_matrix_flat.extend(row)
-
-        # Debug: Check for Undefined values in criteria matrix
-        print(
-            f"[DEBUG] Criteria matrix flat (first 10 elements): {criteria_matrix_flat[:10]}"
-        )
-        for i, val in enumerate(criteria_matrix_flat[:10]):
-            print(f"[DEBUG] Element {i}: type={type(val)}, value={val}")
-
-        matrix_krit = do_matrix(
-            krit=1, matrix=criteria_matrix_flat, criteria=len(criteria_names)
-        )
-        comp_vector_krit = do_comp_vector(
-            krit=1, criteria=len(criteria_names), matr=matrix_krit
-        )
-        norm_vector_krit = do_norm_vector(
-            krit=1, comp_vector=comp_vector_krit, criteria=len(criteria_names)
-        )
-        sum_col_krit = do_sum_col(
-            krit=1, matr=matrix_krit, criteria=len(criteria_names)
-        )
-        prod_col_krit = do_prod_col(
-            krit=1,
-            criteria=len(criteria_names),
-            sum_col=sum_col_krit,
-            norm_vector=norm_vector_krit,
-        )
-        l_max_krit = do_l_max(
-            krit=1, prod_col=prod_col_krit, criteria=len(criteria_names)
-        )
-        index_consistency_krit, relation_consistency_krit = do_consistency(
-            krit=1, l_max=l_max_krit, criteria=len(criteria_names)
-        )
-
-        lst_norm_vector_krit = do_lst_norm_vector(
-            krit=1,
-            name=criteria_names,
-            criteria=len(criteria_names),
-            norm_vector=norm_vector_krit,
-        )
-        ranj_krit = do_ranj(krit=1, lst_norm_vector=lst_norm_vector_krit)
-
-        # Save criteria matrix result
-        add_object_to_db(
-            db,
-            HierarchyCriteriaMatrix,
-            id=common_id,
-            hierarchy_criteria_id=common_id,
-            comparison_matrix=matrix_krit,
-            components_eigenvector=comp_vector_krit,
-            normalized_eigenvector=norm_vector_krit,
-            sum_col=sum_col_krit,
-            prod_col=prod_col_krit,
-            l_max=l_max_krit,
-            index_consistency=index_consistency_krit,
-            relation_consistency=relation_consistency_krit,
-            lst_normalized_eigenvector=lst_norm_vector_krit,
-            ranj=ranj_krit,
-        )
-
-        # Create plot first
-        plot_id = add_object_to_db(db, GlobalPrioritiesPlot, id=common_id, plot_data=[])
-
-        # Process alternatives matrices
-        alternatives_matrices_results = []
-        for i, alt_matrix in enumerate(alternatives_matrices):
-            # Convert numeric matrix to string matrix and flatten for do_matrix
-            alt_matrix_str = []
-            for row in alt_matrix:
-                str_row = []
-                for cell in row:
-                    if isinstance(cell, (int, float)):
-                        str_row.append(str(cell))
-                    else:
-                        str_row.append(str(cell))
-                alt_matrix_str.append(str_row)
-
-            # Flatten the 2D matrix to 1D list for do_matrix
-            alt_matrix_flat = []
-            for row in alt_matrix_str:
-                alt_matrix_flat.extend(row)
-
-            # Debug: Check for Undefined values in alternatives matrix
-            print(
-                f"[DEBUG] Alternatives matrix {i} flat (first 10 elements): {alt_matrix_flat[:10]}"
-            )
-            for j, val in enumerate(alt_matrix_flat[:10]):
-                print(
-                    f"[DEBUG] Alt matrix {i}, element {j}: type={type(val)}, value={val}"
-                )
-
-            matrix_alt = do_matrix(
-                krit=0,
-                matrix=alt_matrix_flat,
-                criteria=1,
-                num_alt=len(alternatives_names),
-            )
-            comp_vector_alt = do_comp_vector(
-                krit=0, criteria=1, matr=matrix_alt, num_alt=len(alternatives_names)
-            )
-            norm_vector_alt = do_norm_vector(
-                krit=0,
-                comp_vector=comp_vector_alt,
-                criteria=1,
-                num_alt=len(alternatives_names),
-            )
-            sum_col_alt = do_sum_col(
-                krit=0, matr=matrix_alt, criteria=1, num_alt=len(alternatives_names)
-            )
-            prod_col_alt = do_prod_col(
-                krit=0,
-                criteria=1,
-                sum_col=sum_col_alt,
-                norm_vector=norm_vector_alt,
-                num_alt=len(alternatives_names),
-            )
-            l_max_alt = do_l_max(krit=0, prod_col=prod_col_alt, criteria=1)
-            index_consistency_alt, relation_consistency_alt = do_consistency(
-                krit=0, l_max=l_max_alt, criteria=1, num_alt=len(alternatives_names)
-            )
-            lst_norm_vector_alt = do_lst_norm_vector(
-                krit=0,
-                name=alternatives_names,
-                criteria=1,
-                norm_vector=norm_vector_alt,
-                num_alt=len(alternatives_names),
-            )
-            ranj_alt = do_ranj(krit=0, lst_norm_vector=lst_norm_vector_alt, criteria=1)
-
-            # Save alternatives matrix result
-            alt_matrix_id = add_object_to_db(
-                db,
-                HierarchyAlternativesMatrix,
-                id=common_id,
-                criteria_id=common_id,
-                hierarchy_alternatives_id=common_id,
-                matr_alt=alt_matrix_flat,
-                comparison_matrix=matrix_alt,
-                components_eigenvector_alt=comp_vector_alt,
-                normalized_eigenvector_alt=norm_vector_alt,
-                sum_col_alt=sum_col_alt,
-                prod_col_alt=prod_col_alt,
-                l_max_alt=l_max_alt,
-                index_consistency_alt=index_consistency_alt,
-                relation_consistency_alt=relation_consistency_alt,
-                lst_normalized_eigenvector_alt=lst_norm_vector_alt,
-                ranj_alt=ranj_alt,
-                global_prior=[],
-                lst_normalized_eigenvector_global=[],
-                ranj_global=[],
-                global_priorities_plot_id=plot_id,
-                task_id=common_id,
-            )
-            alt_matrix_result = HierarchyAlternativesMatrix.query.get(alt_matrix_id)
-            alternatives_matrices_results.append(alt_matrix_result)
-
-        # Calculate global priorities
-        # Collect all normalized vectors for alternatives
-        norm_vectors_alt = []
-        for i, alt_result in enumerate(alternatives_matrices_results):
-            print(f"[DEBUG] Processing alt_result {i}")
-            print(
-                f"[DEBUG] alt_result.normalized_eigenvector_alt: {alt_result.normalized_eigenvector_alt}"
-            )
-            print(
-                f"[DEBUG] Length: {len(alt_result.normalized_eigenvector_alt) if alt_result.normalized_eigenvector_alt else 0}"
-            )
-
-            # Extract the normalized vector for this criterion
-            if (
-                alt_result.normalized_eigenvector_alt
-                and len(alt_result.normalized_eigenvector_alt) > 0
-            ):
-                norm_vector = alt_result.normalized_eigenvector_alt[0]
-            else:
-                norm_vector = []
-            norm_vectors_alt.append(norm_vector)
-
-        ranj_global = do_global_prior(
-            norm_vector=norm_vector_krit,
-            norm_vector_alt=norm_vectors_alt,
-            num_alt=len(alternatives_names),
-        )
-        lst_norm_vector_global = do_lst_norm_vector(
-            krit=0,
-            name=alternatives_names,
-            criteria=1,
-            norm_vector=ranj_global,
-            num_alt=len(alternatives_names),
-            g=1,
-        )
-        ranj_global_final = do_ranj(
-            krit=0, lst_norm_vector=lst_norm_vector_global, criteria=1, g=1
-        )
-
-        # Generate plots
-        plot_criteria = generate_plot(ranj_krit, criteria_names, "Criteria Priorities")
-        plot_alternatives = []
-        for i, alt_result in enumerate(alternatives_matrices_results):
-            alt_plot = generate_plot(
-                alt_result.ranj_alt,
-                alternatives_names,
-                f"Alternatives Priorities (Criterion {i+1})",
-            )
-            plot_alternatives.append(alt_plot)
-
-        # Update plot data
-        plot_record = GlobalPrioritiesPlot.query.get(plot_id)
-        if plot_record:
-            plot_record.plot_data = plot_criteria
-            db.session.commit()
-
-        # Skip saving individual alternative plots for now
-        # for i, alt_plot in enumerate(plot_alternatives):
-        #     add_object_to_db(
-        #         db,
-        #         HierarchyAlternativesMatrix,
-        #         task_id=task.id,
-        #         plot_data=alt_plot,
-        #     )
-
-        # Generate hierarchy tree
-        tree_data = generate_hierarchy_tree(
-            criteria_names, alternatives_names, norm_vector_krit, ranj_global
-        )
-
-        # Save result
-        try:
-            result = Result(
-                method_name="hierarchy",
-                method_id=common_id,
-                user_id=current_user.get_id(),
-            )
-            db.session.add(result)
-            db.session.commit()
-            result_id = result.id
-        except Exception as e:
-            current_app.logger.error(f"Error creating result: {str(e)}")
-            result_id = add_object_to_db(
-                db,
-                Result,
-                method_name="hierarchy",
-                method_id=common_id,
-                user_id=current_user.get_id(),
-            )
-            result = Result.query.get(result_id)
-
-        # Render results page
-        return render_template(
-            "Hierarchy/result.html",
-            title="Результат",
-            task=task,
-            num_criteria=len(criteria_names),
-            num_alternatives=len(alternatives_names),
-            name_criteria=criteria_names,
-            name_alternatives=alternatives_names,
-            matrix_krit=matrix_krit,
-            components_eigenvector=comp_vector_krit,
-            normalized_eigenvector=norm_vector_krit,
-            sum_col=sum_col_krit,
-            prod_col=prod_col_krit,
-            l_max=l_max_krit,
-            index_consistency=index_consistency_krit,
-            relation_consistency=relation_consistency_krit,
-            lst_normalized_eigenvector=lst_norm_vector_krit,
-            ranj=ranj_krit,
-            matrix_alt=[alt.comparison_matrix for alt in alternatives_matrices_results],
-            components_eigenvector_alt=[
-                (
-                    alt.components_eigenvector_alt[0]
-                    if alt.components_eigenvector_alt
-                    and len(alt.components_eigenvector_alt) > 0
-                    else []
-                )
-                for alt in alternatives_matrices_results
-            ],
-            normalized_eigenvector_alt=[
-                (
-                    alt.normalized_eigenvector_alt[0]
-                    if alt.normalized_eigenvector_alt
-                    and len(alt.normalized_eigenvector_alt) > 0
-                    else []
-                )
-                for alt in alternatives_matrices_results
-            ],
-            sum_col_alt=[
-                alt.sum_col_alt[0] if alt.sum_col_alt else []
-                for alt in alternatives_matrices_results
-            ],
-            prod_col_alt=[
-                alt.prod_col_alt[0] if alt.prod_col_alt else []
-                for alt in alternatives_matrices_results
-            ],
-            l_max_alt=[
-                alt.l_max_alt[0] if alt.l_max_alt else []
-                for alt in alternatives_matrices_results
-            ],
-            index_consistency_alt=[
-                alt.index_consistency_alt[0] if alt.index_consistency_alt else []
-                for alt in alternatives_matrices_results
-            ],
-            relation_consistency_alt=[
-                alt.relation_consistency_alt[0] if alt.relation_consistency_alt else []
-                for alt in alternatives_matrices_results
-            ],
-            lst_normalized_eigenvector_alt=[
-                alt.lst_normalized_eigenvector_alt
-                for alt in alternatives_matrices_results
-            ],
-            ranj_alt=[alt.ranj_alt for alt in alternatives_matrices_results],
-            global_prior=[round(x, 3) for x in ranj_global],
-            lst_normalized_eigenvector_global=lst_norm_vector_global,
-            ranj_global=ranj_global_final,
-            global_prior_plot=plot_criteria,
-            result=result,
-            result_id=result.id,
-            method_id=common_id,
-        )
+        # Pass data to result function
+        return result(file_data=file_data)
 
     except Exception as e:
         current_app.logger.error(f"Error processing file data: {str(e)}")

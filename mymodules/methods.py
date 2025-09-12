@@ -414,19 +414,95 @@ def generate_plot(
 
 # Функція для додавання об'єкту в базу даних та повернення його ID
 def add_object_to_db(db, object_class, **kwargs):
+    # Debug logging
+    print(
+        f"DEBUG: add_object_to_db called with class={object_class.__name__}, kwargs={kwargs}"
+    )
+
     # Проверяем, есть ли уже запись с таким ID
     if "id" in kwargs:
+        print(f"DEBUG: ID provided: {kwargs['id']}")
         existing_record = db.session.get(object_class, kwargs["id"])
         if existing_record:
+            print(f"DEBUG: Existing record found, updating")
             # Обновляем существующую запись
             for key, value in kwargs.items():
                 if hasattr(existing_record, key):
                     setattr(existing_record, key, value)
             db.session.commit()
             return existing_record.id
+        else:
+            print(f"DEBUG: No existing record, creating new with ID {kwargs['id']}")
+            # Если записи с таким ID нет, создаем новую
+            object_instance = object_class(**kwargs)
+            db.session.add(object_instance)
+            db.session.commit()
+            return object_instance.id
+    else:
+        print(f"DEBUG: No ID provided, creating new record")
+        print(f"DEBUG: kwargs before creating object: {kwargs}")
+        # Создаем новую запись без указания ID
+        object_instance = object_class(**kwargs)
+        print(
+            f"DEBUG: Object created, ID before add: {getattr(object_instance, 'id', 'NO ID ATTR')}"
+        )
+        db.session.add(object_instance)
+        print(
+            f"DEBUG: Object added to session, ID before commit: {getattr(object_instance, 'id', 'NO ID ATTR')}"
+        )
+        try:
+            db.session.commit()
+            print(f"DEBUG: Created record with ID: {object_instance.id}")
+            return object_instance.id
+        except Exception as e:
+            print(f"DEBUG: Commit failed with error: {str(e)}")
+            db.session.rollback()
 
-    # Создаем новую запись
-    object_instance = object_class(**kwargs)
-    db.session.add(object_instance)
-    db.session.commit()
-    return object_instance.id
+            # If it's a duplicate key error, try to find next available ID
+            if "duplicate key value violates unique constraint" in str(e):
+                print("DEBUG: Duplicate key error detected, finding next available ID")
+                try:
+                    # Get the max ID from the table
+                    max_id = (
+                        db.session.query(db.func.max(object_class.id)).scalar() or 0
+                    )
+                    print(f"DEBUG: Max ID in table: {max_id}")
+
+                    # Try to create with explicit ID starting from max_id + 1
+                    next_id = max_id + 1
+                    max_attempts = 10  # Prevent infinite loop
+
+                    for attempt in range(max_attempts):
+                        try:
+                            kwargs["id"] = next_id
+                            object_instance = object_class(**kwargs)
+                            db.session.add(object_instance)
+                            db.session.commit()
+                            print(
+                                f"DEBUG: Created record with explicit ID: {object_instance.id}"
+                            )
+                            return object_instance.id
+                        except Exception as id_error:
+                            if "duplicate key value violates unique constraint" in str(
+                                id_error
+                            ):
+                                print(
+                                    f"DEBUG: ID {next_id} also exists, trying {next_id + 1}"
+                                )
+                                next_id += 1
+                                db.session.rollback()
+                                continue
+                            else:
+                                raise id_error
+
+                    # If we exhausted all attempts
+                    print(
+                        f"DEBUG: Could not find available ID after {max_attempts} attempts"
+                    )
+                    raise e
+
+                except Exception as id_error:
+                    print(f"DEBUG: ID resolution failed: {str(id_error)}")
+                    raise e
+            else:
+                raise e
