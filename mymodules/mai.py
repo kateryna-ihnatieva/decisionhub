@@ -74,7 +74,7 @@ def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
             if isinstance(value, str):
                 if "/" in value:
                     frac = Fraction(value)
-                    matr[i][j] = float(frac.denominator)
+                    matr[i][j] = float(frac)
                 else:
                     n = float(value)
                     if n == 0:
