@@ -493,6 +493,22 @@ def matrix_alt():
 @hierarchy_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None, file_data=None):
 
+    # Check if we have file data in session (from result_from_file redirect)
+    if (
+        not file_data
+        and session.get("file_criteria_matrix")
+        and session.get("file_alternatives_matrices")
+    ):
+        file_data = {
+            "criteria_names": json.dumps(session.get("name_criteria", [])),
+            "alternatives_names": json.dumps(session.get("name_alternatives", [])),
+            "criteria_matrix": session.get("file_criteria_matrix"),
+            "alternatives_matrices": session.get("file_alternatives_matrices"),
+        }
+        # Clear file data from session after processing
+        session.pop("file_criteria_matrix", None)
+        session.pop("file_alternatives_matrices", None)
+
     # If file_data is provided, process it first
     if file_data:
         try:
@@ -1528,7 +1544,7 @@ def upload_matrix():
 @hierarchy_bp.route("/result_from_file", methods=["POST"])
 @login_required
 def result_from_file():
-    """Process hierarchy analysis from uploaded file data"""
+    """Process hierarchy analysis from uploaded file data and redirect to result page"""
     try:
         current_app.logger.info(f"[DEBUG] Starting result_from_file processing")
         # Get data from form
@@ -1545,8 +1561,44 @@ def result_from_file():
             flash("Missing required data from file upload", "error")
             return redirect(url_for("hierarchy.index"))
 
-        # Pass data to result function
-        return result(file_data=file_data)
+        # Process file data and get method_id
+        result_response = result(file_data=file_data)
+
+        # If result is a redirect or error, return it as is
+        if hasattr(result_response, "status_code") and result_response.status_code in [
+            302,
+            400,
+            500,
+        ]:
+            return result_response
+
+        # If result is a render_template, we need to extract method_id from the context
+        # Since we can't easily extract method_id from render_template response,
+        # let's modify the approach: process the data and get the method_id, then redirect
+
+        # Parse the data to get method_id
+        criteria_names = json.loads(file_data["criteria_names"])
+        alternatives_names = json.loads(file_data["alternatives_names"])
+
+        # Create records in database to get method_id
+        new_record_id = add_object_to_db(db, HierarchyCriteria, names=criteria_names)
+        add_object_to_db(
+            db, HierarchyAlternatives, id=new_record_id, names=alternatives_names
+        )
+
+        # Store data in session for the result function
+        session["new_record_id"] = new_record_id
+        session["num_alternatives"] = len(alternatives_names)
+        session["num_criteria"] = len(criteria_names)
+        session["name_alternatives"] = alternatives_names
+        session["name_criteria"] = criteria_names
+
+        # Store file data in session for processing
+        session["file_criteria_matrix"] = file_data["criteria_matrix"]
+        session["file_alternatives_matrices"] = file_data["alternatives_matrices"]
+
+        # Redirect to the result page with method_id
+        return redirect(url_for("hierarchy.result", method_id=new_record_id))
 
     except Exception as e:
         current_app.logger.error(f"Error processing file data: {str(e)}")
