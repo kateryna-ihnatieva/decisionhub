@@ -65,6 +65,11 @@ app.register_blueprint(savage_bp)
 app.register_blueprint(hurwitz_bp)
 app.register_blueprint(drafts_bp)
 
+# Import and register custom filters
+from mymodules.mai import convert_to_fraction
+
+app.jinja_env.filters["to_fraction"] = convert_to_fraction
+
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 

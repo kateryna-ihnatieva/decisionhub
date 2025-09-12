@@ -4,6 +4,39 @@ from graphviz import Digraph
 from jinja2.runtime import Undefined
 
 
+def convert_to_fraction(value, precision=0.001):
+    """
+    Convert decimal number to fraction string (e.g., 0.333... -> "1/3")
+    """
+    try:
+        if isinstance(value, str):
+            # If it's already a fraction string, return as is
+            if "/" in value:
+                return value
+            value = float(value)
+
+        if isinstance(value, (int, float)):
+            # Handle special cases
+            if abs(value - 1.0) < precision:
+                return "1"
+            elif abs(value) < precision:
+                return "0"
+
+            # Convert to fraction
+            frac = Fraction(value).limit_denominator(1000)
+
+            # If denominator is 1, return just the numerator
+            if frac.denominator == 1:
+                return str(frac.numerator)
+
+            # Return as fraction string
+            return f"{frac.numerator}/{frac.denominator}"
+
+        return str(value)
+    except (ValueError, TypeError):
+        return str(value)
+
+
 # Створення списку з матриць по рівнях
 def do_matrix(krit=0, matrix=0, criteria=0, num_alt=0):
     print(

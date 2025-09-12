@@ -777,7 +777,7 @@
             <tr>
               <th>{{ name_criteria[i] }}</th>
               {% for j in range(num_criteria) %}
-              <td>{{ matrix_krit[i][j] }}</td>
+              <td>{{ matrix_krit[i][j] | to_fraction }}</td>
               {% endfor %}
               <td>{{ components_eigenvector[i] | round(3) }}</td>
               <td>{{ normalized_eigenvector[i] | round(3) }}</td>
@@ -852,7 +852,7 @@
             <tr>
               <th>{{ name_alternatives[i] }}</th>
               {% for j in range(name_alternatives | length) %}
-              <td>{{ matrix_alt[num][i][j] }}</td>
+              <td>{{ matrix_alt[num][i][j] | to_fraction }}</td>
               {% endfor %}
               <td>{{ components_eigenvector_alt[num][i] | round(3) }}</td>
               <td>{{ normalized_eigenvector_alt[num][i] | round(3) }}</td>
@@ -950,10 +950,10 @@
       </table>
     </div>
 
-    {% if task %}
+    {% if hierarchy_task %}
     <div class="task-description">
       <div class="task-label">Задача</div>
-      <div class="task-text">{{ task }}</div>
+      <div class="task-text">{{ hierarchy_task.task }}</div>
     </div>
     {% endif %}
 
