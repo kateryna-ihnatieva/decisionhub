@@ -780,6 +780,17 @@ def result_from_file():
             add_object_to_db(db, ExpertsTask, id=new_record_id, task=experts_task)
             print(f"Created ExpertsTask with ID: {new_record_id}")
 
+        # Create result record for history if user is authenticated
+        if current_user.is_authenticated:
+            add_object_to_db(
+                db,
+                Result,
+                method_name="Experts",
+                method_id=new_record_id,
+                user_id=current_user.get_id(),
+            )
+            print(f"Created Result record for history with ID: {new_record_id}")
+
         # Redirect to result page
         print(f"Redirecting to result page with method_id: {new_record_id}")
         return redirect(url_for("experts.experts_result", method_id=new_record_id))
