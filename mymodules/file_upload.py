@@ -691,3 +691,204 @@ def extract_hierarchy_data(data, num_criteria, num_alternatives):
             "alternatives_matrices": [],
             "error": f"Error processing hierarchy data: {str(e)}",
         }
+
+
+def process_binary_file(file, num_objects, upload_folder="uploads"):
+    """
+    Process uploaded file specifically for binary relations analysis
+    Handles files with binary relations matrix
+
+    Args:
+        file: Flask file object
+        num_objects: Number of objects for binary relations
+        upload_folder: Folder to save uploaded files
+
+    Returns:
+        dict: {'success': bool, 'names': list, 'matrix': list, 'error': str}
+    """
+    try:
+        # Validate file
+        is_valid, error = validate_file(file)
+        if not is_valid:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": error,
+            }
+
+        # Save file
+        file_path = save_uploaded_file(file, upload_folder)
+
+        try:
+            # Parse file based on extension
+            file_ext = os.path.splitext(file.filename.lower())[1]
+
+            if file_ext in [".xlsx", ".xls"]:
+                data = parse_excel_data(file_path)
+            elif file_ext == ".csv":
+                data = parse_csv_data_with_empty_rows(file_path)
+            else:
+                return {
+                    "success": False,
+                    "names": [],
+                    "matrix": [],
+                    "error": "Unsupported file format",
+                }
+
+            # Process binary relations data
+            result = extract_binary_data(data, num_objects)
+
+            # Clean up file
+            cleanup_file(file_path)
+
+            return result
+
+        except Exception as e:
+            # Clean up file on error
+            cleanup_file(file_path)
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": f"Error processing file: {str(e)}",
+            }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "names": [],
+            "matrix": [],
+            "error": f"Upload error: {str(e)}",
+        }
+
+
+def extract_binary_data(data, num_objects):
+    """
+    Extract binary relations data from file
+
+    For binary relations analysis:
+    - Matrix with object names in first row and first column
+    - Values should be -1, 0, or 1
+    - Matrix should be square (num_objects x num_objects)
+
+    Args:
+        data: Raw file data
+        num_objects: Number of objects
+
+    Returns:
+        dict with names and matrix data
+    """
+    try:
+        if not data or len(data) == 0:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": "File is empty",
+            }
+
+        # Clean data - remove completely empty rows
+        data = [row for row in data if any(str(cell).strip() for cell in row)]
+
+        if len(data) == 0:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": "No data found in file",
+            }
+
+        # Check if we have enough data for the expected size
+        min_size = num_objects + 1  # +1 for header row/column
+        if len(data) < min_size or len(data[0]) < min_size:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": f"Insufficient data. Expected at least {min_size}x{min_size}, got {len(data)}x{len(data[0])}",
+            }
+
+        # Extract names from first row (excluding first cell)
+        names = []
+        for j in range(1, min(num_objects + 1, len(data[0]))):
+            cell_value = str(data[0][j]).strip()
+            if cell_value and cell_value != "":
+                names.append(cell_value)
+
+        # If we don't have enough names from first row, try first column
+        if len(names) < num_objects:
+            for i in range(1, min(num_objects + 1, len(data))):
+                cell_value = str(data[i][0]).strip()
+                if cell_value and cell_value != "" and cell_value not in names:
+                    names.append(cell_value)
+
+        # Validate we have enough names
+        if len(names) < num_objects:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": f"Expected {num_objects} object names, found {len(names)}",
+            }
+
+        # Take only the required number of names
+        names = names[:num_objects]
+
+        # Extract matrix data
+        matrix = []
+        for i in range(1, min(num_objects + 1, len(data))):
+            matrix_row = []
+            for j in range(1, min(num_objects + 1, len(data[i]))):
+                cell_value = str(data[i][j]).strip()
+                try:
+                    # Convert to integer and validate it's -1, 0, or 1
+                    value = int(float(cell_value))
+                    if value not in [-1, 0, 1]:
+                        return {
+                            "success": False,
+                            "names": [],
+                            "matrix": [],
+                            "error": f"Invalid value '{value}' at position ({i},{j}). Only -1, 0, and 1 are allowed.",
+                        }
+                    matrix_row.append(value)
+                except (ValueError, TypeError):
+                    return {
+                        "success": False,
+                        "names": [],
+                        "matrix": [],
+                        "error": f"Invalid value '{cell_value}' at position ({i},{j}). Must be a number.",
+                    }
+
+            # Pad row if necessary
+            while len(matrix_row) < num_objects:
+                matrix_row.append(0)
+            matrix.append(matrix_row)
+
+        # Pad matrix if necessary
+        while len(matrix) < num_objects:
+            matrix.append([0] * num_objects)
+
+        # Validate matrix dimensions
+        if len(matrix) != num_objects or len(matrix[0]) != num_objects:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": f"Matrix should be {num_objects}x{num_objects}, got {len(matrix)}x{len(matrix[0])}",
+            }
+
+        return {
+            "success": True,
+            "names": names,
+            "matrix": matrix,
+            "error": None,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "names": [],
+            "matrix": [],
+            "error": f"Error processing binary relations data: {str(e)}",
+        }

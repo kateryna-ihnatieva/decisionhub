@@ -6,6 +6,7 @@ from flask import (
     redirect,
     url_for,
     Response,
+    flash,
 )
 from mymodules.binary import *
 from models import *
@@ -14,7 +15,7 @@ from flask_login import current_user
 from mymodules.methods import *
 from mymodules.gpt_response import *
 from mymodules.binary_excel_export import BinaryExcelExporter
-from mymodules.file_upload import process_uploaded_file
+from mymodules.file_upload import process_uploaded_file, process_binary_file
 
 import operator
 from datetime import datetime
@@ -179,7 +180,9 @@ def matrix():
 
 @binary_relations_bp.route("/result/<int:method_id>", methods=["GET", "POST"])
 def result(method_id=None):
+    print(f"Binary result function called with method_id: {method_id}")
     new_record_id = method_id if method_id else int(session.get("new_record_id"))
+    print(f"Using new_record_id: {new_record_id}")
     binary_task = session.get("binary_task")
 
     try:
@@ -188,8 +191,15 @@ def result(method_id=None):
     except Exception as e:
         print("[!] Error:", e)
 
-    names = BinaryNames.query.get(new_record_id).names
+    binary_names_record = BinaryNames.query.get(new_record_id)
+    if not binary_names_record:
+        print(f"BinaryNames record not found for ID: {new_record_id}")
+        flash("Binary names record not found", "error")
+        return redirect(url_for("binary_relations.index"))
+
+    names = binary_names_record.names
     num = len(names)
+    print(f"Found names: {names}, count: {num}")
 
     # Перевіримо: якщо матриця вже є — session["matr"] має бути 1
     existing_matrix = BinaryMatrix.query.get(new_record_id)
@@ -416,34 +426,107 @@ def export_excel(method_id):
 
 @binary_relations_bp.route("/upload_matrix", methods=["POST"])
 def upload_matrix():
-    """Handle file upload for matrix data"""
+    """Handle file upload for binary relations matrix data"""
     try:
         # Get the uploaded file
         file = request.files.get("matrix_file")
         if not file:
             return {"success": False, "error": "No file uploaded"}, 400
 
-        # Get expected size from request
-        expected_size = request.form.get("expected_size")
-        if not expected_size:
-            return {"success": False, "error": "Expected size not provided"}, 400
+        # Get number of objects from request
+        num_objects = request.form.get("num_objects")
+        if not num_objects:
+            return {"success": False, "error": "Number of objects not provided"}, 400
 
         try:
-            expected_size = int(expected_size)
+            num_objects = int(num_objects)
         except ValueError:
-            return {"success": False, "error": "Invalid expected size"}, 400
+            return {"success": False, "error": "Invalid number of objects"}, 400
 
-        # Process the uploaded file
-        result = process_uploaded_file(file, expected_size)
+        # Process the uploaded file for binary relations analysis
+        result = process_binary_file(file, num_objects)
+        print(f"Binary upload result: {result}")
 
         if result["success"]:
-            return {
+            response_data = {
                 "success": True,
                 "names": result["names"],
                 "matrix": result["matrix"],
             }
+            print(f"Returning response: {response_data}")
+            return response_data
         else:
             return {"success": False, "error": result["error"]}, 400
 
     except Exception as e:
         return {"success": False, "error": f"Upload failed: {str(e)}"}, 500
+
+
+@binary_relations_bp.route("/result_from_file", methods=["POST"])
+def result_from_file():
+    """Process binary relations analysis from uploaded file data and redirect to result page"""
+    try:
+        print(f"result_from_file called with form data: {request.form}")
+
+        # Get data from form
+        file_data = {
+            "names": request.form.get("uploaded_names"),
+            "matrix": request.form.get("uploaded_matrix"),
+        }
+
+        print(f"Extracted file_data: {file_data}")
+
+        # Get task description from form
+        binary_task = request.form.get("binary_task")
+        print(f"Binary task: {binary_task}")
+
+        # Check if all required data is present
+        if not all(file_data.values()):
+            print("Missing required data from file upload")
+            print(f"file_data values: {file_data}")
+            flash("Missing required data from file upload", "error")
+            return redirect(url_for("binary_relations.index"))
+
+        # Parse the data
+        import json
+
+        try:
+            names = json.loads(file_data["names"])
+            matrix = json.loads(file_data["matrix"])
+            print(f"Parsed names: {names}")
+            print(f"Parsed matrix: {matrix}")
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            flash("Error parsing uploaded data", "error")
+            return redirect(url_for("binary_relations.index"))
+
+        # Create records in database to get method_id
+        print("Creating database records...")
+        new_record_id = add_object_to_db(db, BinaryNames, names=names)
+        print(f"Created BinaryNames with ID: {new_record_id}")
+
+        add_object_to_db(
+            db,
+            BinaryMatrix,
+            id=new_record_id,
+            binary_names_id=new_record_id,
+            matrix=matrix,
+        )
+        print(f"Created BinaryMatrix with ID: {new_record_id}")
+
+        # Create binary task if provided
+        if binary_task:
+            add_object_to_db(db, BinaryTask, id=new_record_id, task=binary_task)
+            print(f"Created BinaryTask with ID: {new_record_id}")
+
+        # Redirect to result page
+        print(f"Redirecting to result page with method_id: {new_record_id}")
+        return redirect(url_for("binary_relations.result", method_id=new_record_id))
+
+    except Exception as e:
+        print(f"Exception in result_from_file: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        flash(f"Error processing file data: {str(e)}", "error")
+        return redirect(url_for("binary_relations.index"))
