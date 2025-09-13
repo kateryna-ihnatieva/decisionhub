@@ -11,7 +11,7 @@
 # █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from blueprints import (
     hierarchy_bp,
     binary_relations_bp,
@@ -34,13 +34,11 @@ from flask_login import (
 from UserLogin import UserLogin
 from dotenv import load_dotenv
 import os
-from sqlalchemy.orm import Session
 from flask_paginate import Pagination, get_page_args
 from mymodules.methods import add_object_to_db
 from mymodules.file_parser import FileParser
 from werkzeug.utils import secure_filename
 import tempfile
-import json
 
 load_dotenv()
 
@@ -48,6 +46,15 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["TIMEZONE"] = "Europe/Kiev"
+
+# Configure SQLAlchemy connection pool to prevent timeouts
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_size": 10,
+    "pool_recycle": 3600,
+    "pool_pre_ping": True,
+    "max_overflow": 20,
+    "pool_timeout": 30,
+}
 
 # File upload configuration
 app.config["UPLOAD_FOLDER"] = "uploads"
@@ -202,12 +209,12 @@ def profile():
         method_id = result.method_id
 
         if method_name == "Hierarchy":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            criteria_record = session.get(HierarchyCriteria, result.method_id)
-            alternatives_record = session.get(HierarchyAlternatives, result.method_id)
-            user_record = session.get(User, result.user_id)
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            criteria_record = db.session.get(HierarchyCriteria, result.method_id)
+            alternatives_record = db.session.get(
+                HierarchyAlternatives, result.method_id
+            )
+            user_record = db.session.get(User, result.user_id)
 
             if not criteria_record or not alternatives_record or not user_record:
                 # Skip this result if data is missing
@@ -226,14 +233,11 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
-        if method_name == "Binary":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            binary_record = session.get(BinaryNames, result.method_id)
-            user_record = session.get(User, result.user_id)
+        elif method_name == "Binary":
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            binary_record = db.session.get(BinaryNames, result.method_id)
+            user_record = db.session.get(User, result.user_id)
 
             if not binary_record or not user_record:
                 # Skip this result if data is missing
@@ -250,14 +254,11 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
-        if method_name == "Experts":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            research_record = session.get(ExpertsNameResearch, result.method_id)
-            user_record = session.get(User, result.user_id)
+        elif method_name == "Experts":
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            research_record = db.session.get(ExpertsNameResearch, result.method_id)
+            user_record = db.session.get(User, result.user_id)
 
             if not research_record or not user_record:
                 # Skip this result if data is missing
@@ -274,15 +275,12 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
-        if method_name == "Laplasa":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            alternatives_record = session.get(LaplasaAlternatives, result.method_id)
-            conditions_record = session.get(LaplasaConditions, result.method_id)
-            user_record = session.get(User, result.user_id)
+        elif method_name == "Laplasa":
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            alternatives_record = db.session.get(LaplasaAlternatives, result.method_id)
+            conditions_record = db.session.get(LaplasaConditions, result.method_id)
+            user_record = db.session.get(User, result.user_id)
 
             if not alternatives_record or not conditions_record or not user_record:
                 # Skip this result if data is missing
@@ -301,15 +299,12 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
-        if method_name == "Maximin":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            alternatives_record = session.get(MaximinAlternatives, result.method_id)
-            conditions_record = session.get(MaximinConditions, result.method_id)
-            user_record = session.get(User, result.user_id)
+        elif method_name == "Maximin":
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            alternatives_record = db.session.get(MaximinAlternatives, result.method_id)
+            conditions_record = db.session.get(MaximinConditions, result.method_id)
+            user_record = db.session.get(User, result.user_id)
 
             if not alternatives_record or not conditions_record or not user_record:
                 # Skip this result if data is missing
@@ -328,15 +323,12 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
-        if method_name == "Savage":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            alternatives_record = session.get(SavageAlternatives, result.method_id)
-            conditions_record = session.get(SavageConditions, result.method_id)
-            user_record = session.get(User, result.user_id)
+        elif method_name == "Savage":
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            alternatives_record = db.session.get(SavageAlternatives, result.method_id)
+            conditions_record = db.session.get(SavageConditions, result.method_id)
+            user_record = db.session.get(User, result.user_id)
 
             if not alternatives_record or not conditions_record or not user_record:
                 # Skip this result if data is missing
@@ -355,15 +347,12 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
-        if method_name == "Hurwitz":
-            session = Session(bind=db.engine)
-
-            # Check if records exist before accessing them
-            alternatives_record = session.get(HurwitzAlternatives, result.method_id)
-            conditions_record = session.get(HurwitzConditions, result.method_id)
-            user_record = session.get(User, result.user_id)
+        elif method_name == "Hurwitz":
+            # Use Flask-SQLAlchemy session instead of creating new sessions
+            alternatives_record = db.session.get(HurwitzAlternatives, result.method_id)
+            conditions_record = db.session.get(HurwitzConditions, result.method_id)
+            user_record = db.session.get(User, result.user_id)
 
             if not alternatives_record or not conditions_record or not user_record:
                 # Skip this result if data is missing
@@ -382,7 +371,6 @@ def profile():
                     "owner_name": owner_name,
                 }
             )
-            session.close()
 
     # Розбиваємо список результатів на сторінці
     pagination = Pagination(

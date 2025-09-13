@@ -1,10 +1,21 @@
-from flask import Blueprint, render_template, request, session, send_file, Response
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    session,
+    send_file,
+    Response,
+    flash,
+    redirect,
+    url_for,
+)
 from flask_login import current_user
 from mymodules.gpt_response import *
 from mymodules.methods import *
 from models import *
 from mymodules.experts_func import *
 from mymodules.experts_excel_export import ExpertsExcelExporter
+from mymodules.file_upload import process_experts_file
 from docxtpl import DocxTemplate
 from datetime import datetime
 
@@ -614,3 +625,169 @@ def export_excel(method_id):
     except Exception as e:
         print(f"Excel export error: {e}")
         return Response(f"Export failed: {str(e)}", status=500, mimetype="text/plain")
+
+
+@experts_bp.route("/upload_matrix", methods=["POST"])
+def upload_matrix():
+    """Handle file upload for experts evaluation data"""
+    try:
+        # Get the uploaded file
+        file = request.files.get("matrix_file")
+        if not file:
+            return {"success": False, "error": "No file uploaded"}, 400
+
+        # Get number of experts and alternatives from request
+        num_experts = request.form.get("num_experts")
+        num_alternatives = request.form.get("num_alternatives")
+
+        if not num_experts or not num_alternatives:
+            return {
+                "success": False,
+                "error": "Number of experts and alternatives not provided",
+            }, 400
+
+        try:
+            num_experts = int(num_experts)
+            num_alternatives = int(num_alternatives)
+        except ValueError:
+            return {
+                "success": False,
+                "error": "Invalid number of experts or alternatives",
+            }, 400
+
+        # Process the uploaded file for experts evaluation analysis
+        result = process_experts_file(file, num_experts, num_alternatives)
+
+        if result["success"]:
+            return {
+                "success": True,
+                "competency_matrix": result["competency_matrix"],
+                "evaluation_matrix": result["evaluation_matrix"],
+                "alternatives_names": result["alternatives_names"],
+            }
+        else:
+            return {"success": False, "error": result["error"]}, 400
+
+    except Exception as e:
+        return {"success": False, "error": f"Upload failed: {str(e)}"}, 500
+
+
+@experts_bp.route("/result_from_file", methods=["POST"])
+def result_from_file():
+    """Process experts evaluation from uploaded file data and redirect to result page"""
+    try:
+        print(f"Experts result_from_file called with form data: {request.form}")
+
+        # Get data from form
+        file_data = {
+            "competency_matrix": request.form.get("uploaded_competency_matrix"),
+            "evaluation_matrix": request.form.get("uploaded_evaluation_matrix"),
+            "alternatives_names": request.form.get("uploaded_alternatives_names"),
+        }
+
+        print(f"Extracted file_data: {file_data}")
+
+        # Get task description from form
+        experts_task = request.form.get("experts_task")
+        print(f"Experts task: {experts_task}")
+
+        # Check if all required data is present
+        if not all(file_data.values()):
+            print("Missing required data from file upload")
+            print(f"file_data values: {file_data}")
+            flash("Missing required data from file upload", "error")
+            return redirect(url_for("experts.index"))
+
+        # Parse the data
+        import json
+
+        try:
+            competency_matrix = json.loads(file_data["competency_matrix"])
+            evaluation_matrix = json.loads(file_data["evaluation_matrix"])
+            alternatives_names = json.loads(file_data["alternatives_names"])
+            print(f"Parsed competency_matrix: {competency_matrix}")
+            print(f"Parsed evaluation_matrix: {evaluation_matrix}")
+            print(f"Parsed alternatives_names: {alternatives_names}")
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            flash("Error parsing uploaded data", "error")
+            return redirect(url_for("experts.index"))
+
+        # Create records in database to get method_id
+        print("Creating database records...")
+        new_record_id = add_object_to_db(
+            db, ExpertsNameResearch, names=alternatives_names
+        )
+        print(f"Created ExpertsNameResearch with ID: {new_record_id}")
+
+        # Calculate k_a and k_k from competency matrix
+        k_a = []
+        k_k = []
+        for i in competency_matrix:
+            temp_lst = [float(j) if j and j != "" else 0.0 for j in i]
+            k_a.append(sum(temp_lst[1:]))  # Sum of all criteria except first column
+
+        for i in range(len(competency_matrix)):
+            k_k.append(
+                (
+                    k_a[i]
+                    + float(competency_matrix[i][0] if competency_matrix[i][0] else 0.0)
+                )
+                / 2
+            )
+
+        print(f"Calculated k_a: {k_a}")
+        print(f"Calculated k_k: {k_k}")
+
+        add_object_to_db(
+            db,
+            ExpertsCompetency,
+            id=new_record_id,
+            table_competency=competency_matrix,
+            k_k=k_k,
+            k_a=k_a,
+        )
+        print(f"Created ExpertsCompetency with ID: {new_record_id}")
+
+        # Calculate m_i, r_i, and lambda_value from evaluation matrix
+        from mymodules.experts_func import make_m_i, make_r_i, make_lambda
+
+        num_experts = len(evaluation_matrix)
+        num_research = len(alternatives_names)
+
+        m_i = make_m_i(k_k, evaluation_matrix, num_experts, num_research)
+        r_i = make_r_i(m_i)
+        l_value = make_lambda(num_research, r_i)
+
+        print(f"Calculated m_i: {m_i}")
+        print(f"Calculated r_i: {r_i}")
+        print(f"Calculated lambda_value: {l_value}")
+
+        add_object_to_db(
+            db,
+            ExpertsData,
+            id=new_record_id,
+            experts_name_research_id=new_record_id,
+            experts_data_table=evaluation_matrix,
+            m_i=m_i,
+            r_i=r_i,
+            lambda_value=l_value,
+        )
+        print(f"Created ExpertsData with ID: {new_record_id}")
+
+        # Create experts task if provided
+        if experts_task:
+            add_object_to_db(db, ExpertsTask, id=new_record_id, task=experts_task)
+            print(f"Created ExpertsTask with ID: {new_record_id}")
+
+        # Redirect to result page
+        print(f"Redirecting to result page with method_id: {new_record_id}")
+        return redirect(url_for("experts.experts_result", method_id=new_record_id))
+
+    except Exception as e:
+        print(f"Exception in experts result_from_file: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        flash(f"Error processing file data: {str(e)}", "error")
+        return redirect(url_for("experts.index"))
