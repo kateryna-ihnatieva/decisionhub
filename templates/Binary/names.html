@@ -439,6 +439,7 @@
 
 <div class="form-container">
   <form action="{{ url_for('binary_relations.matrix') }}" method="POST">
+    <input type="hidden" name="file_uploaded" id="file_uploaded_input" value="false">
 
     <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
     <input type="hidden" name="binary_task" value="{{ binary_task or '' }}">
@@ -624,7 +625,7 @@ function hideError() {
 function uploadFile(file) {
   const formData = new FormData();
   formData.append('matrix_file', file);
-  formData.append('expected_size', numObjects);
+  formData.append('num_objects', numObjects);
 
   // Show loading state
   const uploadButton = document.querySelector('.upload-button');
@@ -644,6 +645,8 @@ function uploadFile(file) {
     if (data.success) {
       // Fill form fields with uploaded data
       fillFormFields(data.names);
+      // Store uploaded data for form submission
+      storeUploadedData(data.names, data.matrix);
       showSuccess('File uploaded and processed successfully!');
     } else {
       showError(data.error || 'Upload failed');
@@ -668,6 +671,70 @@ function fillFormFields(names) {
       input.value = names[index];
     }
   });
+}
+
+function storeUploadedData(names, matrix) {
+  // Validate matrix dimensions
+  const expectedSize = numObjects;
+  const actualRows = matrix.length;
+  const actualCols = matrix[0] ? matrix[0].length : 0;
+
+  if (actualRows !== expectedSize || actualCols !== expectedSize) {
+    showError(`Matrix size mismatch! Expected ${expectedSize}x${expectedSize}, but file contains ${actualRows}x${actualCols} matrix.`);
+    return;
+  }
+
+  if (names.length !== expectedSize) {
+    showError(`Names count mismatch! Expected ${expectedSize} names, but file contains ${names.length} names.`);
+    return;
+  }
+
+  // Store the uploaded data in hidden form fields
+  const form = document.querySelector('form');
+
+  // Add hidden fields for names and matrix
+  let namesField = document.getElementById('uploaded_names');
+  if (!namesField) {
+    namesField = document.createElement('input');
+    namesField.type = 'hidden';
+    namesField.name = 'uploaded_names';
+    namesField.id = 'uploaded_names';
+    form.appendChild(namesField);
+  }
+  namesField.value = JSON.stringify(names);
+
+  let matrixField = document.getElementById('uploaded_matrix');
+  if (!matrixField) {
+    matrixField = document.createElement('input');
+    matrixField.type = 'hidden';
+    matrixField.name = 'uploaded_matrix';
+    matrixField.id = 'uploaded_matrix';
+    form.appendChild(matrixField);
+  }
+  matrixField.value = JSON.stringify(matrix);
+
+  // Mark file as uploaded
+  document.getElementById('file_uploaded_input').value = 'true';
+
+  // Update form action to go directly to results
+  updateFormAction();
+}
+
+function updateFormAction() {
+  const form = document.querySelector('form');
+  const fileUploadedInput = document.getElementById('file_uploaded_input');
+
+  if (form && fileUploadedInput) {
+    if (fileUploadedInput.value === 'true') {
+      // If file was uploaded, go directly to results
+      form.action = "{{ url_for('binary_relations.result_from_file') }}";
+      console.log('Form action updated to go directly to results');
+    } else {
+      // If no file uploaded, go to matrix input page
+      form.action = "{{ url_for('binary_relations.matrix') }}";
+      console.log('Form action set to matrix input page');
+    }
+  }
 }
 
 function showSuccess(message) {
@@ -728,6 +795,16 @@ function getCookie(name) {
   }
   return cookieValue;
 }
+
+// Add form submission event listener
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      updateFormAction();
+    });
+  }
+});
 </script>
 
 {% endblock %}
