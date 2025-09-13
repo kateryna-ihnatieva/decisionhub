@@ -899,3 +899,372 @@ def extract_binary_data(data, num_objects):
             "matrix": [],
             "error": f"Error processing binary relations data: {str(e)}",
         }
+
+
+def process_experts_file(file, num_experts, num_alternatives, upload_folder="uploads"):
+    """
+    Process uploaded file specifically for experts evaluation analysis
+    Handles files with two tables: competency weights and evaluation matrix
+
+    Args:
+        file: Flask file object
+        num_experts: Number of experts
+        num_alternatives: Number of alternatives
+        upload_folder: Folder to save uploaded files
+
+    Returns:
+        dict: {'success': bool, 'competency_matrix': list, 'evaluation_matrix': list,
+               'alternatives_names': list, 'error': str}
+    """
+    try:
+        # Validate file
+        is_valid, error = validate_file(file)
+        if not is_valid:
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": error,
+            }
+
+        # Save file
+        file_path = save_uploaded_file(file, upload_folder)
+
+        try:
+            # Parse file based on extension
+            file_ext = os.path.splitext(file.filename.lower())[1]
+
+            if file_ext in [".xlsx", ".xls"]:
+                data = parse_excel_data(file_path)
+            elif file_ext == ".csv":
+                data = parse_csv_data_with_empty_rows(file_path)
+            else:
+                return {
+                    "success": False,
+                    "competency_matrix": [],
+                    "evaluation_matrix": [],
+                    "alternatives_names": [],
+                    "error": "Unsupported file format",
+                }
+
+            # Process experts data
+            result = extract_experts_data(data, num_experts, num_alternatives)
+
+            # Clean up file
+            cleanup_file(file_path)
+
+            return result
+
+        except Exception as e:
+            # Clean up file on error
+            cleanup_file(file_path)
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": f"Error processing file: {str(e)}",
+            }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "competency_matrix": [],
+            "evaluation_matrix": [],
+            "alternatives_names": [],
+            "error": f"Upload error: {str(e)}",
+        }
+
+
+def extract_experts_data(data, num_experts, num_alternatives):
+    """
+    Extract experts evaluation data from file
+
+    For experts evaluation analysis:
+    - First table: competency matrix (expert weights for each criterion)
+    - Second table: evaluation matrix (expert ratings for each alternative)
+    - Alternative names are taken from column headers of the second table
+
+    Args:
+        data: Raw file data
+        num_experts: Number of experts
+        num_alternatives: Number of alternatives
+
+    Returns:
+        dict with competency matrix, evaluation matrix, and alternative names
+    """
+    try:
+        if not data or len(data) == 0:
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": "File is empty",
+            }
+
+        # Clean data - remove completely empty rows
+        data = [row for row in data if any(str(cell).strip() for cell in row)]
+
+        if len(data) == 0:
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": "No data found in file",
+            }
+
+        # Find table boundaries by looking for empty or mostly empty rows
+        table_boundaries = []
+        current_start = 0
+
+        for i, row in enumerate(data):
+            # Check if row is empty or mostly empty (less than 2 non-empty cells)
+            non_empty_cells = sum(
+                1
+                for cell in row
+                if str(cell).strip() and str(cell).strip().lower() != "nan"
+            )
+            if non_empty_cells < 2:  # Row is empty or has only 1 non-empty cell
+                if i > current_start:
+                    table_boundaries.append((current_start, i))
+                current_start = i + 1
+
+        # Add the last table if it doesn't end with empty row
+        if current_start < len(data):
+            table_boundaries.append((current_start, len(data)))
+
+        # If no empty rows found, try to split based on data patterns
+        if not table_boundaries or len(table_boundaries) < 2:
+            # Look for rows that might be headers (contain "Експерти" and multiple criteria)
+            header_rows = []
+            for i, row in enumerate(data):
+                row_text = " ".join(
+                    str(cell).strip().lower() for cell in row if str(cell).strip()
+                )
+                # Look for rows that contain "експерти" and have multiple criteria (not just expert names)
+                if (
+                    "експерти" in row_text
+                    and len(row_text.split())
+                    > 4  # More than just "Експерти" + 3 criteria
+                    and not any(
+                        name in row_text
+                        for name in ["експерт 1", "експерт 2", "експерт 3", "експерт 4"]
+                    )
+                ):
+                    header_rows.append(i)
+
+            # If we found at least 2 potential header rows, split there
+            if len(header_rows) >= 2:
+                table_boundaries = []
+                for i in range(len(header_rows)):
+                    start = header_rows[i]
+                    end = header_rows[i + 1] if i + 1 < len(header_rows) else len(data)
+                    table_boundaries.append((start, end))
+            else:
+                # Fallback: treat entire data as one table
+                table_boundaries = [(0, len(data))]
+
+        if len(table_boundaries) < 2:
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": "File must contain at least 2 tables (competency and evaluation)",
+            }
+
+        # Process first table (competency matrix)
+        competency_data = data[table_boundaries[0][0] : table_boundaries[0][1]]
+        competency_result = extract_competency_matrix(competency_data, num_experts)
+
+        if not competency_result["success"]:
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": f"Competency matrix error: {competency_result['error']}",
+            }
+
+        # Process second table (evaluation matrix)
+        evaluation_data = data[table_boundaries[1][0] : table_boundaries[1][1]]
+        evaluation_result = extract_evaluation_matrix(
+            evaluation_data, num_experts, num_alternatives
+        )
+
+        if not evaluation_result["success"]:
+            return {
+                "success": False,
+                "competency_matrix": [],
+                "evaluation_matrix": [],
+                "alternatives_names": [],
+                "error": f"Evaluation matrix error: {evaluation_result['error']}",
+            }
+
+        return {
+            "success": True,
+            "competency_matrix": competency_result["matrix"],
+            "evaluation_matrix": evaluation_result["matrix"],
+            "alternatives_names": evaluation_result["alternatives_names"],
+            "error": None,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "competency_matrix": [],
+            "evaluation_matrix": [],
+            "alternatives_names": [],
+            "error": f"Error processing experts data: {str(e)}",
+        }
+
+
+def extract_competency_matrix(data, num_experts):
+    """
+    Extract competency matrix from first table
+
+    Args:
+        data: Table data (list of rows)
+        num_experts: Number of experts
+
+    Returns:
+        dict with competency matrix
+    """
+    try:
+        if len(data) < num_experts + 1:  # +1 for header
+            return {
+                "success": False,
+                "matrix": [],
+                "error": f"Insufficient data for competency matrix. Expected at least {num_experts + 1} rows",
+            }
+
+        # Extract competency matrix (skip first row which contains headers)
+        matrix = []
+        for i in range(1, min(num_experts + 1, len(data))):
+            row = []
+            for j in range(1, min(6, len(data[i]))):  # 5 criteria + 1 for expert name
+                cell_value = str(data[i][j]).strip()
+                try:
+                    value = float(cell_value)
+                    row.append(value)
+                except (ValueError, TypeError):
+                    return {
+                        "success": False,
+                        "matrix": [],
+                        "error": f"Invalid competency value '{cell_value}' at position ({i},{j})",
+                    }
+
+            # Pad row if necessary
+            while len(row) < 5:
+                row.append(0.0)
+            matrix.append(row)
+
+        # Pad matrix if necessary
+        while len(matrix) < num_experts:
+            matrix.append([0.0] * 5)
+
+        return {
+            "success": True,
+            "matrix": matrix,
+            "error": None,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "matrix": [],
+            "error": f"Error processing competency matrix: {str(e)}",
+        }
+
+
+def extract_evaluation_matrix(data, num_experts, num_alternatives):
+    """
+    Extract evaluation matrix from second table
+
+    Args:
+        data: Table data (list of rows)
+        num_experts: Number of experts
+        num_alternatives: Number of alternatives
+
+    Returns:
+        dict with evaluation matrix and alternative names
+    """
+    try:
+        if len(data) < num_experts + 1:  # +1 for header
+            return {
+                "success": False,
+                "matrix": [],
+                "alternatives_names": [],
+                "error": f"Insufficient data for evaluation matrix. Expected at least {num_experts + 1} rows",
+            }
+
+        # Extract alternative names from header row (excluding first column)
+        alternatives_names = []
+        for j in range(1, min(num_alternatives + 1, len(data[0]))):
+            cell_value = str(data[0][j]).strip()
+            if cell_value and cell_value != "":
+                alternatives_names.append(cell_value)
+
+        if len(alternatives_names) != num_alternatives:
+            return {
+                "success": False,
+                "matrix": [],
+                "alternatives_names": [],
+                "error": f"Expected {num_alternatives} alternative names, found {len(alternatives_names)}",
+            }
+
+        # Extract evaluation matrix (skip first row which contains headers)
+        matrix = []
+        for i in range(1, min(num_experts + 1, len(data))):
+            row = []
+            for j in range(1, min(num_alternatives + 1, len(data[i]))):
+                cell_value = str(data[i][j]).strip()
+                try:
+                    # Handle checkmarks and other symbols - extract only numbers
+                    import re
+
+                    numbers = re.findall(r"-?\d+\.?\d*", cell_value)
+                    if numbers:
+                        value = float(numbers[0])
+                    else:
+                        return {
+                            "success": False,
+                            "matrix": [],
+                            "alternatives_names": [],
+                            "error": f"Invalid evaluation value '{cell_value}' at position ({i},{j})",
+                        }
+                    row.append(value)
+                except (ValueError, TypeError):
+                    return {
+                        "success": False,
+                        "matrix": [],
+                        "alternatives_names": [],
+                        "error": f"Invalid evaluation value '{cell_value}' at position ({i},{j})",
+                    }
+
+            # Pad row if necessary
+            while len(row) < num_alternatives:
+                row.append(0.0)
+            matrix.append(row)
+
+        # Pad matrix if necessary
+        while len(matrix) < num_experts:
+            matrix.append([0.0] * num_alternatives)
+
+        return {
+            "success": True,
+            "matrix": matrix,
+            "alternatives_names": alternatives_names,
+            "error": None,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "matrix": [],
+            "alternatives_names": [],
+            "error": f"Error processing evaluation matrix: {str(e)}",
+        }

@@ -319,6 +319,135 @@
       display: none;
     }
   }
+
+  /* File Upload Styles */
+  .file-upload-section {
+    margin-bottom: 30px;
+  }
+
+  .section-title.file-upload {
+    color: var(--color-accent);
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .file-upload-container {
+    background: rgba(102, 252, 241, 0.05);
+    border: 2px dashed rgba(102, 252, 241, 0.3);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .file-upload-area {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .file-upload-area:hover {
+    background: rgba(102, 252, 241, 0.1);
+    border-color: rgba(102, 252, 241, 0.5);
+  }
+
+  .file-upload-area.dragover {
+    background: rgba(102, 252, 241, 0.15);
+    border-color: var(--color-accent);
+    transform: scale(1.02);
+  }
+
+  .file-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+    color: var(--color-accent);
+  }
+
+  .upload-text {
+    font-size: 1.1rem;
+    color: var(--color-text);
+  }
+
+  .upload-hint {
+    font-size: 0.9rem;
+    color: rgba(237, 245, 225, 0.7);
+  }
+
+  .upload-button {
+    background: var(--color-accent);
+    color: var(--color-background);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .upload-button:hover {
+    background: var(--color-accent-dark);
+    transform: translateY(-2px);
+  }
+
+  .file-info {
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .file-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .file-name {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .file-size {
+    color: rgba(237, 245, 225, 0.7);
+    font-size: 0.9rem;
+  }
+
+  .remove-file {
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-error {
+    background: rgba(255, 71, 87, 0.1);
+    border: 1px solid rgba(255, 71, 87, 0.3);
+    color: #ff4757;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+  }
+
+  .error-text {
+    font-weight: 500;
+  }
 </style>
 
 <div class="method-hero">
@@ -331,6 +460,7 @@
 
 <div class="form-container">
   <form action="{{ url_for('experts.experts_competence') }}" method="POST">
+    <input type="hidden" name="file_uploaded" id="file_uploaded_input" value="false">
 
     <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
     <input type="hidden" name="experts_task" value="{{ experts_task or '' }}">
@@ -342,6 +472,39 @@
       {{ error }}
     </div>
     {% endif %}
+
+    <!-- File Upload Section -->
+    <div class="file-upload-section">
+      <div class="section-title file-upload">
+        <span class="section-icon">📁</span>
+        Завантажити дані з файлу Excel
+      </div>
+      <div class="file-upload-container">
+        <div class="file-upload-area" id="file-upload-area">
+          <div class="file-upload-content">
+            <div class="upload-icon">📊</div>
+            <div class="upload-text">
+              <strong>Перетягніть файл сюди</strong> або натисніть для вибору
+            </div>
+            <div class="upload-hint">Підтримуються файли .xlsx, .xls, .csv</div>
+            <button type="button" class="upload-button" onclick="document.getElementById('matrix_file').click()">
+              Вибрати файл
+            </button>
+          </div>
+        </div>
+        <input type="file" id="matrix_file" name="matrix_file" accept=".xlsx,.xls,.csv" style="display: none;">
+        <div class="file-info" id="file-info" style="display: none;">
+          <div class="file-details">
+            <span class="file-name" id="file-name"></span>
+            <span class="file-size" id="file-size"></span>
+            <button type="button" class="remove-file" onclick="removeFile()">×</button>
+          </div>
+        </div>
+        <div class="upload-error" id="upload-error" style="display: none;">
+          <span class="error-text" id="error-text"></span>
+        </div>
+      </div>
+    </div>
 
     <div class="info-card">
       <div class="info-icon">🎯</div>
@@ -384,5 +547,305 @@
 
   </form>
 </div>
+
+<script>
+// File upload functionality
+let selectedFile = null;
+
+// Get form data
+const numExperts = {{ num_experts | int }};
+const numResearch = {{ num_research | int }};
+
+// File upload area elements
+const fileUploadArea = document.getElementById('file-upload-area');
+const fileInput = document.getElementById('matrix_file');
+const fileInfo = document.getElementById('file-info');
+const uploadError = document.getElementById('upload-error');
+
+// File upload event listeners
+fileUploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  fileUploadArea.classList.add('dragover');
+});
+
+fileUploadArea.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  fileUploadArea.classList.remove('dragover');
+});
+
+fileUploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  fileUploadArea.classList.remove('dragover');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleFile(files[0]);
+  }
+});
+
+fileUploadArea.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleFile(e.target.files[0]);
+  }
+});
+
+function handleFile(file) {
+  // Validate file type
+  const allowedTypes = ['.xlsx', '.xls', '.csv'];
+  const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+  if (!allowedTypes.includes(fileExt)) {
+    showError('Непідтримуваний тип файлу. Дозволені: .xlsx, .xls, .csv');
+    return;
+  }
+
+  // Validate file size (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    showError('Файл занадто великий. Максимальний розмір: 10MB');
+    return;
+  }
+
+  selectedFile = file;
+  showFileInfo(file);
+  hideError();
+
+  // Upload and process file
+  uploadFile(file);
+}
+
+function uploadFile(file) {
+  const formData = new FormData();
+  formData.append('matrix_file', file);
+  formData.append('num_experts', numExperts);
+  formData.append('num_alternatives', numResearch);
+
+  // Show loading state
+  const uploadButton = document.querySelector('.upload-button');
+  const originalText = uploadButton.textContent;
+  uploadButton.innerHTML = '<span class="loading-spinner"></span>Завантаження...';
+  uploadButton.disabled = true;
+
+  fetch('/experts/upload_matrix', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Fill form fields with uploaded data
+      fillFormFields(data.alternatives_names);
+      // Store uploaded data for form submission
+      storeUploadedData(data.competency_matrix, data.evaluation_matrix, data.alternatives_names);
+      showSuccess('Файл завантажено та оброблено успішно!');
+    } else {
+      showError(data.error || 'Помилка завантаження');
+    }
+  })
+  .catch(error => {
+    console.error('Upload error:', error);
+    showError('Помилка завантаження: ' + error.message);
+  })
+  .finally(() => {
+    // Reset button state
+    uploadButton.textContent = originalText;
+    uploadButton.disabled = false;
+  });
+}
+
+function fillFormFields(alternativesNames) {
+  // Fill research names
+  const nameInputs = document.querySelectorAll('input[name="name_research"]');
+  nameInputs.forEach((input, index) => {
+    if (alternativesNames[index]) {
+      input.value = alternativesNames[index];
+    }
+  });
+}
+
+function storeUploadedData(competencyMatrix, evaluationMatrix, alternativesNames) {
+  // Validate matrix dimensions
+  const expectedExperts = numExperts;
+  const expectedAlternatives = numResearch;
+
+  if (competencyMatrix.length !== expectedExperts) {
+    showError(`Помилка розмірності матриці компетентності! Очікувалося ${expectedExperts} експертів, знайдено ${competencyMatrix.length}.`);
+    return;
+  }
+
+  if (evaluationMatrix.length !== expectedExperts) {
+    showError(`Помилка розмірності матриці оцінок! Очікувалося ${expectedExperts} експертів, знайдено ${evaluationMatrix.length}.`);
+    return;
+  }
+
+  if (evaluationMatrix[0] && evaluationMatrix[0].length !== expectedAlternatives) {
+    showError(`Помилка розмірності матриці оцінок! Очікувалося ${expectedAlternatives} альтернатив, знайдено ${evaluationMatrix[0].length}.`);
+    return;
+  }
+
+  if (alternativesNames.length !== expectedAlternatives) {
+    showError(`Помилка кількості назв! Очікувалося ${expectedAlternatives} назв, знайдено ${alternativesNames.length}.`);
+    return;
+  }
+
+  // Store the uploaded data in hidden form fields
+  const form = document.querySelector('form');
+
+  // Add hidden fields for competency matrix, evaluation matrix, and alternatives names
+  let competencyField = document.getElementById('uploaded_competency_matrix');
+  if (!competencyField) {
+    competencyField = document.createElement('input');
+    competencyField.type = 'hidden';
+    competencyField.name = 'uploaded_competency_matrix';
+    competencyField.id = 'uploaded_competency_matrix';
+    form.appendChild(competencyField);
+  }
+  competencyField.value = JSON.stringify(competencyMatrix);
+
+  let evaluationField = document.getElementById('uploaded_evaluation_matrix');
+  if (!evaluationField) {
+    evaluationField = document.createElement('input');
+    evaluationField.type = 'hidden';
+    evaluationField.name = 'uploaded_evaluation_matrix';
+    evaluationField.id = 'uploaded_evaluation_matrix';
+    form.appendChild(evaluationField);
+  }
+  evaluationField.value = JSON.stringify(evaluationMatrix);
+
+  let alternativesField = document.getElementById('uploaded_alternatives_names');
+  if (!alternativesField) {
+    alternativesField = document.createElement('input');
+    alternativesField.type = 'hidden';
+    alternativesField.name = 'uploaded_alternatives_names';
+    alternativesField.id = 'uploaded_alternatives_names';
+    form.appendChild(alternativesField);
+  }
+  alternativesField.value = JSON.stringify(alternativesNames);
+
+  // Mark file as uploaded
+  document.getElementById('file_uploaded_input').value = 'true';
+
+  // Update form action to go directly to results
+  updateFormAction();
+}
+
+function updateFormAction() {
+  const form = document.querySelector('form');
+  const fileUploadedInput = document.getElementById('file_uploaded_input');
+
+  if (form && fileUploadedInput) {
+    if (fileUploadedInput.value === 'true') {
+      // If file was uploaded, go directly to results
+      form.action = "{{ url_for('experts.result_from_file') }}";
+      console.log('Form action updated to go directly to results');
+    } else {
+      // If no file uploaded, go to competency page
+      form.action = "{{ url_for('experts.experts_competence') }}";
+      console.log('Form action set to competency page');
+    }
+  }
+}
+
+function showFileInfo(file) {
+  const fileName = document.getElementById('file-name');
+  const fileSize = document.getElementById('file-size');
+
+  fileName.textContent = file.name;
+  fileSize.textContent = formatFileSize(file.size);
+
+  fileUploadArea.style.display = 'none';
+  fileInfo.style.display = 'block';
+}
+
+function removeFile() {
+  selectedFile = null;
+  fileInput.value = '';
+
+  fileUploadArea.style.display = 'block';
+  fileInfo.style.display = 'none';
+
+  // Clear uploaded data
+  document.getElementById('file_uploaded_input').value = 'false';
+  updateFormAction();
+}
+
+function showError(message) {
+  const errorText = document.getElementById('error-text');
+  errorText.textContent = message;
+  uploadError.style.display = 'block';
+}
+
+function hideError() {
+  uploadError.style.display = 'none';
+}
+
+function showSuccess(message) {
+  // Create success notification
+  const successDiv = document.createElement('div');
+  successDiv.className = 'alert-success';
+  successDiv.style.cssText = `
+    background: rgba(142, 228, 175, 0.1);
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    color: #8EE4AF;
+    padding: 15px 20px;
+    border-radius: 15px;
+    margin-top: 15px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+  `;
+  successDiv.textContent = message;
+
+  // Insert after file upload section
+  const fileUploadSection = document.querySelector('.file-upload-container');
+  fileUploadSection.parentNode.insertBefore(successDiv, fileUploadSection.nextSibling);
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    if (successDiv.parentNode) {
+      successDiv.parentNode.removeChild(successDiv);
+    }
+  }, 5000);
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// CSRF token helper function
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Add form submission event listener
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      updateFormAction();
+    });
+  }
+});
+</script>
 
 {% endblock %}
