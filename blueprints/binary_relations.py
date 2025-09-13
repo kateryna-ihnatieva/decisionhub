@@ -11,7 +11,7 @@ from flask import (
 from mymodules.binary import *
 from models import *
 from mymodules.mai import *
-from flask_login import current_user
+from flask_login import current_user, login_required
 from mymodules.methods import *
 from mymodules.gpt_response import *
 from mymodules.binary_excel_export import BinaryExcelExporter
@@ -425,6 +425,7 @@ def export_excel(method_id):
 
 
 @binary_relations_bp.route("/upload_matrix", methods=["POST"])
+@login_required
 def upload_matrix():
     """Handle file upload for binary relations matrix data"""
     try:
@@ -463,6 +464,7 @@ def upload_matrix():
 
 
 @binary_relations_bp.route("/result_from_file", methods=["POST"])
+@login_required
 def result_from_file():
     """Process binary relations analysis from uploaded file data and redirect to result page"""
     try:

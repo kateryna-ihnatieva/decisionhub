@@ -473,7 +473,8 @@
     </div>
     {% endif %}
 
-    <!-- File Upload Section -->
+    <!-- File Upload Section - Only for authenticated users -->
+    {% if current_user.is_authenticated %}
     <div class="file-upload-section">
       <div class="section-title file-upload">
         <span class="section-icon">📁</span>
@@ -505,6 +506,28 @@
         </div>
       </div>
     </div>
+    {% else %}
+    <div class="file-upload-section" style="opacity: 0.6; pointer-events: none;">
+      <div class="section-title file-upload">
+        <span class="section-icon">🔒</span>
+        Завантажити дані з файлу Excel (тільки для зареєстрованих користувачів)
+      </div>
+      <div class="file-upload-container">
+        <div class="file-upload-area" style="background-color: #f8f9fa; border: 2px dashed #dee2e6;">
+          <div class="file-upload-content">
+            <div class="upload-icon" style="color: #6c757d;">📊</div>
+            <div class="upload-text" style="color: #6c757d;">
+              <strong>Увійдіть в систему для завантаження файлів</strong>
+            </div>
+            <div class="upload-hint" style="color: #6c757d;">Підтримуються файли .xlsx, .xls, .csv</div>
+            <a href="{{ url_for('login') }}" class="upload-button" style="background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block;">
+              Увійти в систему
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <div class="info-card">
       <div class="info-icon">🎯</div>

@@ -12,7 +12,9 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
 <script src="https://cdn.plot.ly/plotly-3.0.3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/core-js-bundle/minified.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% if current_user.is_authenticated %}
 <script src="{{ url_for('static', filename='js/drafts.js') }}"></script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/navigation-handler.js') }}"></script>
 <script src="{{ url_for('static', filename='js/test-navigation.js') }}"></script>
 <script src="{{ url_for('static', filename='js/file-upload.js') }}"></script>
@@ -503,7 +505,9 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
 <li><a class="nav-link {% block savage %}{% endblock %}" href="{{ url_for('savage.index') }}">Критерій Севіджа</a></li>
 <li><a class="nav-link {% block hurwitz %}{% endblock %}" href="{{ url_for('hurwitz.index') }}">Критерій Гурвиця</a></li>
                 <li><a class="nav-link {% block info %}{% endblock %}" href="{{ url_for('documentation') }}">Довідка</a></li>
+                {% if current_user.is_authenticated %}
                 <li><a class="nav-link {% block drafts %}{% endblock %}" href="{{ url_for('drafts.index') }}">Чернетки</a></li>
+                {% endif %}
 </ul>
 <div class="sidebar-footer mt-auto">
 {% if name or current_user.is_authenticated %}
@@ -558,7 +562,8 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
 {% block content %}{% endblock %}
 </div>
 
-<!-- Плавающая кнопка сохранения черновика -->
+<!-- Плавающая кнопка сохранения черновика - только для авторизованных пользователей -->
+{% if current_user.is_authenticated %}
 <div id="draft-save-button" class="draft-save-button" style="display: none;">
   <button onclick="window.draftsManager.saveDraft()" class="save-draft-btn">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -567,6 +572,7 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
     Зберегти чернетку
   </button>
 </div>
+{% endif %}
 </main>
 </div>
 <script>
@@ -643,7 +649,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Помечаем все ссылки навигации как внутренние
     markNavigationLinks();
 
-    // Дополнительная проверка для черновиков
+    // Дополнительная проверка для черновиков - только для авторизованных пользователей
+    {% if current_user.is_authenticated %}
     console.log('DOM loaded, checking drafts system...');
     console.log('DraftsManager available:', typeof window.draftsManager !== 'undefined');
 
@@ -667,6 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.draftsManager.markAllPageLinks();
         }
     }
+    {% endif %}
 });
 </script>
 </body>

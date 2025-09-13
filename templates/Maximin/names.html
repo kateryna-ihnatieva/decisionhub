@@ -458,6 +458,7 @@
       {% endif %}
 
       <!-- File Upload Section -->
+      {% if current_user.is_authenticated %}
       <div class="file-upload-section">
         <div class="file-upload-header">
           <h3>Завантажити файл Excel</h3>
@@ -492,6 +493,25 @@
           <span id="successMessage"></span>
         </div>
       </div>
+      {% else %}
+      <div class="file-upload-section" style="opacity: 0.6; pointer-events: none;">
+        <div class="file-upload-header">
+          <h3>🔒 Завантажити файл Excel (тільки для зареєстрованих користувачів)</h3>
+          <p>Увійдіть в систему для завантаження файлів</p>
+        </div>
+
+        <div class="file-upload-area" style="background-color: #f8f9fa; border: 2px dashed #dee2e6;">
+          <div class="file-upload-content">
+            <div class="file-upload-icon" style="color: #6c757d;">📁</div>
+            <p class="file-upload-text" style="color: #6c757d;">Увійдіть в систему для завантаження файлів</p>
+            <p class="file-upload-hint" style="color: #6c757d;">Підтримуються формати: .xlsx, .xls, .csv</p>
+            <a href="{{ url_for('login') }}" class="upload-button" style="background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block;">
+              Увійти в систему
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       <div class="form-section">
         <div class="section-title alternatives">Введіть імена альтернатив</div>

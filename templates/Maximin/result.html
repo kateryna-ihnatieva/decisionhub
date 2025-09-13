@@ -573,6 +573,7 @@
     <div class="step-indicator">Результати аналізу</div>
 
     <!-- Export button -->
+    {% if current_user.is_authenticated %}
     <div class="export-container">
       <button id="export-excel-btn" class="export-btn" data-method-id="{{ id }}">
         <span class="export-icon">📊</span>
@@ -580,6 +581,7 @@
         <span class="export-loading" style="display: none;">⏳ Generating...</span>
       </button>
     </div>
+    {% endif %}
   </div>
 </div>
 

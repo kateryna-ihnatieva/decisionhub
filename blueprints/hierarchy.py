@@ -1778,6 +1778,7 @@ def export_excel(result_id):
 
 
 @hierarchy_bp.route("/upload_matrix", methods=["POST"])
+@login_required
 def upload_matrix():
     """Handle file upload for hierarchy matrix data"""
     try:
@@ -1825,6 +1826,7 @@ def upload_matrix():
 
 
 @hierarchy_bp.route("/result_from_file", methods=["POST"])
+@login_required
 def result_from_file():
     """Process hierarchy analysis from uploaded file data and redirect to result page"""
     try:

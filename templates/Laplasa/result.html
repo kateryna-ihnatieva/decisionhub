@@ -580,6 +580,7 @@
 
     <!-- Export Button -->
     {% if method_id %}
+    {% if current_user.is_authenticated %}
     <div class="export-container">
       <button id="export-excel-btn" class="export-btn" data-method-id="{{ method_id }}">
         <span class="export-icon">📊</span>
@@ -587,6 +588,7 @@
         <span class="export-loading" style="display: none;">⏳ Generating...</span>
       </button>
     </div>
+    {% endif %}
     {% endif %}
   </div>
 </div>
