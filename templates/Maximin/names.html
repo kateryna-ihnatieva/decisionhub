@@ -449,12 +449,49 @@
       <input type="hidden" name="num_alt" value="{{ num_alt }}">
       <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
       <input type="hidden" name="matrix_type" value="{{ matrix_type if matrix_type else '' }}">
+      <input type="hidden" id="file_uploaded_input" name="file_uploaded" value="false">
 
       {% if error %}
       <div class="alert alert-danger alert-style" role="alert">
         <i>{{ error }}</i>
       </div>
       {% endif %}
+
+      <!-- File Upload Section -->
+      <div class="file-upload-section">
+        <div class="file-upload-header">
+          <h3>Завантажити файл Excel</h3>
+          <p>Або введіть дані вручну нижче</p>
+        </div>
+
+        <div class="file-upload-area" id="fileUploadArea">
+          <div class="file-upload-content">
+            <div class="file-upload-icon">📁</div>
+            <p class="file-upload-text">Перетягніть файл сюди або натисніть для вибору</p>
+            <p class="file-upload-hint">Підтримуються формати: .xlsx, .xls, .csv</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+            <button type="button" class="upload-button" onclick="document.getElementById('fileInput').click()">
+              Вибрати файл
+            </button>
+          </div>
+        </div>
+
+        <div class="file-info" id="fileInfo" style="display: none;">
+          <div class="file-info-content">
+            <span class="file-name" id="fileName"></span>
+            <span class="file-size" id="fileSize"></span>
+            <button type="button" class="remove-file" onclick="removeFile()">×</button>
+          </div>
+        </div>
+
+        <div class="file-error" id="fileError" style="display: none;">
+          <span id="errorMessage"></span>
+        </div>
+
+        <div class="file-success" id="fileSuccess" style="display: none;">
+          <span id="successMessage"></span>
+        </div>
+      </div>
 
       <div class="form-section">
         <div class="section-title alternatives">Введіть імена альтернатив</div>
@@ -498,5 +535,453 @@
     </form>
   </div>
 </div>
+
+<style>
+  .file-upload-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(102, 252, 241, 0.05);
+    border: 2px dashed rgba(102, 252, 241, 0.3);
+    border-radius: 12px;
+  }
+
+  .file-upload-header h3 {
+    color: var(--color-accent);
+    margin: 0 0 10px 0;
+    font-size: 1.2em;
+  }
+
+  .file-upload-header p {
+    color: var(--color-text);
+    margin: 0 0 20px 0;
+    opacity: 0.8;
+  }
+
+  .file-upload-area {
+    border: 2px dashed rgba(102, 252, 241, 0.5);
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(102, 252, 241, 0.02);
+  }
+
+  .file-upload-area:hover {
+    border-color: var(--color-accent);
+    background: rgba(102, 252, 241, 0.05);
+  }
+
+  .file-upload-area.dragover {
+    border-color: var(--color-accent);
+    background: rgba(102, 252, 241, 0.1);
+  }
+
+  .file-upload-content {
+    pointer-events: none;
+  }
+
+  .file-upload-icon {
+    font-size: 2em;
+    margin-bottom: 10px;
+  }
+
+  .file-upload-text {
+    font-size: 1.1em;
+    margin: 10px 0;
+    color: var(--color-text);
+  }
+
+  .file-upload-hint {
+    font-size: 0.9em;
+    margin: 5px 0 15px 0;
+    color: var(--color-text);
+    opacity: 0.7;
+  }
+
+  .upload-button {
+    background: var(--color-accent);
+    color: var(--color-background);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+  }
+
+  .upload-button:hover {
+    background: var(--color-accent-dark);
+    transform: translateY(-2px);
+  }
+
+  .file-info {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(142, 228, 175, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(142, 228, 175, 0.3);
+  }
+
+  .file-info-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .file-name {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .file-size {
+    color: var(--color-text);
+    opacity: 0.7;
+    font-size: 0.9em;
+  }
+
+  .remove-file {
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .file-error {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 71, 87, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 71, 87, 0.3);
+    color: #ff4757;
+  }
+
+  .file-success {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(142, 228, 175, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(142, 228, 175, 0.3);
+    color: #8ee4af;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<script>
+let selectedFile = null;
+const numAlternatives = {{ num_alt }};
+const numConditions = {{ num_conditions }};
+
+// File upload area event listeners
+const fileUploadArea = document.getElementById('fileUploadArea');
+const fileInput = document.getElementById('fileInput');
+
+fileUploadArea.addEventListener('click', () => fileInput.click());
+fileUploadArea.addEventListener('dragover', handleDragOver);
+fileUploadArea.addEventListener('dragleave', handleDragLeave);
+fileUploadArea.addEventListener('drop', handleDrop);
+
+fileInput.addEventListener('change', handleFileSelect);
+
+function handleDragOver(e) {
+  e.preventDefault();
+  fileUploadArea.classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+  e.preventDefault();
+  fileUploadArea.classList.remove('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  fileUploadArea.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    handleFile(files[0]);
+  }
+}
+
+function handleFileSelect(e) {
+  const files = e.target.files;
+  if (files.length > 0) {
+    handleFile(files[0]);
+  }
+}
+
+function handleFile(file) {
+  // Validate file type
+  const allowedTypes = ['.xlsx', '.xls', '.csv'];
+  const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+  if (!allowedTypes.includes(fileExt)) {
+    showError('Непідтримуваний тип файлу. Дозволені: .xlsx, .xls, .csv');
+    return;
+  }
+
+  // Validate file size (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    showError('Файл занадто великий. Максимальний розмір: 10MB');
+    return;
+  }
+
+  selectedFile = file;
+  showFileInfo(file);
+  hideError();
+
+  // Upload and process file
+  uploadFile(file);
+}
+
+function uploadFile(file) {
+  const formData = new FormData();
+  formData.append('matrix_file', file);
+  formData.append('num_alt', numAlternatives);
+  formData.append('num_conditions', numConditions);
+
+  // Show loading state
+  const uploadButton = document.querySelector('.upload-button');
+  const originalText = uploadButton.textContent;
+  uploadButton.innerHTML = '<span class="loading-spinner"></span>Завантаження...';
+  uploadButton.disabled = true;
+
+  fetch('/maximin/upload_matrix', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken')
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Fill form fields with uploaded data
+      fillFormFields(data.alternatives_names, data.conditions_names);
+      // Store uploaded data for form submission
+      storeUploadedData(data.alternatives_names, data.conditions_names, data.cost_matrix);
+      showSuccess('Файл завантажено та оброблено успішно!');
+    } else {
+      showError(data.error || 'Помилка завантаження');
+    }
+  })
+  .catch(error => {
+    console.error('Upload error:', error);
+    showError('Помилка завантаження: ' + error.message);
+  })
+  .finally(() => {
+    uploadButton.textContent = originalText;
+    uploadButton.disabled = false;
+  });
+}
+
+function fillFormFields(alternativesNames, conditionsNames) {
+  // Fill alternatives names
+  const altInputs = document.querySelectorAll('input[name="name_alternatives"]');
+  altInputs.forEach((input, index) => {
+    if (alternativesNames[index]) {
+      input.value = alternativesNames[index];
+    }
+  });
+
+  // Fill conditions names
+  const condInputs = document.querySelectorAll('input[name="name_conditions"]');
+  condInputs.forEach((input, index) => {
+    if (conditionsNames[index]) {
+      input.value = conditionsNames[index];
+    }
+  });
+}
+
+function storeUploadedData(alternativesNames, conditionsNames, costMatrix) {
+  // Validate matrix dimensions
+  const expectedAlternatives = numAlternatives;
+  const expectedConditions = numConditions;
+
+  if (costMatrix.length !== expectedAlternatives) {
+    showError(`Помилка розмірності матриці! Очікувалося ${expectedAlternatives} альтернатив, знайдено ${costMatrix.length}.`);
+    return;
+  }
+
+  if (costMatrix[0] && costMatrix[0].length !== expectedConditions) {
+    showError(`Помилка розмірності матриці! Очікувалося ${expectedConditions} умов, знайдено ${costMatrix[0].length}.`);
+    return;
+  }
+
+  if (alternativesNames.length !== expectedAlternatives) {
+    showError(`Помилка кількості назв альтернатив! Очікувалося ${expectedAlternatives}, знайдено ${alternativesNames.length}.`);
+    return;
+  }
+
+  if (conditionsNames.length !== expectedConditions) {
+    showError(`Помилка кількості назв умов! Очікувалося ${expectedConditions}, знайдено ${conditionsNames.length}.`);
+    return;
+  }
+
+  // Store data in hidden form fields
+  const form = document.querySelector('form');
+
+  // Add hidden fields for alternatives names, conditions names, and cost matrix
+  let alternativesField = document.getElementById('uploaded_alternatives_names');
+  if (!alternativesField) {
+    alternativesField = document.createElement('input');
+    alternativesField.type = 'hidden';
+    alternativesField.name = 'uploaded_alternatives_names';
+    alternativesField.id = 'uploaded_alternatives_names';
+    form.appendChild(alternativesField);
+  }
+  alternativesField.value = JSON.stringify(alternativesNames);
+
+  let conditionsField = document.getElementById('uploaded_conditions_names');
+  if (!conditionsField) {
+    conditionsField = document.createElement('input');
+    conditionsField.type = 'hidden';
+    conditionsField.name = 'uploaded_conditions_names';
+    conditionsField.id = 'uploaded_conditions_names';
+    form.appendChild(conditionsField);
+  }
+  conditionsField.value = JSON.stringify(conditionsNames);
+
+  let costMatrixField = document.getElementById('uploaded_cost_matrix');
+  if (!costMatrixField) {
+    costMatrixField = document.createElement('input');
+    costMatrixField.type = 'hidden';
+    costMatrixField.name = 'uploaded_cost_matrix';
+    costMatrixField.id = 'uploaded_cost_matrix';
+    form.appendChild(costMatrixField);
+  }
+  costMatrixField.value = JSON.stringify(costMatrix);
+
+  // Mark file as uploaded
+  document.getElementById('file_uploaded_input').value = 'true';
+
+  // Preserve the task field value
+  const taskField = document.querySelector('input[name="maximin_task"]');
+  if (taskField) {
+    // Keep the existing task value
+    console.log('Preserving task value:', taskField.value);
+  }
+
+  // Update form action to go directly to results
+  updateFormAction();
+}
+
+function updateFormAction() {
+  const form = document.querySelector('form');
+  const fileUploadedInput = document.getElementById('file_uploaded_input');
+
+  if (form && fileUploadedInput) {
+    if (fileUploadedInput.value === 'true') {
+      // If file was uploaded, go directly to results
+      form.action = "{{ url_for('maximin.result_from_file') }}";
+    } else {
+      // If no file uploaded, go to cost matrix page
+      form.action = "{{ url_for('maximin.cost_matrix') }}";
+    }
+  }
+}
+
+function showFileInfo(file) {
+  document.getElementById('fileInfo').style.display = 'block';
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = formatFileSize(file.size);
+  document.getElementById('fileUploadArea').style.display = 'none';
+}
+
+function removeFile() {
+  selectedFile = null;
+  document.getElementById('fileInfo').style.display = 'none';
+  document.getElementById('fileUploadArea').style.display = 'block';
+  document.getElementById('fileInput').value = '';
+  hideError();
+  hideSuccess();
+
+  // Clear form fields
+  document.querySelectorAll('input[name="name_alternatives"]').forEach(input => input.value = '');
+  document.querySelectorAll('input[name="name_conditions"]').forEach(input => input.value = '');
+
+  // Remove hidden fields
+  const alternativesField = document.getElementById('uploaded_alternatives_names');
+  if (alternativesField) alternativesField.remove();
+
+  const conditionsField = document.getElementById('uploaded_conditions_names');
+  if (conditionsField) conditionsField.remove();
+
+  const costMatrixField = document.getElementById('uploaded_cost_matrix');
+  if (costMatrixField) costMatrixField.remove();
+
+  // Reset file uploaded flag
+  document.getElementById('file_uploaded_input').value = 'false';
+
+  // Reset form action
+  updateFormAction();
+}
+
+function showError(message) {
+  document.getElementById('fileError').style.display = 'block';
+  document.getElementById('errorMessage').textContent = message;
+  hideSuccess();
+}
+
+function hideError() {
+  document.getElementById('fileError').style.display = 'none';
+}
+
+function showSuccess(message) {
+  document.getElementById('fileSuccess').style.display = 'block';
+  document.getElementById('successMessage').textContent = message;
+  hideError();
+}
+
+function hideSuccess() {
+  document.getElementById('fileSuccess').style.display = 'none';
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Update form action on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateFormAction();
+});
+</script>
 
 {% endblock %}

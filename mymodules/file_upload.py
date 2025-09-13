@@ -1137,6 +1137,242 @@ def extract_laplasa_matrix(data, num_alternatives, num_conditions):
     }
 
 
+def process_maximin_file(
+    file, num_alternatives, num_conditions, upload_folder="uploads"
+):
+    """
+    Process uploaded file for Maximin method
+
+    Args:
+        file: Uploaded file object
+        num_alternatives: Number of alternatives
+        num_conditions: Number of conditions
+        upload_folder: Folder to save uploaded files
+
+    Returns:
+        dict: {'success': bool, 'alternatives_names': list, 'conditions_names': list,
+               'cost_matrix': list, 'error': str}
+    """
+    try:
+        # Save uploaded file
+        file_path = save_uploaded_file(file, upload_folder)
+
+        # Parse file based on extension
+        if file_path.endswith((".xlsx", ".xls")):
+            data = pd.read_excel(file_path, header=None).values.tolist()
+        elif file_path.endswith(".csv"):
+            data = pd.read_csv(file_path, header=None).values.tolist()
+        else:
+            return {
+                "success": False,
+                "alternatives_names": [],
+                "conditions_names": [],
+                "cost_matrix": [],
+                "error": "Unsupported file format",
+            }
+
+        # Extract data
+        result = extract_maximin_data(data, num_alternatives, num_conditions)
+
+        # Clean up temporary file
+        os.remove(file_path)
+
+        return result
+
+    except Exception as e:
+        return {
+            "success": False,
+            "alternatives_names": [],
+            "conditions_names": [],
+            "cost_matrix": [],
+            "error": f"Error processing file: {str(e)}",
+        }
+
+
+def extract_maximin_data(data, num_alternatives, num_conditions):
+    """
+    Extract Maximin data from parsed file data
+
+    Args:
+        data: Parsed file data (list of rows)
+        num_alternatives: Number of alternatives
+        num_conditions: Number of conditions
+
+    Returns:
+        dict with alternatives names, conditions names, and cost matrix
+    """
+    if not data or len(data) < 2:
+        return {
+            "success": False,
+            "alternatives_names": [],
+            "conditions_names": [],
+            "cost_matrix": [],
+            "error": "No data found in file",
+        }
+
+    # Find table boundaries by looking for empty or mostly empty rows
+    table_boundaries = []
+    current_start = 0
+
+    for i, row in enumerate(data):
+        # Check if row is empty or mostly empty (less than 2 non-empty cells)
+        non_empty_cells = sum(
+            1
+            for cell in row
+            if str(cell).strip() and str(cell).strip().lower() != "nan"
+        )
+        if non_empty_cells < 2:  # Row is empty or has only 1 non-empty cell
+            if i > current_start:
+                table_boundaries.append((current_start, i))
+            current_start = i + 1
+
+    # Add the last table if it doesn't end with empty row
+    if current_start < len(data):
+        table_boundaries.append((current_start, len(data)))
+
+    # If no empty rows found, treat the entire data as one table
+    if not table_boundaries:
+        table_boundaries = [(0, len(data))]
+
+    if len(table_boundaries) < 1:
+        return {
+            "success": False,
+            "alternatives_names": [],
+            "conditions_names": [],
+            "cost_matrix": [],
+            "error": "File must contain at least 1 table",
+        }
+
+    # Process the table
+    table_data = data[table_boundaries[0][0] : table_boundaries[0][1]]
+    result = extract_maximin_matrix(table_data, num_alternatives, num_conditions)
+
+    if not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "alternatives_names": result["alternatives_names"],
+        "conditions_names": result["conditions_names"],
+        "cost_matrix": result["cost_matrix"],
+        "error": None,
+    }
+
+
+def extract_maximin_matrix(data, num_alternatives, num_conditions):
+    """
+    Extract Maximin matrix from table data
+
+    Args:
+        data: Table data (list of rows)
+        num_alternatives: Number of alternatives
+        num_conditions: Number of conditions
+
+    Returns:
+        dict with alternatives names, conditions names, and cost matrix
+    """
+    if len(data) < 2:
+        return {
+            "success": False,
+            "alternatives_names": [],
+            "conditions_names": [],
+            "cost_matrix": [],
+            "error": "Insufficient data for Maximin matrix",
+        }
+
+    # First row should contain conditions names
+    conditions_row = data[0]
+    conditions_names = []
+    for j in range(1, len(conditions_row)):  # Skip first column (alternatives)
+        cell_value = str(conditions_row[j]).strip()
+        if cell_value and cell_value.lower() != "nan":
+            conditions_names.append(cell_value)
+        else:
+            conditions_names.append(f"Condition {j}")
+
+    # Validate conditions count
+    if len(conditions_names) != num_conditions:
+        return {
+            "success": False,
+            "alternatives_names": [],
+            "conditions_names": [],
+            "cost_matrix": [],
+            "error": f"Invalid number of conditions. Expected {num_conditions}, found {len(conditions_names)}",
+        }
+
+    # Extract alternatives names and cost matrix
+    alternatives_names = []
+    cost_matrix = []
+
+    for i in range(1, len(data)):  # Skip header row
+        row = data[i]
+        if not row or len(row) == 0:
+            continue
+
+        # First column should contain alternative name
+        alt_name = str(row[0]).strip()
+        if alt_name and alt_name.lower() != "nan":
+            alternatives_names.append(alt_name)
+        else:
+            alternatives_names.append(f"Alternative {i}")
+
+        # Extract cost values
+        cost_row = []
+        for j in range(1, len(row)):  # Skip first column
+            cell_value = str(row[j]).strip()
+            if cell_value and cell_value.lower() != "nan":
+                try:
+                    # Handle checkmarks and other symbols - extract only numbers
+                    import re
+
+                    numbers = re.findall(r"-?\d+\.?\d*", cell_value)
+                    if numbers:
+                        value = float(numbers[0])
+                        cost_row.append(value)
+                    else:
+                        return {
+                            "success": False,
+                            "alternatives_names": [],
+                            "conditions_names": [],
+                            "cost_matrix": [],
+                            "error": f"Invalid cost value '{cell_value}' at position ({i},{j})",
+                        }
+                except (ValueError, TypeError):
+                    return {
+                        "success": False,
+                        "alternatives_names": [],
+                        "conditions_names": [],
+                        "cost_matrix": [],
+                        "error": f"Invalid cost value '{cell_value}' at position ({i},{j})",
+                    }
+            else:
+                cost_row.append(0.0)
+
+        # Pad row if necessary
+        while len(cost_row) < num_conditions:
+            cost_row.append(0.0)
+
+        cost_matrix.append(cost_row)
+
+    # Validate alternatives count
+    if len(alternatives_names) != num_alternatives:
+        return {
+            "success": False,
+            "alternatives_names": [],
+            "conditions_names": [],
+            "cost_matrix": [],
+            "error": f"Invalid number of alternatives. Expected {num_alternatives}, found {len(alternatives_names)}",
+        }
+
+    return {
+        "success": True,
+        "alternatives_names": alternatives_names,
+        "conditions_names": conditions_names,
+        "cost_matrix": cost_matrix,
+        "error": None,
+    }
+
+
 def process_experts_file(file, num_experts, num_alternatives, upload_folder="uploads"):
     """
     Process uploaded file specifically for experts evaluation analysis
