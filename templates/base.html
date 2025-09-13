@@ -4,15 +4,18 @@
 <meta charset="UTF-8">
 <title>{% block title %}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/file-upload.css') }}">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.ico') }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
 integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <script src="https://cdn.plot.ly/plotly-3.0.3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/core-js-bundle/minified.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="{{ url_for('static', filename='js/drafts.js') }}"></script>
 <script src="{{ url_for('static', filename='js/navigation-handler.js') }}"></script>
 <script src="{{ url_for('static', filename='js/test-navigation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/file-upload.js') }}"></script>
 <style>
 /* Общие улучшения сайдбара */
 .sidebar {
@@ -503,7 +506,7 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
                 <li><a class="nav-link {% block drafts %}{% endblock %}" href="{{ url_for('drafts.index') }}">Чернетки</a></li>
 </ul>
 <div class="sidebar-footer mt-auto">
-{% if name %}
+{% if name or current_user.is_authenticated %}
 <!-- Красивая карточка профиля для развернутого сайдбара -->
 <div class="user-profile-card">
     <div class="user-avatar-container">
@@ -512,7 +515,7 @@ integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG
         </a>
     </div>
     <div class="user-info">
-        <a href="{{ url_for('profile') }}" class="user-name">{{ name }}</a>
+        <a href="{{ url_for('profile') }}" class="user-name">{{ name or current_user.get_name() }}</a>
         <div class="user-actions">
             <a href="{{ url_for('profile') }}" class="action-btn profile-btn">
                 <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">

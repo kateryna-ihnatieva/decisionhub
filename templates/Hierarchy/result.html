@@ -728,6 +728,7 @@
     <div class="step-indicator">Результати аналізу</div>
 
     <!-- Export Button -->
+    <!-- DEBUG: result_id = {{ result_id }}, method_id = {{ method_id }} -->
     {% if result_id %}
     <div class="export-container">
       <button id="export-excel-btn" class="export-btn" data-result-id="{{ result_id }}">
@@ -777,7 +778,7 @@
             <tr>
               <th>{{ name_criteria[i] }}</th>
               {% for j in range(num_criteria) %}
-              <td>{{ matrix_krit[i][j] }}</td>
+              <td>{{ matrix_krit[i][j] | to_fraction }}</td>
               {% endfor %}
               <td>{{ components_eigenvector[i] | round(3) }}</td>
               <td>{{ normalized_eigenvector[i] | round(3) }}</td>
@@ -852,7 +853,7 @@
             <tr>
               <th>{{ name_alternatives[i] }}</th>
               {% for j in range(name_alternatives | length) %}
-              <td>{{ matrix_alt[num][i][j] }}</td>
+              <td>{{ matrix_alt[num][i][j] | to_fraction }}</td>
               {% endfor %}
               <td>{{ components_eigenvector_alt[num][i] | round(3) }}</td>
               <td>{{ normalized_eigenvector_alt[num][i] | round(3) }}</td>
@@ -950,10 +951,10 @@
       </table>
     </div>
 
-    {% if task %}
+    {% if hierarchy_task %}
     <div class="task-description">
       <div class="task-label">Задача</div>
-      <div class="task-text">{{ task }}</div>
+      <div class="task-text">{{ hierarchy_task.task }}</div>
     </div>
     {% endif %}
 
@@ -992,10 +993,22 @@ document.addEventListener('DOMContentLoaded', function() {
   }, observerOptions);
 
   containers.forEach(container => {
-    container.style.opacity = '0';
-    container.style.transform = 'translateY(20px)';
-    container.style.transition = 'all 0.6s ease';
-    observer.observe(container);
+    // Проверяем, виден ли элемент уже при загрузке
+    const rect = container.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+
+    if (isVisible) {
+      // Если элемент уже виден, сразу показываем его
+      container.style.opacity = '1';
+      container.style.transform = 'translateY(0)';
+      container.style.transition = 'all 0.6s ease';
+    } else {
+      // Если не виден, скрываем и наблюдаем
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(20px)';
+      container.style.transition = 'all 0.6s ease';
+      observer.observe(container);
+    }
   });
 
   // Анимация для статистических карточек
