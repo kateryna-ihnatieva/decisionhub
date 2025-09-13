@@ -18,7 +18,7 @@ from models import (
     db,
     Result,
 )
-from flask_login import current_user
+from flask_login import current_user, login_required
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 from mymodules.savage_excel_export import SavageExcelExporter
@@ -374,6 +374,7 @@ def export_excel(method_id):
 
 
 @savage_bp.route("/upload_matrix", methods=["POST"])
+@login_required
 def upload_matrix():
     """Handle file upload for Savage method"""
     try:
@@ -414,6 +415,7 @@ def upload_matrix():
 
 
 @savage_bp.route("/result_from_file", methods=["POST"])
+@login_required
 def result_from_file():
     """Process uploaded file data for Savage method"""
     try:

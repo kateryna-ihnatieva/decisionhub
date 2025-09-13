@@ -422,7 +422,7 @@
     <div class="step-indicator">✅ Результати аналізу</div>
 
     <!-- Export Button -->
-    {% if method_id %}
+    {% if method_id and current_user.is_authenticated %}
     <div class="export-container">
       <button id="export-excel-btn" class="export-btn" data-method-id="{{ method_id }}">
         <span class="export-icon">📊</span>

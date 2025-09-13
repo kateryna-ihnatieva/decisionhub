@@ -17,7 +17,7 @@ from models import (
     db,
     Result,
 )
-from flask_login import current_user
+from flask_login import current_user, login_required
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 from mymodules.laplasa_excel_export import LaplasaExcelExporter
@@ -532,6 +532,7 @@ def export_excel(method_id):
 
 
 @kriteriy_laplasa_bp.route("/upload_matrix", methods=["POST"])
+@login_required
 def upload_matrix():
     """Handle file upload for Laplasa method"""
     try:
@@ -572,6 +573,7 @@ def upload_matrix():
 
 
 @kriteriy_laplasa_bp.route("/result_from_file", methods=["POST"])
+@login_required
 def result_from_file():
     """Process uploaded file data for Laplasa method"""
     try:

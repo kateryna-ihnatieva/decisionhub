@@ -9,7 +9,7 @@ from flask import (
     redirect,
     url_for,
 )
-from flask_login import current_user
+from flask_login import current_user, login_required
 from mymodules.gpt_response import *
 from mymodules.methods import *
 from models import *
@@ -628,6 +628,7 @@ def export_excel(method_id):
 
 
 @experts_bp.route("/upload_matrix", methods=["POST"])
+@login_required
 def upload_matrix():
     """Handle file upload for experts evaluation data"""
     try:
@@ -673,6 +674,7 @@ def upload_matrix():
 
 
 @experts_bp.route("/result_from_file", methods=["POST"])
+@login_required
 def result_from_file():
     """Process experts evaluation from uploaded file data and redirect to result page"""
     try:

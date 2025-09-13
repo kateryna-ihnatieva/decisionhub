@@ -729,13 +729,17 @@
 
     <!-- Export Button -->
     <!-- DEBUG: result_id = {{ result_id }}, method_id = {{ method_id }} -->
-    {% if result_id %}
+    {% if result_id and current_user.is_authenticated %}
     <div class="export-container">
       <button id="export-excel-btn" class="export-btn" data-result-id="{{ result_id }}">
         <span class="export-icon">📊</span>
         <span class="export-text">Завантажити Excel</span>
         <span class="export-loading" style="display: none;">⏳ Generating...</span>
       </button>
+    </div>
+    {% elif not current_user.is_authenticated %}
+    <div class="export-container">
+      <p style="color: #6c757d; text-align: center;">🔒 Завантаження Excel доступне тільки для зареєстрованих користувачів</p>
     </div>
     {% else %}
     <div class="export-container">
