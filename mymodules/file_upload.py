@@ -153,7 +153,7 @@ def extract_names_and_matrix(data, expected_size):
             return {
                 "names": [],
                 "matrix": [],
-                "error": f"Insufficient data. Expected at least {min_size}x{min_size}, got {rows}x{cols}",
+                "error": f"Insufficient data. Expected at least {min_size-1}x{min_size-1}, got {rows-1}x{cols-1}",
             }
 
         # For hierarchy analysis, we expect names in both first row and first column
@@ -806,7 +806,14 @@ def extract_binary_data(data, num_objects):
                 "success": False,
                 "names": [],
                 "matrix": [],
-                "error": f"Insufficient data. Expected at least {min_size}x{min_size}, got {len(data)}x{len(data[0])}",
+                "error": f"Insufficient data. Expected at least {min_size-1}x{min_size-1}, got {len(data)-1}x{len(data[0])-1}",
+            }
+        elif len(data) > min_size or len(data[0]) > min_size:
+            return {
+                "success": False,
+                "names": [],
+                "matrix": [],
+                "error": f"Excessive data. Expected at most {min_size-1}x{min_size-1}, got {len(data)-1}x{len(data[0])-1}",
             }
 
         # Extract names from first row (excluding first cell)
@@ -823,8 +830,8 @@ def extract_binary_data(data, num_objects):
                 if cell_value and cell_value != "" and cell_value not in names:
                     names.append(cell_value)
 
-        # Validate we have enough names
-        if len(names) < num_objects:
+        # Validate we have the correct number of names
+        if len(names) != num_objects:
             return {
                 "success": False,
                 "names": [],

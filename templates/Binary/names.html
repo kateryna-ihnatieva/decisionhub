@@ -674,6 +674,21 @@ function fillFormFields(names) {
 }
 
 function storeUploadedData(names, matrix) {
+  // Validate matrix dimensions
+  const expectedSize = numObjects;
+  const actualRows = matrix.length;
+  const actualCols = matrix[0] ? matrix[0].length : 0;
+
+  if (actualRows !== expectedSize || actualCols !== expectedSize) {
+    showError(`Matrix size mismatch! Expected ${expectedSize}x${expectedSize}, but file contains ${actualRows}x${actualCols} matrix.`);
+    return;
+  }
+
+  if (names.length !== expectedSize) {
+    showError(`Names count mismatch! Expected ${expectedSize} names, but file contains ${names.length} names.`);
+    return;
+  }
+
   // Store the uploaded data in hidden form fields
   const form = document.querySelector('form');
 
