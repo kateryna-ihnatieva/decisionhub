@@ -1,4 +1,13 @@
-from flask import Blueprint, render_template, request, session, Response
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    session,
+    Response,
+    flash,
+    redirect,
+    url_for,
+)
 from mymodules.mai import *
 from models import (
     LaplasaConditions,
@@ -12,6 +21,7 @@ from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 from mymodules.laplasa_excel_export import LaplasaExcelExporter
+from mymodules.file_upload import process_laplasa_file
 from datetime import datetime
 
 kriteriy_laplasa_bp = Blueprint("kriteriy_laplasa", __name__, url_prefix="/laplasa")
@@ -519,3 +529,139 @@ def export_excel(method_id):
     except Exception as e:
         print(f"Excel export error: {e}")
         return Response(f"Export failed: {str(e)}", status=500)
+
+
+@kriteriy_laplasa_bp.route("/upload_matrix", methods=["POST"])
+def upload_matrix():
+    """Handle file upload for Laplasa method"""
+    try:
+        # Get form data
+        num_alt = int(request.form.get("num_alt", 0))
+        num_conditions = int(request.form.get("num_conditions", 0))
+
+        if num_alt <= 0 or num_conditions <= 0:
+            return {
+                "success": False,
+                "error": "Invalid number of alternatives or conditions",
+            }
+
+        # Get uploaded file
+        if "matrix_file" not in request.files:
+            return {"success": False, "error": "No file uploaded"}
+
+        file = request.files["matrix_file"]
+        if file.filename == "":
+            return {"success": False, "error": "No file selected"}
+
+        # Process file
+        result = process_laplasa_file(file, num_alt, num_conditions)
+
+        if result["success"]:
+            return {
+                "success": True,
+                "alternatives_names": result["alternatives_names"],
+                "conditions_names": result["conditions_names"],
+                "cost_matrix": result["cost_matrix"],
+            }
+        else:
+            return {"success": False, "error": result["error"]}
+
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return {"success": False, "error": f"Upload failed: {str(e)}"}
+
+
+@kriteriy_laplasa_bp.route("/result_from_file", methods=["POST"])
+def result_from_file():
+    """Process uploaded file data for Laplasa method"""
+    try:
+        print(f"Laplasa result_from_file called with form data: {request.form}")
+
+        # Get data from form
+        file_data = {
+            "alternatives_names": request.form.get("uploaded_alternatives_names"),
+            "conditions_names": request.form.get("uploaded_conditions_names"),
+            "cost_matrix": request.form.get("uploaded_cost_matrix"),
+        }
+
+        print(f"Extracted file_data: {file_data}")
+
+        # Get other form data
+        laplasa_task = request.form.get("laplasa_task", "")
+        num_alt = int(request.form.get("num_alt", 0))
+        num_conditions = int(request.form.get("num_conditions", 0))
+
+        print(f"Laplasa task: {laplasa_task}")
+        print(f"Number of alternatives: {num_alt}")
+        print(f"Number of conditions: {num_conditions}")
+
+        # Parse the data
+        import json
+
+        try:
+            alternatives_names = json.loads(file_data["alternatives_names"])
+            conditions_names = json.loads(file_data["conditions_names"])
+            cost_matrix = json.loads(file_data["cost_matrix"])
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            flash("Error parsing uploaded data", "error")
+            return redirect(url_for("kriteriy_laplasa.index"))
+
+        print(f"Parsed alternatives_names: {alternatives_names}")
+        print(f"Parsed conditions_names: {conditions_names}")
+        print(f"Parsed cost_matrix: {cost_matrix}")
+
+        # Create records in database to get method_id
+        print("Creating database records...")
+        new_record_id = add_object_to_db(db, LaplasaConditions, names=conditions_names)
+        print(f"Created LaplasaConditions with ID: {new_record_id}")
+
+        add_object_to_db(
+            db, LaplasaAlternatives, id=new_record_id, names=alternatives_names
+        )
+        print(f"Created LaplasaAlternatives with ID: {new_record_id}")
+
+        # Calculate optimal variants
+        optimal_variants = [
+            round(sum(map(float, sublist)) / len(sublist), 2) for sublist in cost_matrix
+        ]
+
+        print(f"Calculated optimal_variants: {optimal_variants}")
+
+        add_object_to_db(
+            db,
+            LaplasaCostMatrix,
+            id=new_record_id,
+            laplasa_alternatives_id=new_record_id,
+            matrix=cost_matrix,
+            optimal_variants=optimal_variants,
+        )
+        print(f"Created LaplasaCostMatrix with ID: {new_record_id}")
+
+        # Create laplasa task if provided
+        if laplasa_task:
+            add_object_to_db(db, LaplasaTask, id=new_record_id, task=laplasa_task)
+            print(f"Created LaplasaTask with ID: {new_record_id}")
+
+        # Create result record for history if user is authenticated
+        if current_user.is_authenticated:
+            add_object_to_db(
+                db,
+                Result,
+                method_name="Laplasa",
+                method_id=new_record_id,
+                user_id=current_user.get_id(),
+            )
+            print(f"Created Result record for history with ID: {new_record_id}")
+
+        # Redirect to result page
+        print(f"Redirecting to result page with method_id: {new_record_id}")
+        return redirect(url_for("kriteriy_laplasa.result", method_id=new_record_id))
+
+    except Exception as e:
+        print(f"Exception in laplasa result_from_file: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        flash(f"Error processing file data: {str(e)}", "error")
+        return redirect(url_for("kriteriy_laplasa.index"))
