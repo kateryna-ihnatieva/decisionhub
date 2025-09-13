@@ -1,4 +1,13 @@
-from flask import Blueprint, render_template, request, session, Response
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    session,
+    Response,
+    flash,
+    redirect,
+    url_for,
+)
 
 # from mymodules.mai import *  # Unused import removed
 from models import (
@@ -13,6 +22,7 @@ from flask_login import current_user
 from mymodules.methods import add_object_to_db, generate_plot
 from mymodules.experts_func import make_table
 from mymodules.hurwitz_excel_export import HurwitzExcelExporter
+from mymodules.file_upload import process_hurwitz_file
 from datetime import datetime
 
 hurwitz_bp = Blueprint("hurwitz", __name__, url_prefix="/hurwitz")
@@ -379,3 +389,157 @@ def export_excel(method_id):
     except Exception as e:
         print(f"Excel export error: {e}")
         return Response("Export failed", status=500)
+
+
+@hurwitz_bp.route("/upload_matrix", methods=["POST"])
+def upload_matrix():
+    """Handle file upload for Hurwitz method"""
+    try:
+        # Get form data
+        num_alt = int(request.form.get("num_alt", 0))
+        num_conditions = int(request.form.get("num_conditions", 0))
+
+        if num_alt <= 0 or num_conditions <= 0:
+            return {
+                "success": False,
+                "error": "Invalid number of alternatives or conditions",
+            }
+
+        # Get uploaded file
+        if "matrix_file" not in request.files:
+            return {"success": False, "error": "No file uploaded"}
+
+        file = request.files["matrix_file"]
+        if file.filename == "":
+            return {"success": False, "error": "No file selected"}
+
+        # Process file
+        result = process_hurwitz_file(file, num_alt, num_conditions)
+
+        if result["success"]:
+            return {
+                "success": True,
+                "alternatives_names": result["alternatives_names"],
+                "conditions_names": result["conditions_names"],
+                "cost_matrix": result["cost_matrix"],
+            }
+        else:
+            return {"success": False, "error": result["error"]}
+
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return {"success": False, "error": f"Upload failed: {str(e)}"}
+
+
+@hurwitz_bp.route("/result_from_file", methods=["POST"])
+def result_from_file():
+    """Process uploaded file data for Hurwitz method"""
+    try:
+        print(f"Hurwitz result_from_file called with form data: {request.form}")
+
+        # Get data from form
+        file_data = {
+            "alternatives_names": request.form.get("uploaded_alternatives_names"),
+            "conditions_names": request.form.get("uploaded_conditions_names"),
+            "cost_matrix": request.form.get("uploaded_cost_matrix"),
+        }
+
+        print(f"Extracted file_data: {file_data}")
+
+        # Get other form data
+        hurwitz_task = request.form.get("hurwitz_task", "")
+        alpha = float(request.form.get("alpha", 0.5))
+        num_alt = int(request.form.get("num_alt", 0))
+        num_conditions = int(request.form.get("num_conditions", 0))
+
+        print(f"Hurwitz task: '{hurwitz_task}'")
+        print(f"Alpha: {alpha}")
+        print(f"Number of alternatives: {num_alt}")
+        print(f"Number of conditions: {num_conditions}")
+
+        # Parse the data
+        import json
+
+        try:
+            alternatives_names = json.loads(file_data["alternatives_names"])
+            conditions_names = json.loads(file_data["conditions_names"])
+            cost_matrix = json.loads(file_data["cost_matrix"])
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            flash("Error parsing uploaded data", "error")
+            return redirect(url_for("hurwitz.index"))
+
+        print(f"Parsed alternatives_names: {alternatives_names}")
+        print(f"Parsed conditions_names: {conditions_names}")
+        print(f"Parsed cost_matrix: {cost_matrix}")
+
+        # Create records in database to get method_id
+        print("Creating database records...")
+        new_record_id = add_object_to_db(db, HurwitzConditions, names=conditions_names)
+        print(f"Created HurwitzConditions with ID: {new_record_id}")
+
+        add_object_to_db(
+            db, HurwitzAlternatives, id=new_record_id, names=alternatives_names
+        )
+        print(f"Created HurwitzAlternatives with ID: {new_record_id}")
+
+        # Calculate Hurwitz values
+        max_values = []
+        min_values = []
+        hurwitz_values = []
+        for row in cost_matrix:
+            row_int = list(map(float, row))  # Convert to float
+            min_val = min(row_int)
+            max_val = max(row_int)
+            H = alpha * max_val + (1 - alpha) * min_val
+            hurwitz_values.append(H)
+            max_values.append(max_val)
+            min_values.append(min_val)
+
+        max_value = max(hurwitz_values)
+        max_index = hurwitz_values.index(max_value)
+        optimal_alternative = alternatives_names[max_index]
+
+        print(f"Calculated hurwitz_values: {hurwitz_values}")
+        print(f"Optimal alternative: {optimal_alternative}")
+
+        add_object_to_db(
+            db,
+            HurwitzCostMatrix,
+            id=new_record_id,
+            hurwitz_alternatives_id=new_record_id,
+            matrix=cost_matrix,
+            optimal_variants=hurwitz_values,
+            alpha=alpha,
+        )
+        print(f"Created HurwitzCostMatrix with ID: {new_record_id}")
+
+        # Create hurwitz task if provided
+        if hurwitz_task:
+            add_object_to_db(db, HurwitzTask, id=new_record_id, task=hurwitz_task)
+            print(
+                f"Created HurwitzTask with ID: {new_record_id}, task: '{hurwitz_task}'"
+            )
+
+        # Create result record for history if user is authenticated
+        if current_user.is_authenticated:
+            add_object_to_db(
+                db,
+                Result,
+                method_name="Hurwitz",
+                method_id=new_record_id,
+                user_id=current_user.get_id(),
+            )
+            print(f"Created Result record for history with ID: {new_record_id}")
+
+        # Redirect to result page
+        print(f"Redirecting to result page with method_id: {new_record_id}")
+        return redirect(url_for("hurwitz.result", method_id=new_record_id))
+
+    except Exception as e:
+        print(f"Exception in hurwitz result_from_file: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        flash(f"Error processing file data: {str(e)}", "error")
+        return redirect(url_for("hurwitz.index"))
