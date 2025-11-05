@@ -144,12 +144,12 @@ class HurwitzExcelExporter:
         ws = self.workbook.create_sheet("Загальна інформація")
 
         # Header
-        self.set_header_style(ws["A1"], "Звіт аналізу Критерію Гурвиця")
+        self.set_header_style(ws["A1"], "Звіт аналізу Критерію Гурвіца")
         ws.merge_cells("A1:D1")
 
         # Method info
         self.set_data_style(ws["A3"], "Метод:")
-        self.set_data_style(ws["B3"], "Критерій Гурвиця")
+        self.set_data_style(ws["B3"], "Критерій Гурвіца")
         self.set_data_style(ws["A4"], "ID аналізу:")
         self.set_data_style(ws["B4"], analysis_data.get("method_id", "N/A"))
         self.set_data_style(ws["A5"], "Коефіцієнт α:")
@@ -212,10 +212,10 @@ class HurwitzExcelExporter:
 
     def create_hurwitz_values_sheet(self, analysis_data):
         """Create Hurwitz values sheet"""
-        ws = self.workbook.create_sheet("Значення Гурвиця")
+        ws = self.workbook.create_sheet("Значення Гурвіца")
 
         # Header
-        self.set_header_style(ws["A1"], "Значення Гурвиця")
+        self.set_header_style(ws["A1"], "Значення Гурвіца")
         ws.merge_cells("A1:F1")
 
         name_alternatives = analysis_data.get("name_alternatives", [])
@@ -230,7 +230,7 @@ class HurwitzExcelExporter:
             or not max_values
             or not hurwitz_values
         ):
-            self.set_data_style(ws["A3"], "Немає даних для значень Гурвиця")
+            self.set_data_style(ws["A3"], "Немає даних для значень Гурвіца")
             return
 
         # Row headers
@@ -238,7 +238,7 @@ class HurwitzExcelExporter:
         self.set_subheader_style(ws["B3"], "Мін")
         self.set_subheader_style(ws["C3"], "Макс")
         self.set_subheader_style(ws["D3"], f"α = {alpha}")
-        self.set_subheader_style(ws["E3"], "Гурвиця")
+        self.set_subheader_style(ws["E3"], "Гурвіца")
 
         # Fill data
         for i, alternative in enumerate(name_alternatives):
@@ -262,7 +262,7 @@ class HurwitzExcelExporter:
 
         # Table headers
         self.set_subheader_style(ws["A3"], "Альтернативи")
-        self.set_subheader_style(ws["B3"], "Значення Гурвиця")
+        self.set_subheader_style(ws["B3"], "Значення Гурвіца")
 
         name_alternatives = analysis_data.get("name_alternatives", [])
         hurwitz_values = analysis_data.get("hurwitz_values", [])
@@ -295,7 +295,7 @@ class HurwitzExcelExporter:
         ws = self.workbook.create_sheet("Графіки")
 
         # Header
-        self.set_header_style(ws["A1"], "Графік значень Гурвиця")
+        self.set_header_style(ws["A1"], "Графік значень Гурвіца")
         ws.merge_cells("A1:D1")
 
         name_alternatives = analysis_data.get("name_alternatives", [])
@@ -307,7 +307,7 @@ class HurwitzExcelExporter:
 
         # Prepare data for chart
         self.set_subheader_style(ws["A3"], "Альтернативи")
-        self.set_subheader_style(ws["B3"], "Значення Гурвиця")
+        self.set_subheader_style(ws["B3"], "Значення Гурвіца")
 
         # Fill data in original order (no sorting)
         for i, (alternative, hurwitz_value) in enumerate(
@@ -321,7 +321,7 @@ class HurwitzExcelExporter:
         chart = BarChart()
         chart.type = "col"
         chart.style = 10
-        chart.title = "Значення Гурвиця альтернатив"
+        chart.title = "Значення Гурвіца альтернатив"
         chart.y_axis.title = "Значення"
         chart.x_axis.title = "Альтернативи"
 

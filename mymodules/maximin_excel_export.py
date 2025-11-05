@@ -144,12 +144,12 @@ class MaximinExcelExporter:
         ws = self.workbook.create_sheet("Загальна інформація")
 
         # Header
-        self.set_header_style(ws["A1"], "Звіт аналізу Максимінного критерію")
+        self.set_header_style(ws["A1"], "Звіт аналізу критерію Вальда")
         ws.merge_cells("A1:D1")
 
         # Method info
         self.set_data_style(ws["A3"], "Метод:")
-        self.set_data_style(ws["B3"], "Максимінний критерій")
+        self.set_data_style(ws["B3"], "Критерій Вальда")
         self.set_data_style(ws["A4"], "ID аналізу:")
         self.set_data_style(ws["B4"], analysis_data.get("method_id", "N/A"))
         self.set_data_style(ws["A5"], "Тип матриці:")
