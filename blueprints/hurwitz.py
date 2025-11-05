@@ -31,7 +31,7 @@ hurwitz_bp = Blueprint("hurwitz", __name__, url_prefix="/hurwitz")
 @hurwitz_bp.route("/")
 def index():
     context = {
-        "title": "Критерій Гурвиця",
+        "title": "Критерій Гурвіца",
         "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
     return render_template("Hurwitz/index.html", **context)

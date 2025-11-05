@@ -30,7 +30,7 @@ maximin_bp = Blueprint("maximin", __name__, url_prefix="/maximin")
 @maximin_bp.route("/")
 def index():
     context = {
-        "title": "Максимінний критерій",
+        "title": "Критерій Вальда",
         "name": (current_user.get_name() if current_user.is_authenticated else None),
     }
     return render_template("Maximin/index.html", **context)

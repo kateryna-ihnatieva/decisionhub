@@ -318,11 +318,9 @@ class Draft(db.Model):
     __tablename__ = "drafts"
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    method_type = db.Column(
-        "method", db.String(50), nullable=False
-    )  # ahp, topsis, electre, etc.
+    method_type = db.Column("method", db.String(50), nullable=False)
     current_route = db.Column("page", db.String(100), nullable=False)
-    form_data = db.Column("data", JSON, nullable=False)  # Все данные форм
+    form_data = db.Column("data", JSON, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     created_at = db.Column(
         db.DateTime, default=lambda: datetime.now(pytz.timezone("Europe/Kiev"))
@@ -331,7 +329,6 @@ class Draft(db.Model):
         db.DateTime, default=lambda: datetime.now(pytz.timezone("Europe/Kiev"))
     )
 
-    # Связь с пользователем
     user = db.relationship("User", backref="drafts")
 
 
