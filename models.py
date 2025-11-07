@@ -100,6 +100,7 @@ class LaplasaTask(db.Model):
     __tablename__ = "laplasa_tasks"
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.Text)
+    matrix_type = db.Column(db.String(20), nullable=False, default="profit")
 
 
 class LaplasaCostMatrix(db.Model):
