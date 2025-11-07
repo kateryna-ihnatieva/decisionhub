@@ -45,6 +45,7 @@ def names():
     num_alt = 0
     num_conditions = 0
     savage_task = None
+    matrix_type = None
 
     if draft_id:
         try:
@@ -60,38 +61,45 @@ def names():
                 num_alt = int(draft_data.get("numAlternatives") or 0)
                 num_conditions = int(draft_data.get("numConditions") or 0)
                 savage_task = draft_data.get("task")
+                matrix_type = draft_data.get("matrixType")
             else:
                 # Если черновик не найден, используем значения по умолчанию
                 num_alt = 0
                 num_conditions = 0
                 savage_task = None
+                matrix_type = None
         except Exception as e:
             print(f"Error loading draft: {str(e)}")
             # В случае ошибки используем значения по умолчанию
             num_alt = 0
             num_conditions = 0
             savage_task = None
+            matrix_type = None
     else:
         # Если черновик не загружается, получаем данные из URL параметров
         try:
             num_alt = int(request.args.get("num_alt") or 0)
             num_conditions = int(request.args.get("num_conditions") or 0)
             savage_task = request.args.get("savage_task")
+            matrix_type = request.args.get("matrix_type")
         except (ValueError, TypeError):
             num_alt = 0
             num_conditions = 0
             savage_task = None
+            matrix_type = None
 
     # Збереження змінної у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
     session["savage_task"] = savage_task
+    session["matrix_type"] = matrix_type
 
     context = {
         "title": "Імена",
         "num_alt": num_alt,
         "num_conditions": num_conditions,
         "savage_task": savage_task,
+        "matrix_type": matrix_type,
         "name_alternatives": (draft_data.get("alternatives") if draft_data else None),
         "name_conditions": (draft_data.get("conditions") if draft_data else None),
         "name": (current_user.get_name() if current_user.is_authenticated else None),
@@ -123,20 +131,24 @@ def cost_matrix():
         num_alt = int(draft_data.get("numAlternatives") or 0)
         num_conditions = int(draft_data.get("numConditions") or 0)
         savage_task = draft_data.get("task")
+        matrix_type = draft_data.get("matrixType", "profit")
         name_alternatives = draft_data.get("alternatives", [])
         name_conditions = draft_data.get("conditions", [])
     else:
         # Загружаем данные из сессии и формы
         num_alt = int(session.get("num_alt"))
         num_conditions = int(session.get("num_conditions"))
-        # Получаем savage_task из формы или сессии
+        # Получаем savage_task и matrix_type из формы или сессии
         savage_task = request.form.get("savage_task") or session.get("savage_task")
+        matrix_type = session.get("matrix_type", "profit")
         name_alternatives = request.form.getlist("name_alternatives")
         name_conditions = request.form.getlist("name_conditions")
 
-        # Обновляем сессию с актуальным значением savage_task
+        # Обновляем сессию с актуальными значениями
         if savage_task:
             session["savage_task"] = savage_task
+        if matrix_type:
+            session["matrix_type"] = matrix_type
 
     if len(name_alternatives) != len(set(name_alternatives)) or len(
         name_conditions
@@ -160,8 +172,14 @@ def cost_matrix():
 
     add_object_to_db(db, SavageAlternatives, id=new_record_id, names=name_alternatives)
 
-    if savage_task:
-        add_object_to_db(db, SavageTask, id=new_record_id, task=savage_task)
+    if savage_task or matrix_type:
+        add_object_to_db(
+            db,
+            SavageTask,
+            id=new_record_id,
+            task=savage_task,
+            matrix_type=matrix_type or "profit",
+        )
 
     session["new_record_id"] = new_record_id
     session["flag"] = 0
@@ -173,6 +191,7 @@ def cost_matrix():
         "name_alternatives": name_alternatives,
         "name_conditions": name_conditions,
         "savage_task": savage_task,
+        "matrix_type": matrix_type,
         "name": (current_user.get_name() if current_user.is_authenticated else None),
         "id": new_record_id,
     }
@@ -209,10 +228,13 @@ def result(method_id=None):
     name_conditions = SavageConditions.query.get(new_record_id).names
 
     savage_task = session.get("savage_task")
+    matrix_type = "profit"
 
     try:
         savage_task_record = SavageTask.query.get(new_record_id)
-        savage_task = savage_task_record.task if savage_task_record else None
+        if savage_task_record:
+            savage_task = savage_task_record.task
+            matrix_type = savage_task_record.matrix_type or "profit"
     except Exception as e:
         print("[!] Error:", e)
 
@@ -247,8 +269,14 @@ def result(method_id=None):
         for j in range(num_conditions):
             # Перетворюємо всі елементи стовпця в float
             col = [float(cost_matrix[i][j]) for i in range(num_alt)]
-            max_in_col = max(col)
-            loss_matrix.append([abs(max_in_col - val) for val in col])
+            if matrix_type == "profit":
+                # Для прибыли: потери = максимум - текущее значение
+                max_in_col = max(col)
+                loss_matrix.append([abs(max_in_col - val) for val in col])
+            else:
+                # Для затрат: потери = текущее значение - минимум
+                min_in_col = min(col)
+                loss_matrix.append([abs(val - min_in_col) for val in col])
 
         loss_matrix = list(map(list, zip(*loss_matrix)))
         max_losses = [max(row) for row in loss_matrix]
@@ -286,11 +314,18 @@ def result(method_id=None):
                 user_id=current_user.get_id(),
             )
 
-    optimal_message = (
-        f"Оптимальна альтернатива за критерієм Севіджа: "
-        f"{optimal_alternative} (мінімальні максимальні втрати = "
-        f"{min(max_losses)})"
-    )
+    if matrix_type == "profit":
+        optimal_message = (
+            f"Оптимальна альтернатива за критерієм Севіджа: "
+            f"{optimal_alternative} (мінімальні максимальні втрати = "
+            f"{min(max_losses)})"
+        )
+    else:
+        optimal_message = (
+            f"Оптимальна альтернатива за критерієм Севіджа: "
+            f"{optimal_alternative} (мінімальні максимальні втрати = "
+            f"{min(max_losses)})"
+        )
 
     context = {
         "title": "Результат",
@@ -302,6 +337,7 @@ def result(method_id=None):
         "max_losses": max_losses,
         "id": new_record_id,
         "savage_task": savage_task,
+        "matrix_type": matrix_type,
         "optimal_message": optimal_message,
         "savage_plot": generate_plot(max_losses, name_alternatives, False, savage=True),
     }
@@ -323,10 +359,13 @@ def export_excel(method_id):
         if not all([savage_conditions, savage_alternatives, savage_cost_matrix]):
             return Response("Data not found", status=404)
 
-        # Get task description
+        # Get task description and matrix type
         task_description = "Savage Analysis"
-        if savage_task and savage_task.task:
-            task_description = savage_task.task
+        matrix_type = "profit"
+        if savage_task:
+            if savage_task.task:
+                task_description = savage_task.task
+            matrix_type = savage_task.matrix_type or "profit"
 
         # Calculate optimal message exactly like on website
         cost_matrix = savage_cost_matrix.matrix or []
@@ -346,6 +385,7 @@ def export_excel(method_id):
         analysis_data = {
             "method_id": method_id,
             "savage_task": task_description,
+            "matrix_type": matrix_type,
             "name_alternatives": name_alternatives,
             "name_conditions": savage_conditions.names or [],
             "cost_matrix": cost_matrix,
@@ -432,6 +472,7 @@ def result_from_file():
 
         # Get other form data
         savage_task = request.form.get("savage_task", "")
+        matrix_type = request.form.get("matrix_type", "profit")
         num_alt = int(request.form.get("num_alt", 0))
         num_conditions = int(request.form.get("num_conditions", 0))
 
@@ -470,8 +511,14 @@ def result_from_file():
         for j in range(num_conditions):
             # Convert all elements in column to float
             col = [float(cost_matrix[i][j]) for i in range(num_alt)]
-            max_in_col = max(col)
-            loss_matrix.append([abs(max_in_col - val) for val in col])
+            if matrix_type == "profit":
+                # Для прибыли: потери = максимум - текущее значение
+                max_in_col = max(col)
+                loss_matrix.append([abs(max_in_col - val) for val in col])
+            else:
+                # Для затрат: потери = текущее значение - минимум
+                min_in_col = min(col)
+                loss_matrix.append([abs(val - min_in_col) for val in col])
 
         loss_matrix = list(map(list, zip(*loss_matrix)))
         max_losses = [max(row) for row in loss_matrix]
@@ -482,6 +529,7 @@ def result_from_file():
         print(f"Calculated loss_matrix: {loss_matrix}")
         print(f"Calculated max_losses: {max_losses}")
         print(f"Optimal alternative: {optimal_alternative}")
+        print(f"Matrix type: {matrix_type}")
 
         add_object_to_db(
             db,
@@ -496,9 +544,17 @@ def result_from_file():
         print(f"Created SavageCostMatrix with ID: {new_record_id}")
 
         # Create savage task if provided
-        if savage_task:
-            add_object_to_db(db, SavageTask, id=new_record_id, task=savage_task)
-            print(f"Created SavageTask with ID: {new_record_id}, task: '{savage_task}'")
+        if savage_task or matrix_type:
+            add_object_to_db(
+                db,
+                SavageTask,
+                id=new_record_id,
+                task=savage_task,
+                matrix_type=matrix_type or "profit",
+            )
+            print(
+                f"Created SavageTask with ID: {new_record_id}, task: '{savage_task}', matrix_type: {matrix_type}"
+            )
 
         # Create result record for history if user is authenticated
         if current_user.is_authenticated:

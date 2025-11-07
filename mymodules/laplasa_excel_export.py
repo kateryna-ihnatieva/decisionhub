@@ -126,6 +126,14 @@ class LaplasaExcelExporter:
         ws.merge_cells("A7:D7")
         self.set_row_height_for_text(ws, 7, task_description)
 
+        # Matrix type
+        matrix_type = analysis_data.get("matrix_type", "profit")
+        matrix_type_text = "Прибуток" if matrix_type == "profit" else "Затрати"
+        ws["A8"] = "Тип матриці:"
+        ws["B8"] = matrix_type_text
+        self.set_data_style(ws["A8"])
+        self.set_data_style(ws["B8"])
+
         # Auto-adjust column widths
         for column in ws.columns:
             max_length = 0
@@ -234,8 +242,12 @@ class LaplasaExcelExporter:
         ws.merge_cells("A1:B1")
 
         # Table headers
+        matrix_type = analysis_data.get("matrix_type", "profit")
+        header_text = (
+            "Очікувана вигода" if matrix_type == "profit" else "Очікувані затрати"
+        )
         ws["A3"] = "Альтернативи"
-        ws["B3"] = "Очікувана вигода"
+        ws["B3"] = header_text
         self.set_subheader_style(ws["A3"])
         self.set_subheader_style(ws["B3"])
 
@@ -248,14 +260,15 @@ class LaplasaExcelExporter:
             return
 
         # Create ranking data
+        matrix_type = analysis_data.get("matrix_type", "profit")
         ranking_data = []
         for i, (alternative, variant) in enumerate(
             zip(name_alternatives, optimal_variants)
         ):
             ranking_data.append((alternative, variant))
 
-        # Sort by variant value in descending order
-        ranking_data.sort(key=lambda x: x[1], reverse=True)
+        # Sort by variant value: descending for profit, ascending for cost
+        ranking_data.sort(key=lambda x: x[1], reverse=(matrix_type == "profit"))
 
         # Fill ranking table
         for i, (alternative, variant) in enumerate(ranking_data):
@@ -299,8 +312,12 @@ class LaplasaExcelExporter:
             return
 
         # Add data for chart
+        matrix_type = analysis_data.get("matrix_type", "profit")
+        header_text = (
+            "Очікувана вигода" if matrix_type == "profit" else "Очікувані затрати"
+        )
         ws["A3"] = "Альтернативи"
-        ws["B3"] = "Очікувана вигода"
+        ws["B3"] = header_text
         self.set_subheader_style(ws["A3"])
         self.set_subheader_style(ws["B3"])
 
@@ -314,11 +331,15 @@ class LaplasaExcelExporter:
             self.set_number_style(ws[f"B{row}"], variant)
 
         # Create chart
+        matrix_type = analysis_data.get("matrix_type", "profit")
+        y_axis_title = (
+            "Очікувана вигода" if matrix_type == "profit" else "Очікувані затрати"
+        )
         chart = BarChart()
         chart.type = "col"
         chart.style = 10
         chart.title = "Оптимальні варіанти"
-        chart.y_axis.title = "Очікувана вигода"
+        chart.y_axis.title = y_axis_title
         chart.x_axis.title = "Альтернативи"
 
         data = Reference(ws, min_col=2, min_row=3, max_row=3 + len(name_alternatives))

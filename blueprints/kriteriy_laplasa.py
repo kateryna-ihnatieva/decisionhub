@@ -44,6 +44,7 @@ def names():
     num_alt = 0
     num_conditions = 0
     laplasa_task = None
+    matrix_type = None
 
     if draft_id:
         try:
@@ -59,38 +60,45 @@ def names():
                 num_alt = int(draft_data.get("numAlternatives") or 0)
                 num_conditions = int(draft_data.get("numConditions") or 0)
                 laplasa_task = draft_data.get("task")
+                matrix_type = draft_data.get("matrixType")
             else:
                 # Если черновик не найден, используем значения по умолчанию
                 num_alt = 0
                 num_conditions = 0
                 laplasa_task = None
+                matrix_type = None
         except Exception as e:
             print(f"Error loading draft: {str(e)}")
             # В случае ошибки используем значения по умолчанию
             num_alt = 0
             num_conditions = 0
             laplasa_task = None
+            matrix_type = None
     else:
         # Если черновик не загружается, получаем данные из URL параметров
         try:
             num_alt = int(request.args.get("num_alt") or 0)
             num_conditions = int(request.args.get("num_conditions") or 0)
             laplasa_task = request.args.get("laplasa_task")
+            matrix_type = request.args.get("matrix_type")
         except (ValueError, TypeError):
             num_alt = 0
             num_conditions = 0
             laplasa_task = None
+            matrix_type = None
 
     # Збереження змінної у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
     session["laplasa_task"] = laplasa_task
+    session["matrix_type"] = matrix_type
 
     context = {
         "title": "Імена",
         "num_alt": num_alt,
         "num_conditions": num_conditions,
         "laplasa_task": laplasa_task,
+        "matrix_type": matrix_type,
         "name_alternatives": draft_data.get("alternatives") if draft_data else None,
         "name_conditions": draft_data.get("conditions") if draft_data else None,
         "name": current_user.get_name() if current_user.is_authenticated else None,
@@ -104,6 +112,7 @@ def cost_matrix():
     # Проверяем, загружается ли черновик
     draft_id = request.args.get("draft")
     draft_data = None
+    matrix_type = None
 
     if draft_id:
         try:
@@ -119,6 +128,7 @@ def cost_matrix():
                 num_alt = int(draft_data.get("numAlternatives") or 0)
                 num_conditions = int(draft_data.get("numConditions") or 0)
                 laplasa_task = draft_data.get("task")
+                matrix_type = draft_data.get("matrixType", "profit")
                 name_alternatives = draft_data.get("alternatives", [])
                 name_conditions = draft_data.get("conditions", [])
 
@@ -155,6 +165,7 @@ def cost_matrix():
                 session["num_alt"] = num_alt
                 session["num_conditions"] = num_conditions
                 session["laplasa_task"] = laplasa_task
+                session["matrix_type"] = matrix_type
 
                 # Создаем новый ID записи для черновика
                 new_record_id = add_object_to_db(
@@ -163,9 +174,13 @@ def cost_matrix():
                 add_object_to_db(
                     db, LaplasaAlternatives, id=new_record_id, names=name_alternatives
                 )
-                if laplasa_task:
+                if laplasa_task or matrix_type:
                     add_object_to_db(
-                        db, LaplasaTask, id=new_record_id, task=laplasa_task
+                        db,
+                        LaplasaTask,
+                        id=new_record_id,
+                        task=laplasa_task,
+                        matrix_type=matrix_type or "profit",
                     )
 
                 session["new_record_id"] = new_record_id
@@ -195,6 +210,7 @@ def cost_matrix():
                     ),
                     "id": new_record_id,
                     "cost_matrix": cost_matrix,  # Передаем матрицу в контекст
+                    "matrix_type": matrix_type,
                 }
                 print(f"Context cost_matrix: {context['cost_matrix']}")
                 return render_template("Laplasa/cost_matrix.html", **context)
@@ -206,6 +222,7 @@ def cost_matrix():
     num_alt = int(session.get("num_alt"))
     num_conditions = int(session.get("num_conditions"))
     laplasa_task = session.get("laplasa_task")
+    matrix_type = session.get("matrix_type", "profit")
 
     name_alternatives = request.form.getlist("name_alternatives")
     name_conditions = request.form.getlist("name_conditions")
@@ -230,8 +247,14 @@ def cost_matrix():
 
     add_object_to_db(db, LaplasaAlternatives, id=new_record_id, names=name_alternatives)
 
-    if laplasa_task:
-        add_object_to_db(db, LaplasaTask, id=new_record_id, task=laplasa_task)
+    if laplasa_task or matrix_type:
+        add_object_to_db(
+            db,
+            LaplasaTask,
+            id=new_record_id,
+            task=laplasa_task,
+            matrix_type=matrix_type or "profit",
+        )
 
     # Збереження даних у сесії
     session["new_record_id"] = new_record_id
@@ -256,6 +279,7 @@ def cost_matrix():
         "id": new_record_id,
         "cost_matrix": cost_matrix,  # Передаем матрицу в контекст
         "laplasa_task": laplasa_task,  # Передаем задачу в контекст
+        "matrix_type": matrix_type,
     }
 
     return render_template("Laplasa/cost_matrix.html", **context)
@@ -320,9 +344,13 @@ def result(method_id=None):
                 add_object_to_db(
                     db, LaplasaAlternatives, id=new_record_id, names=name_alternatives
                 )
-                if laplasa_task:
+                if laplasa_task or matrix_type:
                     add_object_to_db(
-                        db, LaplasaTask, id=new_record_id, task=laplasa_task
+                        db,
+                        LaplasaTask,
+                        id=new_record_id,
+                        task=laplasa_task,
+                        matrix_type=matrix_type or "profit",
                     )
 
                 session["new_record_id"] = new_record_id
@@ -336,14 +364,20 @@ def result(method_id=None):
 
                 # Вычисляем оптимальные варианты
                 optimal_variants = [
-                    round(sum(map(int, sublist)) / len(sublist), 2)
+                    round(sum(map(float, sublist)) / len(sublist), 2)
                     for sublist in cost_matrix
                 ]
 
-                max_value = max(optimal_variants)
-                max_index = optimal_variants.index(max_value)
-                optimal_alternative = name_alternatives[max_index]
-                optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+                if matrix_type == "profit":
+                    max_value = max(optimal_variants)
+                    max_index = optimal_variants.index(max_value)
+                    optimal_alternative = name_alternatives[max_index]
+                    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+                else:
+                    min_value = min(optimal_variants)
+                    min_index = optimal_variants.index(min_value)
+                    optimal_alternative = name_alternatives[min_index]
+                    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має мінімальне значення очікуваних затрат ('{min_value}')."
 
                 context = {
                     "title": "Результат",
@@ -358,9 +392,13 @@ def result(method_id=None):
                     "optimal_variants": optimal_variants,
                     "id": new_record_id,
                     "laplasa_task": laplasa_task,
+                    "matrix_type": matrix_type,
                     "optimal_message": optimal_message,
                     "laplasa_plot": generate_plot(
-                        optimal_variants, name_alternatives, False
+                        optimal_variants,
+                        name_alternatives,
+                        False,
+                        savage=False if matrix_type == "profit" else True,
                     ),
                 }
 
@@ -384,10 +422,13 @@ def result(method_id=None):
     name_conditions = LaplasaConditions.query.get(new_record_id).names
 
     laplasa_task = session.get("laplasa_task")
+    matrix_type = "profit"
 
     try:
         laplasa_task_record = LaplasaTask.query.get(new_record_id)
-        laplasa_task = laplasa_task_record.task if laplasa_task_record else None
+        if laplasa_task_record:
+            laplasa_task = laplasa_task_record.task
+            matrix_type = laplasa_task_record.matrix_type or "profit"
     except Exception as e:
         print("[!] Error:", e)
 
@@ -423,14 +464,20 @@ def result(method_id=None):
             session.pop("draft_loaded", None)
 
     optimal_variants = [
-        round(sum(map(int, sublist)) / len(sublist), 2) for sublist in cost_matrix
+        round(sum(map(float, sublist)) / len(sublist), 2) for sublist in cost_matrix
     ]
-    # Знаходимо максимальне значення і його індекс
-    max_value = max(optimal_variants)
-    max_index = optimal_variants.index(max_value)
-    optimal_alternative = name_alternatives[max_index]
 
-    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+    # Знаходимо оптимальне значення в залежності від типу матриці
+    if matrix_type == "profit":
+        max_value = max(optimal_variants)
+        max_index = optimal_variants.index(max_value)
+        optimal_alternative = name_alternatives[max_index]
+        optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+    else:
+        min_value = min(optimal_variants)
+        min_index = optimal_variants.index(min_value)
+        optimal_alternative = name_alternatives[min_index]
+        optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має мінімальне значення очікуваних затрат ('{min_value}')."
 
     existing_record = LaplasaCostMatrix.query.get(new_record_id)
     if existing_record is None and not session.get("draft_loaded"):
@@ -462,8 +509,14 @@ def result(method_id=None):
         "id": new_record_id,
         "method_id": new_record_id,
         "laplasa_task": laplasa_task,
+        "matrix_type": matrix_type,
         "optimal_message": optimal_message,
-        "laplasa_plot": generate_plot(optimal_variants, name_alternatives, False),
+        "laplasa_plot": generate_plot(
+            optimal_variants,
+            name_alternatives,
+            False,
+            savage=False if matrix_type == "profit" else True,
+        ),
     }
 
     session["flag"] = 1
@@ -484,20 +537,29 @@ def export_excel(method_id):
         if not all([laplasa_conditions, laplasa_alternatives, laplasa_cost_matrix]):
             return Response("Data not found", status=404)
 
-        # Get task description
+        # Get task description and matrix type
         task_description = "Laplasa Analysis"
-        if laplasa_task and laplasa_task.task:
-            task_description = laplasa_task.task
+        matrix_type = "profit"
+        if laplasa_task:
+            if laplasa_task.task:
+                task_description = laplasa_task.task
+            matrix_type = laplasa_task.matrix_type or "profit"
 
         # Calculate optimal message exactly like on website
         optimal_variants = laplasa_cost_matrix.optimal_variants or []
         name_alternatives = laplasa_alternatives.names or []
 
         if optimal_variants and name_alternatives:
-            max_value = max(optimal_variants)
-            max_index = optimal_variants.index(max_value)
-            optimal_alternative = name_alternatives[max_index]
-            optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+            if matrix_type == "profit":
+                max_value = max(optimal_variants)
+                max_index = optimal_variants.index(max_value)
+                optimal_alternative = name_alternatives[max_index]
+                optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення очікуваної вигоди ('{max_value}')."
+            else:
+                min_value = min(optimal_variants)
+                min_index = optimal_variants.index(min_value)
+                optimal_alternative = name_alternatives[min_index]
+                optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має мінімальне значення очікуваних затрат ('{min_value}')."
         else:
             optimal_message = "Немає даних для аналізу"
 
@@ -505,6 +567,7 @@ def export_excel(method_id):
         analysis_data = {
             "method_id": method_id,
             "laplasa_task": task_description,
+            "matrix_type": matrix_type,
             "name_alternatives": name_alternatives,
             "name_conditions": laplasa_conditions.names or [],
             "cost_matrix": laplasa_cost_matrix.matrix or [],
@@ -590,6 +653,7 @@ def result_from_file():
 
         # Get other form data
         laplasa_task = request.form.get("laplasa_task", "")
+        matrix_type = request.form.get("matrix_type", "profit")
         num_alt = int(request.form.get("num_alt", 0))
         num_conditions = int(request.form.get("num_conditions", 0))
 
@@ -629,6 +693,7 @@ def result_from_file():
         ]
 
         print(f"Calculated optimal_variants: {optimal_variants}")
+        print(f"Matrix type: {matrix_type}")
 
         add_object_to_db(
             db,
@@ -641,9 +706,17 @@ def result_from_file():
         print(f"Created LaplasaCostMatrix with ID: {new_record_id}")
 
         # Create laplasa task if provided
-        if laplasa_task:
-            add_object_to_db(db, LaplasaTask, id=new_record_id, task=laplasa_task)
-            print(f"Created LaplasaTask with ID: {new_record_id}")
+        if laplasa_task or matrix_type:
+            add_object_to_db(
+                db,
+                LaplasaTask,
+                id=new_record_id,
+                task=laplasa_task,
+                matrix_type=matrix_type or "profit",
+            )
+            print(
+                f"Created LaplasaTask with ID: {new_record_id}, matrix_type: {matrix_type}"
+            )
 
         # Create result record for history if user is authenticated
         if current_user.is_authenticated:

@@ -446,6 +446,7 @@
 
       <!-- Скрытые поля для сохранения данных с предыдущих страниц -->
       <input type="hidden" name="savage_task" value="{{ savage_task if savage_task else '' }}">
+      <input type="hidden" name="matrix_type" value="{{ matrix_type or 'profit' }}">
       <input type="hidden" name="num_alt" value="{{ num_alt }}">
       <input type="hidden" name="num_conditions" value="{{ num_conditions }}">
       <input type="hidden" id="file_uploaded_input" name="file_uploaded" value="false">

@@ -62,12 +62,14 @@ def names():
                 num_conditions = int(draft_data.get("numConditions") or 0)
                 hurwitz_task = draft_data.get("task")
                 alpha = float(draft_data.get("alpha") or 0.5)
+                matrix_type = draft_data.get("matrixType")
             else:
                 # Если черновик не найден, используем значения по умолчанию
                 num_alt = 0
                 num_conditions = 0
                 hurwitz_task = None
                 alpha = 0.5
+                matrix_type = None
         except Exception as e:
             print(f"Error loading draft: {str(e)}")
             # В случае ошибки используем значения по умолчанию
@@ -75,6 +77,7 @@ def names():
             num_conditions = 0
             hurwitz_task = None
             alpha = 0.5
+            matrix_type = None
     else:
         # Если черновик не загружается, получаем данные из URL параметров
         try:
@@ -82,17 +85,20 @@ def names():
             num_conditions = int(request.args.get("num_conditions") or 0)
             hurwitz_task = request.args.get("hurwitz_task")
             alpha = float(request.args.get("alpha") or 0.5)
+            matrix_type = request.args.get("matrix_type")
         except (ValueError, TypeError):
             num_alt = 0
             num_conditions = 0
             hurwitz_task = None
             alpha = 0.5
+            matrix_type = None
 
     # Збереження змінниї у сесії
     session["num_alt"] = num_alt
     session["num_conditions"] = num_conditions
     session["hurwitz_task"] = hurwitz_task
     session["alpha"] = alpha
+    session["matrix_type"] = matrix_type
 
     context = {
         "title": "Імена",
@@ -100,6 +106,7 @@ def names():
         "num_conditions": num_conditions,
         "hurwitz_task": hurwitz_task,
         "alpha": alpha,
+        "matrix_type": matrix_type,
         "name_alternatives": (draft_data.get("alternatives") if draft_data else None),
         "name_conditions": (draft_data.get("conditions") if draft_data else None),
         "name": (current_user.get_name() if current_user.is_authenticated else None),
@@ -132,15 +139,17 @@ def cost_matrix():
         num_conditions = int(draft_data.get("numConditions") or 0)
         hurwitz_task = draft_data.get("task")
         alpha = float(draft_data.get("alpha") or 0.5)
+        matrix_type = draft_data.get("matrixType", "profit")
         name_alternatives = draft_data.get("alternatives", [])
         name_conditions = draft_data.get("conditions", [])
     else:
         # Загружаем данные из сессии и формы
         num_alt = int(session.get("num_alt"))
         num_conditions = int(session.get("num_conditions"))
-        # Получаем hurwitz_task из формы или сессии
+        # Получаем hurwitz_task и matrix_type из формы или сессии
         hurwitz_task = request.form.get("hurwitz_task") or session.get("hurwitz_task")
         alpha = float(request.form.get("alpha") or session.get("alpha") or 0.5)
+        matrix_type = session.get("matrix_type", "profit")
         name_alternatives = request.form.getlist("name_alternatives")
         name_conditions = request.form.getlist("name_conditions")
 
@@ -148,6 +157,8 @@ def cost_matrix():
         if hurwitz_task:
             session["hurwitz_task"] = hurwitz_task
         session["alpha"] = alpha
+        if matrix_type:
+            session["matrix_type"] = matrix_type
 
     if len(name_alternatives) != len(set(name_alternatives)) or len(
         name_conditions
@@ -171,8 +182,14 @@ def cost_matrix():
 
     add_object_to_db(db, HurwitzAlternatives, id=new_record_id, names=name_alternatives)
 
-    if hurwitz_task:
-        add_object_to_db(db, HurwitzTask, id=new_record_id, task=hurwitz_task)
+    if hurwitz_task or matrix_type:
+        add_object_to_db(
+            db,
+            HurwitzTask,
+            id=new_record_id,
+            task=hurwitz_task,
+            matrix_type=matrix_type or "profit",
+        )
 
     session["new_record_id"] = new_record_id
     session["flag"] = 0
@@ -185,6 +202,7 @@ def cost_matrix():
         "name_conditions": name_conditions,
         "hurwitz_task": hurwitz_task,
         "alpha": alpha,
+        "matrix_type": matrix_type,
         "name": (current_user.get_name() if current_user.is_authenticated else None),
         "id": new_record_id,
     }
@@ -233,11 +251,14 @@ def result(method_id=None):
     else:
         alpha = float(alpha)
 
-    # Аналогічно з hurwitz_task
+    # Аналогічно з hurwitz_task та matrix_type
     hurwitz_task_record = HurwitzTask.query.get(new_record_id)
     hurwitz_task = (
         hurwitz_task_record.task if hurwitz_task_record else session.get("hurwitz_task")
     )
+    matrix_type = "profit"
+    if hurwitz_task_record:
+        matrix_type = hurwitz_task_record.matrix_type or "profit"
 
     flag = session.get("flag")
     if flag != 0:
@@ -254,20 +275,34 @@ def result(method_id=None):
         row_int = list(map(float, row))  # Перетворюємо в float
         min_val = min(row_int)
         max_val = max(row_int)
-        H = alpha * max_val + (1 - alpha) * min_val
+        if matrix_type == "profit":
+            # Для прибыли: H = α * max + (1 - α) * min (максимизируем)
+            H = alpha * max_val + (1 - alpha) * min_val
+        else:
+            # Для затрат: H = α * min + (1 - α) * max (минимизируем)
+            H = alpha * min_val + (1 - alpha) * max_val
         hurwitz_values.append(H)
         max_values.append(max_val)
         min_values.append(min_val)
 
-    max_value = max(hurwitz_values)
-    max_index = hurwitz_values.index(max_value)
-    optimal_alternative = name_alternatives[max_index]
-
-    optimal_message = (
-        f"Оптимальна альтернатива {optimal_alternative}, "
-        f"має максимальне значення критерію Гурвіца: "
-        f"{max_value:.2f}."
-    )
+    if matrix_type == "profit":
+        max_value = max(hurwitz_values)
+        max_index = hurwitz_values.index(max_value)
+        optimal_alternative = name_alternatives[max_index]
+        optimal_message = (
+            f"Оптимальна альтернатива {optimal_alternative}, "
+            f"має максимальне значення критерію Гурвіца: "
+            f"{max_value:.2f}."
+        )
+    else:
+        min_value = min(hurwitz_values)
+        min_index = hurwitz_values.index(min_value)
+        optimal_alternative = name_alternatives[min_index]
+        optimal_message = (
+            f"Оптимальна альтернатива {optimal_alternative}, "
+            f"має мінімальне значення критерію Гурвіца: "
+            f"{min_value:.2f}."
+        )
 
     existing_record = HurwitzCostMatrix.query.get(new_record_id)
     if existing_record is None:
@@ -301,8 +336,14 @@ def result(method_id=None):
         "alpha": alpha,
         "id": new_record_id,
         "hurwitz_task": hurwitz_task,
+        "matrix_type": matrix_type,
         "optimal_message": optimal_message,
-        "hurwitz_plot": generate_plot(hurwitz_values, name_alternatives, False),
+        "hurwitz_plot": generate_plot(
+            hurwitz_values,
+            name_alternatives,
+            False,
+            savage=False if matrix_type == "profit" else True,
+        ),
     }
 
     session["flag"] = 1
@@ -323,10 +364,13 @@ def export_excel(method_id):
         if not all([hurwitz_conditions, hurwitz_alternatives, hurwitz_cost_matrix]):
             return Response("Data not found", status=404)
 
-        # Get task description
+        # Get task description and matrix type
         task_description = "Hurwitz Analysis"
-        if hurwitz_task and hurwitz_task.task:
-            task_description = hurwitz_task.task
+        matrix_type = "profit"
+        if hurwitz_task:
+            if hurwitz_task.task:
+                task_description = hurwitz_task.task
+            matrix_type = hurwitz_task.matrix_type or "profit"
 
         # Calculate values exactly like in result function
         cost_matrix = hurwitz_cost_matrix.matrix or []
@@ -343,16 +387,27 @@ def export_excel(method_id):
                 row_int = list(map(float, row))  # Convert to float
                 min_val = min(row_int)
                 max_val = max(row_int)
-                H = alpha * max_val + (1 - alpha) * min_val
+                if matrix_type == "profit":
+                    # Для прибыли: H = α * max + (1 - α) * min (максимизируем)
+                    H = alpha * max_val + (1 - alpha) * min_val
+                else:
+                    # Для затрат: H = α * min + (1 - α) * max (минимизируем)
+                    H = alpha * min_val + (1 - alpha) * max_val
                 hurwitz_values.append(H)
                 max_values.append(max_val)
                 min_values.append(min_val)
 
             if hurwitz_values and name_alternatives:
-                max_hurwitz = max(hurwitz_values)
-                max_index = hurwitz_values.index(max_hurwitz)
-                optimal_alternative = name_alternatives[max_index]
-                optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення критерію Гурвіца: {max_hurwitz:.2f}."
+                if matrix_type == "profit":
+                    max_hurwitz = max(hurwitz_values)
+                    max_index = hurwitz_values.index(max_hurwitz)
+                    optimal_alternative = name_alternatives[max_index]
+                    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має максимальне значення критерію Гурвіца: {max_hurwitz:.2f}."
+                else:
+                    min_hurwitz = min(hurwitz_values)
+                    min_index = hurwitz_values.index(min_hurwitz)
+                    optimal_alternative = name_alternatives[min_index]
+                    optimal_message = f"Оптимальна альтернатива {optimal_alternative}, має мінімальне значення критерію Гурвіца: {min_hurwitz:.2f}."
             else:
                 optimal_message = "Немає даних для аналізу"
         else:
@@ -362,6 +417,7 @@ def export_excel(method_id):
         analysis_data = {
             "method_id": method_id,
             "hurwitz_task": task_description,
+            "matrix_type": matrix_type,
             "name_alternatives": name_alternatives,
             "name_conditions": hurwitz_conditions.names or [],
             "cost_matrix": cost_matrix,
@@ -450,6 +506,7 @@ def result_from_file():
 
         # Get other form data
         hurwitz_task = request.form.get("hurwitz_task", "")
+        matrix_type = request.form.get("matrix_type", "profit")
         alpha = float(request.form.get("alpha", 0.5))
         num_alt = int(request.form.get("num_alt", 0))
         num_conditions = int(request.form.get("num_conditions", 0))
@@ -493,17 +550,28 @@ def result_from_file():
             row_int = list(map(float, row))  # Convert to float
             min_val = min(row_int)
             max_val = max(row_int)
-            H = alpha * max_val + (1 - alpha) * min_val
+            if matrix_type == "profit":
+                # Для прибыли: H = α * max + (1 - α) * min (максимизируем)
+                H = alpha * max_val + (1 - alpha) * min_val
+            else:
+                # Для затрат: H = α * min + (1 - α) * max (минимизируем)
+                H = alpha * min_val + (1 - alpha) * max_val
             hurwitz_values.append(H)
             max_values.append(max_val)
             min_values.append(min_val)
 
-        max_value = max(hurwitz_values)
-        max_index = hurwitz_values.index(max_value)
-        optimal_alternative = alternatives_names[max_index]
+        if matrix_type == "profit":
+            max_value = max(hurwitz_values)
+            max_index = hurwitz_values.index(max_value)
+            optimal_alternative = alternatives_names[max_index]
+        else:
+            min_value = min(hurwitz_values)
+            min_index = hurwitz_values.index(min_value)
+            optimal_alternative = alternatives_names[min_index]
 
         print(f"Calculated hurwitz_values: {hurwitz_values}")
         print(f"Optimal alternative: {optimal_alternative}")
+        print(f"Matrix type: {matrix_type}")
 
         add_object_to_db(
             db,
@@ -517,10 +585,16 @@ def result_from_file():
         print(f"Created HurwitzCostMatrix with ID: {new_record_id}")
 
         # Create hurwitz task if provided
-        if hurwitz_task:
-            add_object_to_db(db, HurwitzTask, id=new_record_id, task=hurwitz_task)
+        if hurwitz_task or matrix_type:
+            add_object_to_db(
+                db,
+                HurwitzTask,
+                id=new_record_id,
+                task=hurwitz_task,
+                matrix_type=matrix_type or "profit",
+            )
             print(
-                f"Created HurwitzTask with ID: {new_record_id}, task: '{hurwitz_task}'"
+                f"Created HurwitzTask with ID: {new_record_id}, task: '{hurwitz_task}', matrix_type: {matrix_type}"
             )
 
         # Create result record for history if user is authenticated

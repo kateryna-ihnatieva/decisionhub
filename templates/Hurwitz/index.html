@@ -558,6 +558,18 @@
             >
             <div class="info-hint">α ∈ [0;1], де 0 — повний песимізм, 1 — повний оптимізм</div>
           </div>
+          <div class="parameter-group" style="grid-column: span 2; text-align: center;">
+            <div class="parameter-label" style="justify-content: center;">Тип значень у матриці</div>
+            <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; margin-right: 20px;">
+              <input type="radio" name="matrix_type" id="matrix_type" value="profit" required style="accent-color: var(--color-accent);">
+              Прибуток
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer;">
+              <input type="radio" name="matrix_type" id="matrix_type" value="cost" style="accent-color: var(--color-accent);">
+              Затрати
+            </label>
+            <div class="info-hint">Виберіть, що відображає платіжна матриця</div>
+          </div>
         </div>
       </div>
 

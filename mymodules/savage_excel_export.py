@@ -165,6 +165,12 @@ class SavageExcelExporter:
         )
         self.set_row_height_for_text(ws, 7, task_description)
 
+        # Matrix type
+        matrix_type = analysis_data.get("matrix_type", "profit")
+        matrix_type_text = "Прибуток" if matrix_type == "profit" else "Затрати"
+        self.set_data_style(ws["A8"], "Тип матриці:")
+        self.set_data_style(ws["B8"], matrix_type_text)
+
         # Auto-adjust column widths
         self.auto_adjust_columns(ws)
 
