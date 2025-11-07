@@ -167,6 +167,12 @@ class HurwitzExcelExporter:
         )
         self.set_row_height_for_text(ws, 8, task_description)
 
+        # Matrix type
+        matrix_type = analysis_data.get("matrix_type", "profit")
+        matrix_type_text = "Прибуток" if matrix_type == "profit" else "Затрати"
+        self.set_data_style(ws["A9"], "Тип матриці:")
+        self.set_data_style(ws["B9"], matrix_type_text)
+
         # Auto-adjust column widths
         self.auto_adjust_columns(ws)
 
@@ -272,14 +278,15 @@ class HurwitzExcelExporter:
             return
 
         # Create ranking data
+        matrix_type = analysis_data.get("matrix_type", "profit")
         ranking_data = []
         for i, (alternative, hurwitz_value) in enumerate(
             zip(name_alternatives, hurwitz_values)
         ):
             ranking_data.append((alternative, hurwitz_value))
 
-        # Sort by Hurwitz value in descending order (higher is better)
-        ranking_data.sort(key=lambda x: x[1], reverse=True)
+        # Sort by Hurwitz value: descending for profit, ascending for cost
+        ranking_data.sort(key=lambda x: x[1], reverse=(matrix_type == "profit"))
 
         # Fill ranking table
         for i, (alternative, hurwitz_value) in enumerate(ranking_data):

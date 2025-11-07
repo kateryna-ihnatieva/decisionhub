@@ -596,6 +596,7 @@
 
       <!-- Скрытые поля для сохранения данных в черновик -->
       <input type="hidden" name="savage_task" value="{{ savage_task or '' }}">
+      <input type="hidden" name="matrix_type" value="{{ matrix_type or 'profit' }}">
       <input type="hidden" name="num_alt" value="{{ name_alternatives | length }}">
       <input type="hidden" name="num_conditions" value="{{ name_conditions | length }}">
       {% for name in name_alternatives %}

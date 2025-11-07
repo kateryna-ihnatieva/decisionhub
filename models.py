@@ -166,6 +166,7 @@ class SavageTask(db.Model):
     __tablename__ = "savage_tasks"
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.Text)
+    matrix_type = db.Column(db.String(20), nullable=False, default="profit")
 
 
 class SavageCostMatrix(db.Model):
@@ -200,6 +201,7 @@ class HurwitzTask(db.Model):
     __tablename__ = "hurwitz_tasks"
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.Text)
+    matrix_type = db.Column(db.String(20), nullable=False, default="profit")
 
 
 class HurwitzCostMatrix(db.Model):
