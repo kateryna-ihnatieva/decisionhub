@@ -1785,7 +1785,7 @@ def upload_matrix():
         # Get the uploaded file
         file = request.files.get("matrix_file")
         if not file:
-            return {"success": False, "error": "No file uploaded"}, 400
+            return {"success": False, "error": "Файл не завантажено"}, 400
 
         # Get number of criteria and alternatives from request
         num_criteria = request.form.get("num_criteria")
@@ -1794,7 +1794,7 @@ def upload_matrix():
         if not num_criteria or not num_alternatives:
             return {
                 "success": False,
-                "error": "Number of criteria and alternatives not provided",
+                "error": "Кількість критеріїв і альтернатив не вказана",
             }, 400
 
         try:
@@ -1803,7 +1803,7 @@ def upload_matrix():
         except ValueError:
             return {
                 "success": False,
-                "error": "Invalid number of criteria or alternatives",
+                "error": "Невірна кількість критеріїв або альтернатив",
             }, 400
 
         # Process the uploaded file for hierarchy analysis

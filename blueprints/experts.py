@@ -635,7 +635,7 @@ def upload_matrix():
         # Get the uploaded file
         file = request.files.get("matrix_file")
         if not file:
-            return {"success": False, "error": "No file uploaded"}, 400
+            return {"success": False, "error": "Файл не завантажено"}, 400
 
         # Get number of experts and alternatives from request
         num_experts = request.form.get("num_experts")
@@ -644,7 +644,7 @@ def upload_matrix():
         if not num_experts or not num_alternatives:
             return {
                 "success": False,
-                "error": "Number of experts and alternatives not provided",
+                "error": "Кількість експертів і альтернатив не вказана",
             }, 400
 
         try:
@@ -653,7 +653,7 @@ def upload_matrix():
         except ValueError:
             return {
                 "success": False,
-                "error": "Invalid number of experts or alternatives",
+                "error": "Невірна кількість експертів або альтернатив",
             }, 400
 
         # Process the uploaded file for experts evaluation analysis

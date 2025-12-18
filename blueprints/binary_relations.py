@@ -34,7 +34,6 @@ def index():
 
 @binary_relations_bp.route("/names", methods=["GET", "POST"])
 def names():
-    # Проверяем, загружается ли черновик
     draft_id = request.args.get("draft")
     draft_data = None
     num = 0
@@ -51,23 +50,19 @@ def names():
 
             if draft and draft.form_data:
                 draft_data = draft.form_data
-                # Восстанавливаем данные из черновика
                 num = int(draft_data.get("numObjects") or 0)
                 binary_task = draft_data.get("task")
                 names = draft_data.get("objects", [])
             else:
-                # Если черновик не найден, используем значения по умолчанию
                 num = 0
                 binary_task = None
                 names = None
         except Exception as e:
             print(f"Error loading draft: {str(e)}")
-            # В случае ошибки используем значения по умолчанию
             num = 0
             binary_task = None
             names = None
     else:
-        # Если черновик не загружается, получаем данные из URL параметров
         try:
             num = int(request.args.get("num") or 0)
             binary_task = request.args.get("binary_task")
@@ -93,7 +88,6 @@ def names():
 
 @binary_relations_bp.route("/matrix/", methods=["GET", "POST"])
 def matrix():
-    # Проверяем, загружается ли черновик
     draft_id = request.args.get("draft")
     draft_data = None
 
@@ -107,17 +101,14 @@ def matrix():
 
             if draft and draft.form_data:
                 draft_data = draft.form_data
-                # Восстанавливаем данные из черновика
                 num = int(draft_data.get("numObjects") or 0)
                 binary_task = draft_data.get("task")
                 names = draft_data.get("objects", [])
 
-                # Обновляем сессию
                 session["num"] = num
                 session["binary_task"] = binary_task
                 session["names"] = names
 
-                # Создаем новый ID записи для черновика
                 new_record_id = add_object_to_db(db, BinaryNames, names=names)
                 if binary_task:
                     add_object_to_db(db, BinaryTask, id=new_record_id, task=binary_task)
@@ -141,12 +132,10 @@ def matrix():
         except Exception as e:
             print(f"Error loading draft: {str(e)}")
 
-    # Обычная обработка POST запроса
     num = int(session.get("num"))
     binary_task = session.get("binary_task")
     names = request.form.getlist("names")
 
-    # Перевірка на унікальність введених імен об'єктів
     if len(names) != len(set(names)):
         error = "Імена об'єктів повинні бути унікальними!"
         context = {
@@ -432,17 +421,17 @@ def upload_matrix():
         # Get the uploaded file
         file = request.files.get("matrix_file")
         if not file:
-            return {"success": False, "error": "No file uploaded"}, 400
+            return {"success": False, "error": "Файл не завантажено"}, 400
 
         # Get number of objects from request
         num_objects = request.form.get("num_objects")
         if not num_objects:
-            return {"success": False, "error": "Number of objects not provided"}, 400
+            return {"success": False, "error": "Кількість об'єктів не вказана"}, 400
 
         try:
             num_objects = int(num_objects)
         except ValueError:
-            return {"success": False, "error": "Invalid number of objects"}, 400
+            return {"success": False, "error": "Невірна кількість об'єктів"}, 400
 
         # Process the uploaded file for binary relations analysis
         result = process_binary_file(file, num_objects)

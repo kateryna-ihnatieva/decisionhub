@@ -1061,7 +1061,7 @@ def extract_laplasa_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of conditions. Expected {num_conditions}, found {len(conditions_names)}",
+            "error": f"Невірна кількість умов. Очікувалося {num_conditions}, знайдено {len(conditions_names)}",
         }
 
     # Extract alternatives names and cost matrix
@@ -1125,7 +1125,7 @@ def extract_laplasa_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of alternatives. Expected {num_alternatives}, found {len(alternatives_names)}",
+            "error": f"Невірна кількість альтернатив. Очікувалося {num_alternatives}, знайдено {len(alternatives_names)}",
         }
 
     return {
@@ -1297,7 +1297,7 @@ def extract_maximin_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of conditions. Expected {num_conditions}, found {len(conditions_names)}",
+            "error": f"Невірна кількість умов. Очікувалося {num_conditions}, знайдено {len(conditions_names)}",
         }
 
     # Extract alternatives names and cost matrix
@@ -1361,7 +1361,7 @@ def extract_maximin_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of alternatives. Expected {num_alternatives}, found {len(alternatives_names)}",
+            "error": f"Невірна кількість альтернатив. Очікувалося {num_alternatives}, знайдено {len(alternatives_names)}",
         }
 
     return {
@@ -1533,7 +1533,7 @@ def extract_savage_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of conditions. Expected {num_conditions}, found {len(conditions_names)}",
+            "error": f"Невірна кількість умов. Очікувалося {num_conditions}, знайдено {len(conditions_names)}",
         }
 
     # Extract alternatives names and cost matrix
@@ -1597,7 +1597,7 @@ def extract_savage_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of alternatives. Expected {num_alternatives}, found {len(alternatives_names)}",
+            "error": f"Невірна кількість альтернатив. Очікувалося {num_alternatives}, знайдено {len(alternatives_names)}",
         }
 
     return {
@@ -1769,7 +1769,7 @@ def extract_hurwitz_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of conditions. Expected {num_conditions}, found {len(conditions_names)}",
+            "error": f"Невірна кількість умов. Очікувалося {num_conditions}, знайдено {len(conditions_names)}",
         }
 
     # Extract alternatives names and cost matrix
@@ -1833,7 +1833,7 @@ def extract_hurwitz_matrix(data, num_alternatives, num_conditions):
             "alternatives_names": [],
             "conditions_names": [],
             "cost_matrix": [],
-            "error": f"Invalid number of alternatives. Expected {num_alternatives}, found {len(alternatives_names)}",
+            "error": f"Невірна кількість альтернатив. Очікувалося {num_alternatives}, знайдено {len(alternatives_names)}",
         }
 
     return {

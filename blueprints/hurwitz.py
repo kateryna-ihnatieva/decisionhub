@@ -459,16 +459,16 @@ def upload_matrix():
         if num_alt <= 0 or num_conditions <= 0:
             return {
                 "success": False,
-                "error": "Invalid number of alternatives or conditions",
+                "error": "Невірна кількість альтернатив або умов",
             }
 
         # Get uploaded file
         if "matrix_file" not in request.files:
-            return {"success": False, "error": "No file uploaded"}
+            return {"success": False, "error": "Файл не завантажено"}
 
         file = request.files["matrix_file"]
         if file.filename == "":
-            return {"success": False, "error": "No file selected"}
+            return {"success": False, "error": "Файл не вибрано"}
 
         # Process file
         result = process_hurwitz_file(file, num_alt, num_conditions)
