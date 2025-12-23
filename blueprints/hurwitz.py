@@ -232,6 +232,18 @@ def result(method_id=None):
         num_conditions = int(session.get("num_conditions"))
     else:
         new_record_id = method_id
+        # Проверка принадлежности результата пользователю
+        if not current_user.is_authenticated:
+            flash("Для доступу до результату потрібна авторизація", "error")
+            return redirect(url_for("hurwitz.index"))
+        result_record = Result.query.filter_by(
+            method_name="Hurwitz",
+            method_id=new_record_id,
+            user_id=current_user.get_id(),
+        ).first()
+        if not result_record:
+            flash("У вас немає доступу до цього результату", "error")
+            return redirect(url_for("hurwitz.index"))
         num_alt = len(HurwitzAlternatives.query.get(new_record_id).names)
         num_conditions = len(HurwitzConditions.query.get(new_record_id).names)
 
@@ -354,6 +366,22 @@ def result(method_id=None):
 @hurwitz_bp.route("/export/excel/<int:method_id>")
 def export_excel(method_id):
     """Export hurwitz analysis to Excel"""
+    # Check if user owns this result
+    if current_user.is_authenticated:
+        result = Result.query.filter_by(
+            method_id=method_id, method_name="Hurwitz", user_id=current_user.get_id()
+        ).first()
+        if not result:
+            return Response(
+                "You don't have permission to export this result",
+                status=403,
+                mimetype="text/plain",
+            )
+    else:
+        return Response(
+            "Please log in to export this result", status=403, mimetype="text/plain"
+        )
+
     try:
         # Get data from database
         hurwitz_conditions = HurwitzConditions.query.get(method_id)

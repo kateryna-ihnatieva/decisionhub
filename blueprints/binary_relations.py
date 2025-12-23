@@ -172,6 +172,19 @@ def result(method_id=None):
     print(f"Binary result function called with method_id: {method_id}")
     new_record_id = method_id if method_id else int(session.get("new_record_id"))
     print(f"Using new_record_id: {new_record_id}")
+
+    # Check if user owns this result
+    if method_id and current_user.is_authenticated:
+        result = Result.query.filter_by(
+            method_id=new_record_id, method_name="Binary", user_id=current_user.get_id()
+        ).first()
+        if not result:
+            flash("You don't have permission to access this result", "error")
+            return redirect(url_for("binary_relations.index"))
+    elif method_id and not current_user.is_authenticated:
+        flash("Please log in to access this result", "error")
+        return redirect(url_for("binary_relations.index"))
+
     binary_task = session.get("binary_task")
 
     try:
