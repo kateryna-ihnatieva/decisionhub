@@ -173,14 +173,17 @@ def result(method_id=None):
     new_record_id = method_id if method_id else int(session.get("new_record_id"))
     print(f"Using new_record_id: {new_record_id}")
 
-    # Check if user owns this result
+    # Check if user owns this result (admin has access to all results)
     if method_id and current_user.is_authenticated:
-        result = Result.query.filter_by(
-            method_id=new_record_id, method_name="Binary", user_id=current_user.get_id()
-        ).first()
-        if not result:
-            flash("You don't have permission to access this result", "error")
-            return redirect(url_for("binary_relations.index"))
+        if current_user.get_name() != "admin":
+            result = Result.query.filter_by(
+                method_id=new_record_id,
+                method_name="Binary",
+                user_id=current_user.get_id(),
+            ).first()
+            if not result:
+                flash("You don't have permission to access this result", "error")
+                return redirect(url_for("binary_relations.index"))
     elif method_id and not current_user.is_authenticated:
         flash("Please log in to access this result", "error")
         return redirect(url_for("binary_relations.index"))
@@ -353,13 +356,14 @@ def export_excel(method_id):
         if not current_user.is_authenticated:
             return Response("Unauthorized", status=401)
 
-        # Get result record
-        result = Result.query.filter_by(
-            method_id=method_id, user_id=current_user.get_id(), method_name="Binary"
-        ).first()
+        # Check if user owns this result (admin has access to all results)
+        if current_user.get_name() != "admin":
+            result = Result.query.filter_by(
+                method_id=method_id, user_id=current_user.get_id(), method_name="Binary"
+            ).first()
 
-        if not result:
-            return Response("Result not found", status=404)
+            if not result:
+                return Response("Result not found", status=404)
 
         # Get binary data
         binary_names = BinaryNames.query.get(method_id)

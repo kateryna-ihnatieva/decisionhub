@@ -1050,16 +1050,17 @@ def result(method_id=None, file_data=None):
         num_criteria = session.get("num_criteria")
     else:
         new_record_id = method_id
-        # Check if user owns this result
+        # Check if user owns this result (admin has access to all results)
         if current_user.is_authenticated:
-            result = Result.query.filter_by(
-                method_id=new_record_id,
-                method_name="Hierarchy",
-                user_id=current_user.get_id(),
-            ).first()
-            if not result:
-                flash("You don't have permission to access this result", "error")
-                return redirect(url_for("hierarchy.index"))
+            if current_user.get_name() != "admin":
+                result = Result.query.filter_by(
+                    method_id=new_record_id,
+                    method_name="Hierarchy",
+                    user_id=current_user.get_id(),
+                ).first()
+                if not result:
+                    flash("You don't have permission to access this result", "error")
+                    return redirect(url_for("hierarchy.index"))
         else:
             flash("Please log in to access this result", "error")
             return redirect(url_for("hierarchy.index"))
