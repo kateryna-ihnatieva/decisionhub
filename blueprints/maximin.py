@@ -228,6 +228,18 @@ def result(method_id=None):
         num_conditions = int(session.get("num_conditions"))
     else:
         new_record_id = method_id
+        # Проверка принадлежности результата пользователю
+        if not current_user.is_authenticated:
+            flash("Для доступу до результату потрібна авторизація", "error")
+            return redirect(url_for("maximin.index"))
+        result_record = Result.query.filter_by(
+            method_name="Maximin",
+            method_id=new_record_id,
+            user_id=current_user.get_id(),
+        ).first()
+        if not result_record:
+            flash("У вас немає доступу до цього результату", "error")
+            return redirect(url_for("maximin.index"))
         num_alt = len(MaximinAlternatives.query.get(new_record_id).names)
         num_conditions = len(MaximinConditions.query.get(new_record_id).names)
 
@@ -313,6 +325,22 @@ def result(method_id=None):
 @maximin_bp.route("/export/excel/<int:method_id>")
 def export_excel(method_id):
     """Export maximin analysis to Excel"""
+    # Check if user owns this result
+    if current_user.is_authenticated:
+        result = Result.query.filter_by(
+            method_id=method_id, method_name="Maximin", user_id=current_user.get_id()
+        ).first()
+        if not result:
+            return Response(
+                "You don't have permission to export this result",
+                status=403,
+                mimetype="text/plain",
+            )
+    else:
+        return Response(
+            "Please log in to export this result", status=403, mimetype="text/plain"
+        )
+
     try:
         # Get data from database
         maximin_conditions = MaximinConditions.query.get(method_id)

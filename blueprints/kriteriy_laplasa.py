@@ -415,6 +415,20 @@ def result(method_id=None):
         num_conditions = int(session.get("num_conditions"))
     else:
         new_record_id = method_id
+        # Check if user owns this result
+        if current_user.is_authenticated:
+            result = Result.query.filter_by(
+                method_id=new_record_id,
+                method_name="Laplasa",
+                user_id=current_user.get_id(),
+            ).first()
+            if not result:
+                flash("You don't have permission to access this result", "error")
+                return redirect(url_for("kriteriy_laplasa.index"))
+        else:
+            flash("Please log in to access this result", "error")
+            return redirect(url_for("kriteriy_laplasa.index"))
+
         num_alt = len(LaplasaAlternatives.query.get(new_record_id).names)
         num_conditions = len(LaplasaConditions.query.get(new_record_id).names)
 
@@ -527,6 +541,22 @@ def result(method_id=None):
 @kriteriy_laplasa_bp.route("/export/excel/<int:method_id>")
 def export_excel(method_id):
     """Export Laplasa analysis to Excel"""
+    # Check if user owns this result
+    if current_user.is_authenticated:
+        result = Result.query.filter_by(
+            method_id=method_id, method_name="Laplasa", user_id=current_user.get_id()
+        ).first()
+        if not result:
+            return Response(
+                "You don't have permission to export this result",
+                status=403,
+                mimetype="text/plain",
+            )
+    else:
+        return Response(
+            "Please log in to export this result", status=403, mimetype="text/plain"
+        )
+
     try:
         # Fetch data from database
         laplasa_conditions = LaplasaConditions.query.get(method_id)
